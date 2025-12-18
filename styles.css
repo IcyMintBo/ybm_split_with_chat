@@ -1,0 +1,1224 @@
+:root {
+      --desk-bg: #f2c245;
+      --desk-ink: #1a1a1a;
+      --desk-paper: #f6f0df;
+      --desk-paper-2: #efe6cf;
+
+      --rust: #8f3a2f;
+      --mint: #89a97e;
+      --sky: #8fb7d7;
+
+      --shadow: 14px 16px 0 rgba(0, 0, 0, .85);
+      --shadow2: 10px 12px 0 rgba(0, 0, 0, .85);
+
+      --radius-xl: 22px;
+      --radius-lg: 16px;
+
+      --line: 3px solid rgba(0, 0, 0, .86);
+      --line-soft: 2px solid rgba(0, 0, 0, .72);
+
+      --gutter: 24px;
+      --panel-w: 520px;
+      --panel-h: 640px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      background: var(--desk-bg);
+      color: var(--desk-ink);
+      overflow: hidden;
+      font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    .desktop {
+      position: relative;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .desktop::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(rgba(0, 0, 0, .08) 1px, transparent 1px) 0 0 / 18px 18px;
+      opacity: .22;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 999px;
+      opacity: .55;
+      pointer-events: none;
+    }
+
+    .blob.b1 {
+      width: 320px;
+      height: 320px;
+      left: -90px;
+      bottom: -80px;
+      background: var(--mint);
+    }
+
+    .blob.b2 {
+      width: 260px;
+      height: 260px;
+      right: -90px;
+      bottom: -60px;
+      background: var(--sky);
+    }
+
+    .blob.b3 {
+      width: 180px;
+      height: 180px;
+      right: 120px;
+      top: 520px;
+      background: rgba(143, 58, 47, .35);
+    }
+
+    .stage {
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 2;
+    }
+
+    .view {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: .22s ease;
+    }
+
+    .view.on {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    /* =========================
+     Launcher: image frame + overlay screen
+     ========================= */
+    .phoneWrap {
+      width: min(520px, calc(100vw - 2*var(--gutter)));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .phoneImgWrap {
+      /* 你这张图是 1024x1536（2:3），用 aspect-ratio 最稳 */
+      width: min(420px, 92vw);
+      aspect-ratio: 2 / 3;
+      position: relative;
+      filter: drop-shadow(14px 16px 0 rgba(0, 0, 0, .85));
+    }
+
+    .phoneFrame {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .phoneImgWrap {
+      --sx: 20%;
+      /* 左右位置 */
+      --sy: 14.8%;
+      /* 上下位置（往上提） */
+      --sw: 60%;
+      /* 宽度（稍微放大） */
+      --sh: 55%;
+      /* 高度（关键：盖住底部露出的黄色） */
+    }
+
+
+    .screenOverlay {
+      position: absolute;
+      left: var(--sx);
+      top: var(--sy);
+      width: var(--sw);
+      height: var(--sh);
+
+      border-radius: 14px;
+      background: #0f1417;
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .06);
+      overflow: hidden;
+
+      display: flex;
+      flex-direction: column;
+      padding: 12px 12px 14px;
+      gap: 10px;
+      color: #e9eef2;
+    }
+
+    .screenOverlay::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(to bottom,
+          rgba(255, 255, 255, 0) 0,
+          rgba(255, 255, 255, 0) 3px,
+          rgba(255, 255, 255, .04) 3px,
+          rgba(255, 255, 255, .04) 4px);
+      opacity: .35;
+      pointer-events: none;
+    }
+
+    .statusRow {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace;
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: .06em;
+      opacity: .95;
+    }
+
+    .battery {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .batBox {
+      border: 2px solid rgba(233, 238, 242, .65);
+      border-radius: 8px;
+      padding: 1px 6px;
+      font-size: 11px;
+    }
+
+    .logo {
+      position: relative;
+      margin-top: 2px;
+      padding: 4px 0 0;
+      text-align: center;
+      font-weight: 900;
+      letter-spacing: .14em;
+      color: #e5b24a;
+      /* 金色感 */
+      text-shadow: 0 2px 0 rgba(0, 0, 0, .55);
+      font-size: 18px;
+    }
+
+    .tagline {
+      position: relative;
+      text-align: center;
+      font-size: 12px;
+      opacity: .85;
+      line-height: 1.35;
+    }
+
+    .spacer {
+      flex: 1;
+    }
+
+    .claimBtn {
+      position: relative;
+      border: 3px solid rgba(255, 255, 255, .78);
+      background: linear-gradient(#a8e5ff, #5aa7ff);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow:
+        0 0 0 3px rgba(255, 255, 255, .12),
+        0 10px 0 rgba(0, 0, 0, .35);
+    }
+
+    .claimBtn:active {
+      transform: translateY(1px);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, .12), 0 9px 0 rgba(0, 0, 0, .35);
+    }
+
+    .peekBtn {
+      position: relative;
+      border: 2px solid rgba(255, 255, 255, .32);
+      background: rgba(255, 255, 255, .06);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 800;
+      cursor: pointer;
+      color: #e9eef2;
+    }
+
+    .launcherActions {
+      display: flex;
+      gap: 10px;
+      width: min(520px, 92vw);
+    }
+
+    .btn {
+      flex: 1;
+      border: var(--line-soft);
+      border-radius: 999px;
+      padding: 12px 14px;
+      background: #fff;
+      font-weight: 900;
+      letter-spacing: .08em;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: rgba(143, 58, 47, .16);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    /* =========================
+     Main window (unchanged)
+     ========================= */
+    .window {
+      width: min(var(--panel-w), calc(100vw - 2*var(--gutter)));
+      height: min(var(--panel-h), calc(100vh - 2*var(--gutter)));
+      border: var(--line);
+      border-radius: var(--radius-xl);
+      background: var(--desk-paper);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      transform: scale(.92);
+      opacity: 0;
+      pointer-events: none;
+      transition: .22s ease;
+    }
+
+    .window.on {
+      transform: scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    @media (max-width:720px) {
+      body {
+        overflow: auto;
+      }
+
+      .blob {
+        opacity: .38;
+      }
+
+      .window {
+        width: calc(100vw - 20px);
+        height: calc(100vh - 20px);
+        box-shadow: var(--shadow2);
+      }
+    }
+
+    .titlebar {
+      height: 52px;
+      border-bottom: var(--line);
+      background: var(--desk-paper-2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      gap: 10px;
+    }
+
+    .dots {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: var(--line-soft);
+      background: #fff;
+    }
+
+    .dot.r {
+      background: rgba(143, 58, 47, .25);
+    }
+
+    .dot.y {
+      background: rgba(176, 123, 63, .20);
+    }
+
+    .dot.g {
+      background: rgba(137, 169, 126, .22);
+    }
+
+    .tb-title {
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      font-size: 12px;
+      opacity: .9;
+      white-space: nowrap;
+    }
+
+    .tb-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pill {
+      border: var(--line-soft);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .pill.primary {
+      background: rgba(143, 58, 47, .12);
+    }
+
+    .pages {
+      height: calc(100% - 52px);
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+    }
+
+    .pages::-webkit-scrollbar {
+      display: none;
+    }
+
+    .page {
+      flex: 0 0 100%;
+      height: 100%;
+      scroll-snap-align: start;
+      padding: 16px 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .label {
+      font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace;
+      font-size: 12px;
+      letter-spacing: .12em;
+      opacity: .8;
+    }
+
+    .h1 {
+      font-family: ui-serif, Georgia, "Times New Roman", "Songti SC", serif;
+      font-weight: 900;
+      letter-spacing: .02em;
+      font-size: 38px;
+      line-height: 1.02;
+      margin: 6px 0 0;
+    }
+
+    .sub {
+      margin: 0;
+      color: rgba(0, 0, 0, .70);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .sep {
+      height: 2px;
+      background: rgba(0, 0, 0, .78);
+      opacity: .55;
+      border-radius: 999px;
+    }
+
+    .card {
+      border: var(--line-soft);
+      border-radius: var(--radius-lg);
+      background: #fff;
+      padding: 14px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .card.soft {
+      background: rgba(255, 255, 255, .72);
+    }
+
+    .iconBox {
+      width: 58px;
+      height: 58px;
+      border: var(--line-soft);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 58px;
+      background: rgba(137, 169, 126, .20);
+    }
+
+    .iconBox.rust {
+      background: rgba(143, 58, 47, .16);
+    }
+
+    .iconBox.sky {
+      background: rgba(143, 183, 215, .22);
+    }
+
+    .iconBox svg {
+      width: 30px;
+      height: 30px;
+    }
+
+    .btnRow {
+      margin-top: auto;
+      display: flex;
+      gap: 10px;
+    }
+
+    .pageDots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding-top: 2px;
+    }
+
+    .pageDots span {
+      width: 7px;
+      height: 7px;
+      border: var(--line-soft);
+      border-radius: 999px;
+      background: #fff;
+      opacity: .65;
+    }
+
+    .pageDots span.on {
+      background: rgba(143, 58, 47, .55);
+      opacity: 1;
+    }
+
+
+/* =========================
+   START MENU (startPage)
+   - center phone card stays centered
+   - top tabs open a left side panel on desktop
+   - on mobile, tabs open full overlay that covers center
+   ========================= */
+.startPage{
+  width:100%;
+  height:100%;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+/* ===== 修正：顶栏按钮居中，并与 startCenter 同宽对齐 ===== */
+.startTopbar{
+  width: min(760px, 92vw);  /* 和 .startCenter(电脑端)对齐 */
+  margin: 0 auto;
+}
+
+.startTopbarInner{
+  display: flex;
+  align-items: center;
+  justify-content: center;  /* 居中 */
+  padding: 10px 12px;
+}
+
+.startTabs{
+  width: 100%;
+  display: flex;
+  justify-content: center;  /* 按钮组居中 */
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;          /* 手机端不够就自动换行 */
+}
+
+.startTab{
+  white-space: nowrap;      /* 避免“操作说明”断行 */
+}
+
+/* 手机端：按钮更紧凑，保证一屏尽量塞下 */
+@media (max-width: 980px){
+  .startTopbar{ width: min(520px, 92vw); }  /* 手机时跟 startCenter 基础宽对齐 */
+  .startTabs{ gap: 8px; }
+  .startTab{
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+}
+
+
+.startDot{
+  width:10px;
+  height:10px;
+  border:2px solid rgba(0,0,0,.78);
+  border-radius:3px;
+  background: rgba(137,169,126,.55);
+  display:inline-block;
+}
+.startDot.p{ background: rgba(243,178,198,.8); }
+.startDot.o{ background: rgba(255,166,61,.65); }
+
+/* center area */
+.startStage{
+  width:min(1100px, 94vw);
+  margin:0 auto;
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+}
+
+.startCenter{ width: min(520px, 92vw); }
+
+@media (min-width: 981px){
+  .startCenter{ width: min(760px, 92vw); }
+}
+
+
+/* floating card look */
+.startFloating{
+  border: var(--line);
+  border-radius: var(--radius-xl);
+  background: rgba(244,237,217,.90);
+  box-shadow: 0 16px 0 rgba(0,0,0,.10), 0 30px 40px rgba(0,0,0,.18);
+  overflow:hidden;
+}
+.startChrome{
+  height:52px;
+  border-bottom: var(--line-soft);
+  background: rgba(255,255,255,.65);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 14px;
+}
+.startLights{ display:flex; gap:8px; }
+.startLight{
+  width:14px; height:14px; border-radius:999px; border:2px solid rgba(0,0,0,.55);
+  background: rgba(143,58,47,.25);
+}
+.startLight.y{ background: rgba(176,123,63,.20); }
+.startLight.g{ background: rgba(137,169,126,.22); }
+.startChromeTitle{ font-weight:900; letter-spacing:.14em; font-size:12px; opacity:.85; }
+
+.startCore{ padding:14px; }
+.startHeroTop{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+.startTitle{ margin:0; font-size:22px; letter-spacing:.08em; }
+.startSubtitle{ margin:6px 0 0; opacity:.85; font-size:12px; line-height:1.4; }
+.startBadge{
+  border: var(--line-soft);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(137,169,126,.18);
+  font-weight:900;
+  font-size:12px;
+  white-space:nowrap;
+}
+
+.startPhoneWrap{ margin-top:12px; }
+.startPhone{
+  height:280px;
+  border: 2px dashed rgba(0,0,0,.25);
+  border-radius: 18px;
+  background: rgba(255,255,255,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.startPhone img{ width:100%; height:100%; object-fit:cover; display:block; }
+.startPhonePlaceholder{ text-align:center; opacity:.65; font-size:12px; line-height:1.5; }
+
+.startCta{ margin-top:12px; display:flex; gap:10px; }
+.startCta .btn{ flex:1; }
+
+.startHint{
+  margin-top:12px;
+  border: var(--line-soft);
+  border-radius: 14px;
+  background: rgba(255,255,255,.72);
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.55;
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  opacity:.92;
+}
+.startHint i{
+  width:18px; height:18px;
+  border:2px solid rgba(0,0,0,.78);
+  border-radius:4px;
+  background: rgba(243,178,198,.8);
+  box-shadow: 2px 2px 0 rgba(0,0,0,.16);
+  flex:0 0 auto;
+  margin-top:2px;
+}
+
+/* 让中间主窗口与左侧面板等高 */
+.startStage{
+  /* 原来是 align-items:center；会导致中间在竖直方向不撑满 */
+  align-items: flex-start;
+  padding-top: 84px; /* 和 startSide 的 top 对齐 */
+  padding-bottom: 26px;
+}
+
+.startCenter{
+  /* 让中间容器也按视口高度撑起来 */
+  height: calc(100vh - 110px);
+}
+
+.startPanel{
+  height: 100%;
+}
+
+.startSide[data-show="true"]{ display:block; }
+
+.startPanel{
+  border: var(--line);
+  border-radius: var(--radius-xl);
+  background: rgba(244,237,217,.92);
+  box-shadow: 0 16px 0 rgba(0,0,0,.10), 0 30px 40px rgba(0,0,0,.18);
+  overflow:hidden;
+  height:100%;
+}
+.startPanelBody{ padding:14px; overflow:auto; height: calc(100% - 52px); }
+
+/* overlay (mobile) */
+.startOverlay{
+  position: fixed;
+  inset:0;
+  display:none;
+  z-index:100;
+  background: rgba(0,0,0,.30);
+  padding:14px;
+  padding-top: max(14px, env(safe-area-inset-top));
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+}
+.startOverlay[data-open="true"]{ display:block; }
+.startOverlay .startPanel{ max-width:520px; margin:0 auto; height: calc(100vh - 28px); }
+.startOverlayCloseBtn{
+  margin-left:auto;
+  border: var(--line-soft);
+  border-radius: 12px;
+  background: rgba(255,255,255,.75);
+  font-weight:900;
+  padding: 8px 10px;
+  cursor:pointer;
+}
+.startOverlayCloseBtn:active{ transform: translateY(1px); }
+
+/* simple form/list blocks inside panel */
+.startKvs{ display:grid; gap:10px; font-size:12px; }
+.startKv{
+  border: var(--line-soft);
+  border-radius: 14px;
+  background: rgba(255,255,255,.75);
+  box-shadow: 0 10px 0 rgba(0,0,0,.08);
+  padding: 10px;
+}
+.startKv .startK{ opacity:.75; margin-bottom:6px; font-weight:900; }
+.startKv input,.startKv select,.startKv textarea{
+  width:100%;
+  border:2px solid rgba(0,0,0,.35);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 12px;
+  background: rgba(255,255,255,.90);
+  outline:none;
+}
+.startList{ display:grid; gap:10px; font-size:12px; line-height:1.65; }
+.startItem{
+  border: var(--line-soft);
+  border-radius: 14px;
+  background: rgba(255,255,255,.75);
+  box-shadow: 0 10px 0 rgba(0,0,0,.08);
+  padding: 10px;
+}
+
+/* mobile behavior: side panel hidden; overlay used */
+@media (max-width: 980px){
+  .startSide{ display:none !important; }
+  .startBrand .s{ display:none; }
+  .startTabs{ gap:8px; }
+  .startTab{ padding:10px 10px; }
+}
+/* 顶栏按钮组：补一个“空位” */
+.startTabsSpacer{
+  width: 88px;      /* 你想更宽就调大 */
+  height: 36px;
+  border: var(--line-soft);
+  border-radius: 12px;
+  background: rgba(255,255,255,.35);
+  opacity: .55;
+}
+
+/* 皮肤按钮的小方块颜色 */
+.startDot.s{ background: rgba(143,183,215,.55); }
+/* ===== start 中央虚线区：三列布局（世界书/预设/右侧按钮） ===== */
+.startDash{
+  border: 2px dashed rgba(0,0,0,.25);
+  border-radius: 18px;
+  background: rgba(255,255,255,.55);
+  padding: 14px;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.06);
+}
+
+.dashGrid{
+  display:grid;
+  grid-template-columns: 1fr 1fr 180px;
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 12px;
+}
+
+.dashRight{
+  display:grid;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.dashBox{
+  border: var(--line-soft);
+  border-radius: 16px;
+  background: rgba(255,255,255,.70);
+  box-shadow: 0 10px 0 rgba(0,0,0,.10);
+  font-weight: 900;
+  letter-spacing: .14em;
+  cursor: pointer;
+  user-select:none;
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+
+.dashBox:active{
+  transform: translateY(1px);
+  box-shadow: 0 9px 0 rgba(0,0,0,.10);
+}
+
+.dashBox.big{
+  min-height: 170px;
+  font-size: 26px;
+}
+
+.dashBox.small{
+  min-height: 48px;
+  font-size: 18px;
+}
+
+.dashActions{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dashGo{
+  width:100%;
+  padding: 14px 12px;
+  border-radius: 16px;
+  letter-spacing: .20em;
+}
+
+/* 手机端：右侧三按钮变成横排，避免太挤 */
+@media (max-width: 980px){
+  .dashGrid{
+    grid-template-columns: 1fr 1fr;
+  }
+  .dashRight{
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: none;
+  }
+  .dashBox.big{ min-height: 140px; font-size: 22px; }
+}
+/* 上半区（世界书/预设等）更舒展：因为下面那排按钮被移除 */
+.dashBox.big{
+  min-height: 210px;   /* 原来170左右，拉高 */
+}
+
+@media (max-width: 980px){
+  .dashBox.big{ min-height: 170px; }
+}
+.dashBox.small{
+  min-height: 56px;    /* 原来48左右 */
+}
+/* 顶部按钮托盘：更像“系统菜单条” */
+.startTabsTray{
+  width: min(760px, 92vw);   /* 跟 startCenter 对齐（你现在电脑端就是760） */
+  margin: 0 auto 12px;
+  padding: 10px 12px;
+  border: var(--line);
+  border-radius: 18px;
+  background: rgba(244,237,217,.55);
+  box-shadow: 0 10px 0 rgba(0,0,0,.08), 0 18px 26px rgba(0,0,0,.12);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* 按钮组居中 */
+.startTabs{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* 重新设计四个按钮：大一点、厚一点、统一风格 */
+.startTab{
+  height: 44px;
+  padding: 0 16px;
+  border: var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,.75);
+  box-shadow: 0 8px 0 rgba(0,0,0,.10);
+  font-weight: 900;
+  letter-spacing: .08em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.startTab:active{
+  transform: translateY(1px);
+  box-shadow: 0 7px 0 rgba(0,0,0,.10);
+}
+
+/* 小圆点更像“指示灯” */
+.startDot{
+  width: 10px;
+  height: 10px;
+  border-radius: 4px;
+  border: 2px solid rgba(0,0,0,.25);
+  background: rgba(0,0,0,.08);
+}
+
+/* 不同面板的点色（你原来 p/o/s 继续用） */
+.startDot.p{ background: rgba(214,140,160,.35); }
+.startDot.o{ background: rgba(217,168,95,.40); }
+.startDot.s{ background: rgba(143,183,215,.45); }
+
+/* 手机端更紧凑 */
+@media (max-width: 980px){
+  .startTabsTray{ width: min(520px, 92vw); }
+  .startTab{ height: 40px; padding: 0 12px; font-size: 12px; }
+}
+
+
+/* =========================
+   START HOTFIX (layout stability)
+   - remove blank tray box
+   - keep side panel on LEFT (desktop)
+   - prevent page from being pushed down
+   - mobile: allow scroll + safe area
+   ========================= */
+:root{
+  --start-w-mobile: 520px;
+  --start-w-desktop: 760px;
+  --start-top-gap: 14px;
+  --start-side-gap: 18px;
+}
+
+/* allow mobile scroll; desktop keeps clean */
+@media (max-width: 980px){
+  body{ overflow: auto !important; }
+  .desktop{ overflow: auto !important; }
+  .stage{ align-items: flex-start !important; }
+}
+
+.startPage{
+  padding-top: var(--start-top-gap);
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+}
+
+/* topbar stays visible; width aligns with center window */
+.startTopbar{
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  width: min(var(--start-w-desktop), 92vw) !important;
+  margin: 0 auto !important;
+  padding-top: max(0px, env(safe-area-inset-top));
+}
+
+@media (max-width: 980px){
+  .startTopbar{ width: min(var(--start-w-mobile), 92vw) !important; }
+}
+
+.startTopbarInner{ padding: 0 !important; justify-content: center !important; }
+
+.startTabsTray{
+  width: 100%;
+  padding: 10px 12px;
+  border: var(--line);
+  border-radius: 18px;
+  background: rgba(244,237,217,.55);
+  box-shadow: 0 10px 0 rgba(0,0,0,.08), 0 18px 26px rgba(0,0,0,.12);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.startTabs{
+  width: 100%;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center;
+  gap: 12px !important;
+  flex-wrap: wrap;
+}
+
+.startTab{
+  height: 44px;
+  padding: 0 16px;
+  border: var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,.78);
+  box-shadow: 0 8px 0 rgba(0,0,0,.10);
+  font-weight: 900;
+  letter-spacing: .08em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.startTab:active{ transform: translateY(1px); box-shadow: 0 7px 0 rgba(0,0,0,.10); }
+
+@media (max-width: 980px){
+  .startTab{ height: 40px; padding: 0 12px; font-size: 12px; }
+  .startTabs{ gap: 8px !important; }
+}
+
+/* stage: don't push down; center stays visible */
+.startStage{
+  width: 100% !important;
+  margin: 0 auto !important;
+  flex: 1;
+  display: flex;
+  align-items: flex-start !important;
+  justify-content: center;
+  position: relative;
+  padding: 14px 0 18px !important;
+}
+
+/* center window size */
+.startCenter{
+  width: min(var(--start-w-mobile), 92vw) !important;
+  max-height: calc(100vh - 150px);
+}
+@media (min-width: 981px){
+  .startCenter{ width: min(var(--start-w-desktop), 92vw) !important; max-height: calc(100vh - 150px); }
+}
+
+/* make the floating window fill available height and scroll its core */
+.startFloating{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.startCore{ flex: 1; overflow: auto; }
+
+/* desktop side panel: fixed LEFT, never squeezed to the right */
+.startSide{
+  position: fixed;
+  top: 92px;
+  left: var(--start-side-gap);
+  width: min(420px, 36vw);
+  height: calc(100vh - 110px);
+  z-index: 70;
+  display: none;
+  pointer-events: auto;
+}
+.startSide[data-show="true"]{ display: block; }
+
+/* keep a comfortable gap so it doesn't kiss the center window */
+@media (min-width: 981px){
+  .startCenter{ margin-left: 0; }
+}
+
+/* mobile: always use overlay, hide side */
+@media (max-width: 980px){
+  .startSide{ display: none !important; }
+  .startOverlay{ padding: 12px !important; }
+  .startOverlay .startPanel{ height: calc(100vh - 24px) !important; }
+}
+
+/* remove legacy spacer box if it exists somewhere */
+.startTabsSpacer{ display:none !important; }
+
+.startOverlayClose{ margin-left:auto; border: var(--line-soft); border-radius: 12px; background: rgba(255,255,255,.75); font-weight:900; padding: 8px 10px; cursor:pointer; }
+.startOverlayClose:active{ transform: translateY(1px); }
+
+
+/* =========================
+   START DASH (配置区)
+   ========================= */
+.startDash{
+  border: 2px dashed rgba(0,0,0,.25);
+  border-radius: 18px;
+  background: rgba(255,255,255,.55);
+  padding: 14px;
+}
+
+.dashGrid{
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.78fr;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.dashRight{
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.dashBox{
+  border: var(--line-soft);
+  border-radius: 18px;
+  background: rgba(255,255,255,.78);
+  box-shadow: 0 10px 0 rgba(0,0,0,.08);
+  font-weight: 900;
+  letter-spacing: .12em;
+  cursor: pointer;
+}
+
+.dashBox.big{
+  min-height: 180px;
+  font-size: 30px;
+}
+
+.dashBox.small{
+  min-height: 56px;
+  font-size: 16px;
+  letter-spacing: .16em;
+}
+
+.dashBox:active{ transform: translateY(1px); box-shadow: 0 9px 0 rgba(0,0,0,.08); }
+
+.startBottomActions{
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.dashActions{
+  display: flex;
+  gap: 10px;
+}
+
+.dashActions .btn{ flex: 1; }
+
+.dashGo{
+  width: 100%;
+}
+
+/* =========================
+   MOBILE TUNING
+   - 顶部四按钮强制一排
+   - 配置区更适配小屏
+   ========================= */
+@media (max-width: 420px){
+  /* 允许页面滚动，避免内容被裁掉 */
+  body{ overflow:auto; }
+
+  .startTopbar{ width: min(520px, 92vw); }
+
+  .startTabs{
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+  .startTab{
+    width: 100%;
+    justify-content: center;
+    height: 36px;
+    padding: 0 6px;
+    font-size: 11px;
+    border-radius: 14px;
+    letter-spacing: .06em;
+  }
+  .startDot{ width: 8px; height: 8px; border-radius: 3px; }
+
+  /* 中间区域不要整体下沉 */
+  .startStage{
+    padding-top: 62px;
+    padding-bottom: 16px;
+  }
+  .startCenter{ height: auto; }
+
+  .dashGrid{
+    grid-template-columns: 1fr 1fr;
+  }
+  .dashRight{
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: none;
+    gap: 10px;
+  }
+  .dashBox.big{ min-height: 140px; font-size: 24px; }
+  .dashBox.small{ min-height: 48px; font-size: 14px; }
+}
+
+/* 更宽一点的手机：仍尽量单排按钮，必要时才换行 */
+@media (min-width: 421px) and (max-width: 980px){
+  body{ overflow:auto; }
+  .startTabs{ flex-wrap: nowrap; }
+  .startTab{ padding: 8px 10px; font-size: 12px; }
+}
+/* 电脑端：把底部行动区往下放，填掉空白 */
+@media (min-width: 981px){
+  .startBottomActions{
+    margin-top: 26px;     /* 往下压：你觉得还空就调到 36/48 */
+  }
+}
+/* 电脑端：上半区整体放大一点 */
+@media (min-width: 981px){
+  .dashBox.big{
+    min-height: 240px;   /* 原来大概 170~210，直接拉到 240 更饱满 */
+    font-size: 28px;
+  }
+  .dashBox.small{
+    min-height: 62px;
+    font-size: 18px;
+  }
+  .dashGrid{
+    gap: 14px;
+  }
+  .dashRight{
+    gap: 14px;
+  }
+}
+@media (min-width: 981px){
+  .dashGo{
+    padding: 18px 12px;  /* 出发更厚重 */
+    margin-top: 10px;
+  }
+}

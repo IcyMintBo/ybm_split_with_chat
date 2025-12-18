@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>YBM Device · Nokia Frame + Entry</title>
+
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./chat/chat.css" />
+</head>
+
+<body>
+  <div class="desktop">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+
+    <div class="stage">
+
+      <!-- ===== View 0: Nokia image launcher ===== -->
+      <div class="view on" id="viewLauncher" aria-label="Nokia Launcher">
+        <div class="phoneWrap">
+          <div class="phoneImgWrap" id="launcherPhone">
+            <img class="phoneFrame" src="./assets/nokia-frame.png" alt="Nokia frame">
+
+            <div class="screenOverlay">
+              <div class="statusRow">
+                <span>MNT-ICE NET</span>
+                <span class="battery"><span>▮▮▮</span><span class="batBox">79%</span></span>
+              </div>
+
+              <div class="logo">边水往事</div>
+              <div class="tagline">走山接水 讨生活<br />Get some money · make some money</div>
+
+              <div class="spacer"></div>
+
+              <button class="claimBtn" id="btnClaim">领取手机</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== View START: Start menu ===== -->
+      <div class="view" id="viewStart" aria-label="Start Menu">
+        <div class="startPage">
+          <header class="startTopbar">
+            <div class="startTopbarInner">
+              <div class="startTabsTray" role="group" aria-label="顶部功能">
+                <nav aria-label="功能面板" class="startTabs">
+                  <button class="startTab" data-key="api" type="button">
+                    <span class="startDot"></span> API设置
+                  </button>
+
+                  <button class="startTab" data-key="help" type="button">
+                    <span class="startDot p"></span> 操作说明
+                  </button>
+
+                  <button class="startTab" data-key="log" type="button">
+                    <span class="startDot o"></span> 更新日志
+                  </button>
+
+                  <button class="startTab" data-key="skin" type="button">
+                    <span class="startDot s"></span> 皮肤
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </header>
+
+          <main class="startStage">
+            <section class="startCenter">
+              <div aria-label="开始剧情" class="startFloating" role="region">
+                <div class="startChrome">
+                  <div aria-hidden="true" class="startLights">
+                    <span class="startLight"></span><span class="startLight y"></span><span class="startLight g"></span>
+                  </div>
+                  <div class="startChromeTitle"> MNT-ICE NET </div>
+                </div>
+                <div class="startCore">
+                  <div class="startHero">
+                    <div class="startHeroTop">
+                      <div>
+                        <h1 class="startTitle">边水往事</h1>
+                        <p class="startSubtitle">走山路 · 讨生活<br />Get some money · make some money</p>
+                      </div>
+                      <div class="startBadge">● MNT-ICE NET · 79%</div>
+                    </div>
+
+                    <div class="startPhoneWrap">
+                      <div class="startDash" aria-label="配置区">
+                        <div class="dashGrid">
+                          <button class="dashBox big" id="btnWorldbook" type="button">世界书</button>
+                          <button class="dashBox big" id="btnPresetList" type="button">预设</button>
+
+                          <div class="dashRight">
+                            <button class="dashBox small" id="btnRole" type="button">人设</button>
+                            <button class="dashBox small" id="btnChatlog" type="button">聊天记录</button>
+                            <button class="dashBox small" id="btnPresetQuick" type="button">预设</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="startBottomActions" aria-label="行动区">
+                      <div class="dashActions">
+                        <button class="btn secondary" id="btnSaveCfg" type="button">保存设置</button>
+                        <button class="btn" id="btnResetCfg" type="button">恢复默认</button>
+                      </div>
+                      <button class="btn primary dashGo" id="btnGo" type="button">出发</button>
+                    </div>
+
+                    <div class="startCta"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <aside class="startSide" id="startSide" data-show="false" aria-label="Start Side Panel"></aside>
+          </main>
+
+          <div aria-hidden="true" class="startOverlay" data-open="false" id="startOverlay">
+            <div class="startPanel" id="overlayPanel">
+              <div class="startChrome">
+                <div aria-hidden="true" class="startLights">
+                  <span class="startLight"></span><span class="startLight y"></span><span class="startLight g"></span>
+                </div>
+                <div class="startChromeTitle" id="startOverlayTitle">PANEL</div>
+                <button class="startOverlayClose" id="startOverlayCloseBtn" type="button">关闭</button>
+              </div>
+              <div class="startPanelBody" id="startOverlayBody"></div>
+            </div>
+          </div>
+
+          <template id="startTplApi">
+            <div class="startKvs">
+              <div class="startKv">
+                <div class="startK">API 提供方</div>
+                <select>
+                  <option>OpenAI / 兼容接口</option>
+                  <option>自建代理</option>
+                  <option>本地模型（占位）</option>
+                </select>
+              </div>
+              <div class="startKv">
+                <div class="startK">Base URL</div>
+                <input placeholder="例如：https://api.xxx.com/v1" />
+              </div>
+              <div class="startKv">
+                <div class="startK">API Key</div>
+                <input placeholder="sk-..." />
+              </div>
+              <div class="startKv">
+                <div class="startK">模型</div>
+                <input placeholder="例如：gpt-4.1 / gpt-4o-mini / ..." />
+              </div>
+              <button class="btn primary" type="button">保存（占位）</button>
+              <div class="startItem" style="opacity:.85">
+                <b>提示：</b>这里只是起始页入口。你后续可以把它对接到你现有的配置存储逻辑（localStorage/配置文件/后端）。
+              </div>
+            </div>
+          </template>
+
+          <template id="startTplHelp">
+            <div class="startList">
+              <div class="startItem"><b>1）开始剧情</b><br />点中间按钮进入对话区（你后续的“世界书/预设/存档流程”从这里接出去）。</div>
+              <div class="startItem"><b>2）顶部按钮</b><br />API / 说明 / 日志都是面板，不跳页：电脑端并排，手机端覆盖。</div>
+              <div class="startItem"><b>3）手机端手感</b><br />把它当成 SillyTavern：信息需要时叫出来，用完立刻收回。</div>
+              <div class="startItem"><b>4）图像口子</b><br />中间手机框支持直接换成你的 png；保持相对路径即可。</div>
+            </div>
+          </template>
+
+          <template id="startTplLog">
+            <div class="startList">
+              <div class="startItem"><b>v0.1</b> · 起始页框架完成<br />三段式结构 + 手机覆盖面板。</div>
+              <div class="startItem"><b>v0.2</b> · UI 立体化<br />窗口顶栏 + 粗边框 + 浮层阴影。</div>
+              <div class="startItem"><b>下一步</b><br />把按钮、面板内容接到你的真实逻辑（配置保存/读取、跳转到剧情页）。</div>
+            </div>
+          </template>
+
+          <template id="startTplSkin">
+            <div class="startList">
+              <div class="startItem"><b>经典黄</b><br />当前背景风格（默认）。</div>
+              <div class="startItem"><b>夜色</b><br />深色背景 + 更强对比（占位）。</div>
+              <div class="startItem"><b>薄荷</b><br />更冷的配色（占位）。</div>
+              <button class="btn primary" type="button">应用（占位）</button>
+              <div class="startItem" style="opacity:.85">
+                <b>提示：</b>先把 UI 口子放好，后续再接你的皮肤切换逻辑（CSS class / localStorage）。
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ===== View 1: Main window ===== -->
+      <div class="view" id="viewMain" aria-label="Main Entry">
+        <div class="window" id="window">
+          <div class="titlebar">
+            <div class="dots" aria-hidden="true">
+              <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            </div>
+            <div class="tb-title" id="tbTitle">THE TAVERN · ENTRY</div>
+            <div class="tb-actions">
+              <div class="pill" data-goto="0">入口</div>
+              <div class="pill" data-goto="1">API</div>
+              <div class="pill" data-goto="2">说明</div>
+              <div class="pill primary" data-action="start">出发</div>
+            </div>
+          </div>
+
+          <div class="pages" id="pages">
+            <!-- Page 1 -->
+            <section class="page" aria-label="入口">
+              <div class="label">DEVICE STATUS: <b style="color:var(--rust)">ONLINE</b></div>
+              <div class="h1">THE TAVERN</div>
+              <p class="sub">领取成功。这里是系统入口：干净、直接、能用。</p>
+              <div class="sep"></div>
+
+              <div class="card">
+                <div class="iconBox rust">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
+                    <path d="M7 7h10v10H7z" />
+                    <path d="M9 12h6" />
+                  </svg>
+                </div>
+                <div>
+                  <div style="font-weight:900; letter-spacing:.06em;">进入剧情</div>
+                  <div class="sub">默认配置足够用。想折腾，再去右边两页。</div>
+                </div>
+              </div>
+
+              <div class="card soft">
+                <div class="iconBox sky">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
+                    <path d="M4 12h16" />
+                    <path d="M12 4v16" />
+                  </svg>
+                </div>
+                <div>
+                  <div style="font-weight:900; letter-spacing:.06em;">小提示</div>
+                  <div class="sub">手机端左右滑动切页；电脑端主要看中间主窗。</div>
+                </div>
+              </div>
+
+              <div class="btnRow">
+                <button class="btn" data-goto="1">API →</button>
+                <button class="btn primary" data-action="start">出发</button>
+              </div>
+
+              <div class="pageDots" aria-hidden="true">
+                <span class="on"></span><span></span><span></span>
+              </div>
+            </section>
+
+            <!-- Page 2 -->
+            <section class="page" aria-label="API">
+              <div class="label">CONNECTIVITY: <b style="color:var(--rust)">READY</b></div>
+              <div class="h1">API</div>
+              <p class="sub">像旧机器背后的接口面板：插对、拧紧、亮灯。</p>
+              <div class="sep"></div>
+
+              <div class="card">
+                <div class="iconBox">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
+                    <path d="M7 7h10v10H7z" />
+                    <path d="M4 12h3M17 12h3M12 4v3M12 17v3" />
+                  </svg>
+                </div>
+                <div>
+                  <div style="font-weight:900; letter-spacing:.06em;">接口地址</div>
+                  <div class="sub">https://…（占位）</div>
+                </div>
+              </div>
+
+              <div class="card soft">
+                <div class="iconBox rust">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
+                    <path d="M12 3v18" />
+                    <path d="M7 8h10" />
+                    <path d="M7 16h10" />
+                  </svg>
+                </div>
+                <div>
+                  <div style="font-weight:900; letter-spacing:.06em;">状态码说明位</div>
+                  <div class="sub">401/403/503 的弹窗、测试按钮、保存配置——都塞在这里。</div>
+                </div>
+              </div>
+
+              <div class="btnRow">
+                <button class="btn" data-goto="0">← 返回</button>
+                <button class="btn primary" data-goto="2">说明 →</button>
+              </div>
+
+              <div class="pageDots" aria-hidden="true">
+                <span></span><span class="on"></span><span></span>
+              </div>
+            </section>
+
+            <!-- Page 3 -->
+            <section class="page" aria-label="操作说明">
+              <div class="label">MANUAL: <b style="color:var(--rust)">OK</b></div>
+              <div class="h1">MANUAL</div>
+              <p class="sub">短、清楚、有台阶。像旧系统的说明卡。</p>
+              <div class="sep"></div>
+
+              <div class="card">
+                <div class="iconBox">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
+                    <rect x="5" y="4" width="14" height="16" rx="2" />
+                    <path d="M8 8h8M8 12h8M8 16h5" />
+                  </svg>
+                </div>
+                <div class="sub">
+                  · 手机端左右滑动切页<br />
+                  · “出发”进入对话栏<br />
+                  · 需要更换世界书/预设时，回到这里配置
+                </div>
+              </div>
+
+              <div class="card soft">
+                <div class="iconBox rust">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
+                    <path d="M4 7h16v10H4z" />
+                    <path d="M8 10h8M8 14h5" />
+                  </svg>
+                </div>
+                <div>
+                  <div style="font-weight:900; letter-spacing:.06em;">功能位（以后）</div>
+                  <div class="sub">更新日志 / 撤回偷看 / 存档导入导出——写成“旧系统通知”。</div>
+                </div>
+              </div>
+
+              <div class="btnRow">
+                <button class="btn" data-goto="1">← 返回</button>
+                <button class="btn primary" data-action="start">出发</button>
+              </div>
+
+              <div class="pageDots" aria-hidden="true">
+                <span></span><span></span><span class="on"></span>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== View CHAT: Chat UI (mounted) ===== -->
+      <div id="mountChat"></div>
+
+    </div>
+  </div>
+
+  <script src="./app.js" defer></script>
+  <script src="./chat/chat.js" defer></script>
+</body>
+
+</html>

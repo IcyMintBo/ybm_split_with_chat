@@ -1,0 +1,67 @@
+<div class="view" id="viewChat" aria-label="Chat">
+  <div class="chatWrap">
+    <div class="chatWindow" role="application" aria-label="聊天窗口">
+      <div class="chatTitlebar">
+        <div class="dots" aria-hidden="true">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        </div>
+        <div class="chatTitle">CHAT · EDGEWATER</div>
+        <div class="chatActions">
+          <button class="pill" id="chatLeftBtn" type="button">≡</button>
+          <button class="pill" id="chatRightBtn" type="button">☰</button>
+          <button class="pill primary" id="chatBack" type="button">返回</button>
+        </div>
+      </div>
+
+      <div class="chatBody">
+        <div class="chatMessages" id="chatMessages" aria-label="消息列表"></div>
+      </div>
+
+      <div class="chatComposer" aria-label="输入区">
+        <textarea id="chatInput" rows="1" placeholder="输入消息…"></textarea>
+        <button class="btn primary" id="chatSend" type="button">发送</button>
+      </div>
+    </div>
+
+    <!-- desktop drawers -->
+    <aside class="chatDrawer chatDrawerLeft" id="chatDrawerLeft" aria-label="左侧面板">
+      <div class="startPanel">
+        <div class="startChrome">
+          <div class="startLights" aria-hidden="true">
+            <span class="startLight"></span><span class="startLight y"></span><span class="startLight g"></span>
+          </div>
+          <div class="startChromeTitle">世界书 / 预设</div>
+          <button class="startOverlayCloseBtn" data-chat-close="left" type="button">关闭</button>
+        </div>
+        <div class="startPanelBody">
+          <div class="startList">
+            <div class="startItem"><b>世界书</b><br/>（占位）后续接你的 worldbook 列表。</div>
+            <div class="startItem"><b>预设</b><br/>（占位）后续接 preset/角色卡。</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <aside class="chatDrawer chatDrawerRight" id="chatDrawerRight" aria-label="右侧面板">
+      <div class="startPanel">
+        <div class="startChrome">
+          <div class="startLights" aria-hidden="true">
+            <span class="startLight"></span><span class="startLight y"></span><span class="startLight g"></span>
+          </div>
+          <div class="startChromeTitle">工具</div>
+          <button class="startOverlayCloseBtn" data-chat-close="right" type="button">关闭</button>
+        </div>
+        <div class="startPanelBody">
+          <div class="startList">
+            <div class="startItem"><b>撤回/偷看</b><br/>（占位）以后接你的撤回逻辑。</div>
+            <div class="startItem"><b>聊天记录</b><br/>（占位）以后接存档。</div>
+            <div class="startItem"><b>API 状态</b><br/>（占位）显示当前模型/接口。</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- mobile mask -->
+    <div class="chatMask" id="chatMask" aria-hidden="true"></div>
+  </div>
+</div>

@@ -1,0 +1,147 @@
+/* =========================
+   CHAT (SillyTavern-ish, fits your style)
+   ========================= */
+.chatWrap{
+  width: min(1100px, 94vw);
+  height: min(var(--panel-h), calc(100vh - 2*var(--gutter)));
+  display:flex;
+  align-items: stretch;
+  justify-content: center;
+  position: relative;
+}
+
+.chatWindow{
+  flex: 1;
+  border: var(--line);
+  border-radius: var(--radius-xl);
+  background: rgba(244,237,217,.92);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display:flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chatTitlebar{
+  height: 52px;
+  border-bottom: var(--line);
+  background: var(--desk-paper-2);
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  padding: 0 14px;
+  gap: 10px;
+}
+
+.chatTitle{
+  font-weight: 900;
+  letter-spacing: .16em;
+  font-size: 12px;
+  opacity: .9;
+  white-space: nowrap;
+}
+
+.chatActions{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+
+.chatBody{
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.chatMessages{
+  height: 100%;
+  overflow: auto;
+  padding: 14px 14px 18px;
+  display:flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chatMsg{
+  max-width: 78%;
+  border: var(--line-soft);
+  border-radius: 18px;
+  background: rgba(255,255,255,.82);
+  box-shadow: 0 10px 0 rgba(0,0,0,.08);
+  padding: 10px 12px;
+  line-height: 1.55;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+.chatMsg.me{
+  align-self: flex-end;
+  background: rgba(143,58,47,.10);
+}
+
+.chatMeta{
+  font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace;
+  font-size: 11px;
+  letter-spacing: .08em;
+  opacity: .75;
+  margin-bottom: 6px;
+}
+
+.chatComposer{
+  border-top: var(--line);
+  background: rgba(255,255,255,.65);
+  padding: 10px;
+  display:flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+#chatInput{
+  flex: 1;
+  resize: none;
+  border: var(--line-soft);
+  border-radius: 16px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: rgba(255,255,255,.90);
+  outline: none;
+  min-height: 44px;
+  max-height: 140px;
+}
+
+/* drawers */
+.chatDrawer{
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: min(420px, 40vw);
+  display: none;
+  z-index: 40;
+}
+.chatDrawerLeft{ left: -18px; }
+.chatDrawerRight{ right: -18px; }
+
+.chatDrawer[data-open="true"]{ display:block; }
+
+.chatMask{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.30);
+  display:none;
+  z-index: 35;
+}
+.chatMask[data-open="true"]{ display:block; }
+
+@media (max-width: 980px){
+  .chatWrap{
+    width: min(520px, 92vw);
+    height: calc(100vh - 20px);
+  }
+  .chatWindow{ box-shadow: var(--shadow2); }
+  .chatDrawer{
+    position: fixed;
+    inset: 14px;
+    width: auto;
+    z-index: 120;
+  }
+}
