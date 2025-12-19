@@ -1,300 +1,267 @@
-/* phone/phoneEngine.js
- * 共享记忆、分离显示：main/phone 两个 channel 都参与上下文，但各自只在自己的 UI 渲染
- * 多联系人：每个 contactId 一套历史
- */
-(function () {
-  const LS_KEY = 'YBM_ENGINE_V1';
-  const API_LS_KEY = 'YBM_API_CFG_V1';
+/* =========================================================
+ * PhoneEngine.js
+ * ========================================================= */
 
-  function loadApiCfgFromLS() {
-    try { return JSON.parse(localStorage.getItem(API_LS_KEY) || '{}'); } catch { return {}; }
+(function () {
+  const ENGINE_KEY = 'YBM_ENGINE_V1';
+  const API_KEY = 'YBM_API_CFG_V1';
+  const PROMPT_KEY = 'YBM_PROMPT_CFG_V1';
+
+  /* =========================
+   * 基础工具
+   * ========================= */
+  function loadLS(key, fallback) {
+    try {
+      const v = JSON.parse(localStorage.getItem(key));
+      return v ?? fallback;
+    } catch {
+      return fallback;
+    }
   }
 
-  const VERSION = 1;
+  function saveLS(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  }
 
-  const state = load() || {
-    version: VERSION,
-    activeContactId: 'ybm',
-    contacts: {
-      ybm: { id: 'ybm', name: '岩白眉' },
-    },
-    // messages[contactId] = Array<Message>
-    messages: {
-      ybm: [],
-    },
+  function uid() {
+    return Math.random().toString(36).slice(2) + Date.now().toString(36);
+  }
+
+  /* =========================
+   * Engine State
+   * ========================= */
+  const state = loadLS(ENGINE_KEY, {
+    activeContactId: null,
+    contacts: [],           // [{id, name}]
+    messages: {},           // { contactId: [ {id, ts, role, content, channel} ] }
     api: {
       baseUrl: '',
       apiKey: '',
-      model: '',
+      model: ''
     }
-  };
-
-  function uid() {
-    return 'm_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
-  }
-
-  function nowTs() { return Date.now(); }
+  });
 
   function save() {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch { /* ignore */ }
-  }
-  function load() {
-    try {
-      const raw = localStorage.getItem(LS_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
+    saveLS(ENGINE_KEY, state);
   }
 
-  function ensureContact(contactId) {
-    if (!contactId) contactId = state.activeContactId || 'ybm';
-    if (!state.contacts[contactId]) {
-      state.contacts[contactId] = { id: contactId, name: contactId };
-    }
-    if (!state.messages[contactId]) state.messages[contactId] = [];
-    return contactId;
+  /* =========================
+   * API Config
+   * ========================= */
+  function loadApiCfgFromLS() {
+    return loadLS(API_KEY, {});
   }
 
+  function readApiFromDOM() {
+    // 🚫 不再从 DOM 读，统一从 localStorage
+    const cfg = loadApiCfgFromLS();
+    if (cfg) {
+      if (typeof cfg.baseUrl === 'string') state.api.baseUrl = cfg.baseUrl.trim();
+      if (typeof cfg.apiKey === 'string') state.api.apiKey = cfg.apiKey.trim();
+      if (typeof cfg.model === 'string') state.api.model = cfg.model.trim();
+      save();
+    }
+    return { ...state.api };
+  }
+
+  /* =========================
+   * Prompt Config / 世界书
+   * ========================= */
+  function loadPromptCfg() {
+    return loadLS(PROMPT_KEY, null);
+  }
+
+  function syncContactsFromPromptCfg() {
+    const cfg = loadPromptCfg();
+    if (!cfg || !Array.isArray(cfg.contacts)) return;
+
+    state.contacts = cfg.contacts.map(c => ({ id: c.id, name: c.name }));
+    if (!state.activeContactId && state.contacts.length) {
+      state.activeContactId = state.contacts[0].id;
+    }
+    save();
+  }
+
+  function buildSystemPrompt() {
+    const cfg = loadPromptCfg();
+    if (!cfg || !cfg.worldbook) return '';
+
+    const parts = [];
+
+    // Global / ALWAYS
+    if (Array.isArray(cfg.worldbook.global)) {
+      cfg.worldbook.global.forEach(wb => {
+        if (wb.enabled && wb.content) {
+          parts.push(wb.content);
+        }
+      });
+    }
+
+    // Contact / ACTIVE_CONTACT
+    const cid = state.activeContactId;
+    if (cid && cfg.worldbook.contact && Array.isArray(cfg.worldbook.contact[cid])) {
+      cfg.worldbook.contact[cid].forEach(wb => {
+        if (wb.enabled && wb.content) {
+          parts.push(wb.content);
+        }
+      });
+    }
+
+    return parts.join('\n\n');
+  }
+
+  /* =========================
+   * Contacts
+   * ========================= */
   function listContacts() {
-    return Object.values(state.contacts);
-  }
-
-  function addContact({ id, name }) {
-    if (!id) return false;
-    if (state.contacts[id]) return true;
-    state.contacts[id] = { id, name: name || id };
-    state.messages[id] = [];
-    save();
-    return true;
-  }
-
-  function setActiveContact(contactId) {
-    contactId = ensureContact(contactId);
-    state.activeContactId = contactId;
-    save();
-    return contactId;
+    return state.contacts || [];
   }
 
   function getActiveContact() {
-    return ensureContact(state.activeContactId);
+    return state.activeContactId;
   }
 
-  function appendMessage({ contactId, channel, role, content, meta }) {
-    contactId = ensureContact(contactId);
-    const msg = {
-      id: uid(),
-      ts: nowTs(),
-      contactId,
-      channel,            // 'main' | 'phone'
-      role,               // 'user' | 'assistant' | 'system'
-      content: content || '',
-      meta: meta || {},
-    };
-    state.messages[contactId].push(msg);
+  function setActiveContact(id) {
+    if (!id) return;
+    state.activeContactId = id;
+    if (!state.messages[id]) state.messages[id] = [];
     save();
-    return msg;
   }
 
+  /* =========================
+   * Messages
+   * ========================= */
   function getMessages({ contactId, channel } = {}) {
-    contactId = ensureContact(contactId || getActiveContact());
-    const all = state.messages[contactId] || [];
-    if (!channel) return all.slice();
-    return all.filter(m => m.channel === channel);
+    const cid = contactId || state.activeContactId;
+    const list = state.messages[cid] || [];
+    if (!channel) return list;
+    return list.filter(m => m.channel === channel);
   }
 
-  // 把 main + phone 合并成给模型看的上下文（但 UI 不串）
-  function buildContext({ contactId, systemPrompt, maxChars } = {}) {
-    contactId = ensureContact(contactId || getActiveContact());
-    const all = state.messages[contactId] || [];
+  function pushMessage({ role, content, channel }) {
+    const cid = state.activeContactId;
+    if (!cid) return;
 
-    // system prompt（可选）
-    const messages = [];
-    if (systemPrompt && systemPrompt.trim()) {
-      messages.push({ role: 'system', content: systemPrompt.trim() });
-    }
-
-    // 合并：保留顺序（按时间）
-    const sorted = all.slice().sort((a, b) => a.ts - b.ts);
-
-    for (const m of sorted) {
-      if (m.role !== 'user' && m.role !== 'assistant' && m.role !== 'system') continue;
-      messages.push({ role: m.role, content: m.content || '' });
-    }
-
-    // 粗暴截断：按字符数从尾部裁（先简单，够用；后面可做 token 截断）
-    if (maxChars && maxChars > 0) {
-      let total = 0;
-      for (let i = messages.length - 1; i >= 0; i--) {
-        total += (messages[i].content || '').length;
-        if (total > maxChars) {
-          // 保留从 i+1 到末尾
-          return messages.slice(i + 1);
-        }
-      }
-    }
-    return messages;
-  }
-
-  // 从设置面板读 API（输入框没 id 时也尽量兜底）
-function readApiFromDOM() {
-  // ✅ 统一从 localStorage 读取
-  const cfg = loadApiCfgFromLS();
-  if (cfg && typeof cfg === 'object') {
-    if (typeof cfg.baseUrl === 'string') state.api.baseUrl = cfg.baseUrl.trim();
-    if (typeof cfg.apiKey === 'string')  state.api.apiKey  = cfg.apiKey.trim();
-    if (typeof cfg.model === 'string')   state.api.model   = cfg.model.trim();
-    save();
-  }
-  return { ...state.api };
-}
-
-  function setApiConfig({ baseUrl, apiKey, model }) {
-    if (typeof baseUrl === 'string') state.api.baseUrl = baseUrl.trim();
-    if (typeof apiKey === 'string') state.api.apiKey = apiKey.trim();
-    if (typeof model === 'string') state.api.model = model.trim();
+    if (!state.messages[cid]) state.messages[cid] = [];
+    state.messages[cid].push({
+      id: uid(),
+      ts: Date.now(),
+      role,
+      content,
+      channel
+    });
     save();
   }
 
-  // OpenAI 兼容：POST {baseUrl}/chat/completions
-  async function callChatCompletions({ baseUrl, apiKey, model, messages, stream, signal, onToken }) {
-    if (!baseUrl) throw new Error('Base URL 为空');
-    if (!model) throw new Error('Model 为空');
+  /* =========================
+   * Context Builder
+   * ========================= */
+  function buildContext() {
+    const cid = state.activeContactId;
+    const msgs = (state.messages[cid] || []).slice().sort((a, b) => a.ts - b.ts);
 
-    const url = baseUrl.replace(/\/$/, '') + '/chat/completions';
+    const context = [];
 
-    const headers = {
-      'Content-Type': 'application/json',
-    };
-    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-
-    const body = {
-      model,
-      messages,
-      temperature: 0.8,
-      stream: !!stream
-    };
-
-    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal });
-
-    if (!res.ok) {
-      const t = await res.text().catch(() => '');
-      throw new Error(`API 错误 ${res.status}: ${t.slice(0, 200)}`);
+    const systemPrompt = buildSystemPrompt();
+    if (systemPrompt) {
+      context.push({
+        role: 'system',
+        content: systemPrompt
+      });
     }
 
-    if (!stream) {
-      const data = await res.json();
-      const text = data?.choices?.[0]?.message?.content ?? '';
-      return text;
-    }
-
-    // stream: SSE-ish (data: ...)
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let buffer = '';
-    let full = '';
-
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      // 按行处理
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const s = line.trim();
-        if (!s) continue;
-        if (s === 'data: [DONE]') continue;
-        if (!s.startsWith('data:')) continue;
-
-        const jsonStr = s.replace(/^data:\s*/, '');
-        try {
-          const chunk = JSON.parse(jsonStr);
-          const delta = chunk?.choices?.[0]?.delta?.content ?? '';
-          if (delta) {
-            full += delta;
-            onToken?.(delta, full);
-          }
-        } catch {
-          // ignore chunk parse errors
-        }
-      }
-    }
-
-    return full;
-  }
-
-  // 发送：会把 user 写入对应 channel；assistant 回复也写入同 channel
-  // 但上下文总是 main+phone 合并（共享记忆）
-  async function send({ text, channel, contactId, systemPrompt, stream, onToken, maxChars } = {}) {
-    if (!text || !text.trim()) return null;
-    channel = channel === 'phone' ? 'phone' : 'main';
-    contactId = ensureContact(contactId || getActiveContact());
-
-    // 读 API 配置（从 DOM / state）
-    const api = readApiFromDOM();
-
-    // 写入 user
-    appendMessage({ contactId, channel, role: 'user', content: text.trim() });
-
-    // 构造给模型看的 context（共享记忆）
-    const ctx = buildContext({
-      contactId,
-      systemPrompt: systemPrompt || '',
-      maxChars: maxChars || 16000, // 先按字符截断，后面再换 token 截断
+    msgs.forEach(m => {
+      context.push({
+        role: m.role,
+        content: m.content
+      });
     });
 
-    // 先占位 assistant（用于流式/更新 UI）
-    const assistantMsg = appendMessage({ contactId, channel, role: 'assistant', content: '' });
+    return context;
+  }
 
+  /* =========================
+   * Send
+   * ========================= */
+  async function send({ text, channel = 'main', onChunk, onDone, onError }) {
     try {
-      const reply = await callChatCompletions({
-        baseUrl: api.baseUrl,
-        apiKey: api.apiKey,
-        model: api.model,
-        messages: ctx,
-        stream: !!stream,
-        onToken: (delta, full) => {
-          assistantMsg.content = full;
-          save();
-          onToken?.(delta, full);
-        }
-      });
-
-      // 非流式时补回
-      if (!stream) {
-        assistantMsg.content = reply || '';
-        save();
+      const api = readApiFromDOM();
+      if (!api.baseUrl || !api.apiKey || !api.model) {
+        throw new Error('API 未配置');
       }
 
-      return assistantMsg;
-    } catch (e) {
-      assistantMsg.content = `（错误）${e?.message || e}`;
-      assistantMsg.meta = { error: true };
-      save();
-      return assistantMsg;
+      pushMessage({ role: 'user', content: text, channel });
+
+      const messages = buildContext();
+
+      const res = await fetch(api.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${api.apiKey}`
+        },
+        body: JSON.stringify({
+          model: api.model,
+          messages,
+          stream: true
+        })
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error(`API 错误：${res.status}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantText = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(Boolean);
+
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          const data = line.replace(/^data:\s*/, '');
+          if (data === '[DONE]') break;
+
+          const json = JSON.parse(data);
+          const delta = json.choices?.[0]?.delta?.content;
+          if (delta) {
+            assistantText += delta;
+            onChunk && onChunk(delta);
+          }
+        }
+      }
+
+      pushMessage({ role: 'assistant', content: assistantText, channel });
+      onDone && onDone(assistantText);
+
+    } catch (err) {
+      console.error(err);
+      onError && onError(err);
     }
   }
 
+  /* =========================
+   * Init
+   * ========================= */
+  syncContactsFromPromptCfg();
+  if (!state.activeContactId && state.contacts.length) {
+    setActiveContact(state.contacts[0].id);
+  }
+
+  /* =========================
+   * Expose
+   * ========================= */
   window.PhoneEngine = {
-    // state
-    listContacts,
-    addContact,
-    setActiveContact,
-    getActiveContact,
-
-    // messages
-    appendMessage,
-    getMessages,
-    buildContext,
-
-    // api
-    readApiFromDOM,
-    setApiConfig,
-
-    // send
     send,
+    listContacts,
+    getActiveContact,
+    setActiveContact,
+    getMessages
   };
+
 })();
