@@ -145,3 +145,367 @@
     z-index: 120;
   }
 }
+.chatActions{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* 圆形图标按钮 */
+.chatIconBtn{
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--paper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.chatIconBtn:hover{
+  background: #fff;
+}
+
+/* 返回按钮你原来如果已经有样式，这里不会冲突 */
+.chatBackBtn{
+  padding: 6px 14px;
+}
+/* ===== Phone Overlay (虚拟小手机) ===== */
+.phoneMask{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.28);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: .18s ease;
+  z-index: 95;
+}
+.phoneMask[data-open="true"]{
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.phoneOverlay{
+  position: fixed;
+  right: 26px;
+  bottom: 26px;
+  width: 360px;
+  height: 640px;
+  background: #f8f4ea;
+  border: 3px solid #2f2a24;
+  border-radius: 26px;
+  box-shadow: 0 20px 54px rgba(0,0,0,.28);
+  transform: translateY(18px);
+  opacity: 0;
+  pointer-events: none;
+  transition: .18s ease;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.phoneOverlay[data-open="true"]{
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.phoneChrome{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 2px solid #2f2a24;
+  background: #fbf7ee;
+}
+
+.phoneLights{display:flex;gap:8px;}
+.phoneLight{
+  width: 10px;height: 10px;border-radius: 999px;
+  border: 2px solid #2f2a24;
+  background: #efe6d4;
+}
+.phoneLight.y{ background:#f2dd9a; }
+.phoneLight.g{ background:#cfe7c6; }
+
+.phoneTitle{
+  flex: 1;
+  font-weight: 900;
+  letter-spacing: .08em;
+  font-size: 12px;
+  opacity: .9;
+}
+
+.phoneClose{
+  border: 2px solid #2f2a24;
+  background: #f8f4ea;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.phoneBody{
+  flex: 1;
+  padding: 12px;
+  overflow: auto;
+  background: #f3ead4;
+}
+
+.phoneMsgs{ display: grid; gap: 10px; }
+
+.phoneMsg{
+  max-width: 82%;
+  border: 2px solid #2f2a24;
+  border-radius: 18px;
+  padding: 10px 12px;
+  background: #fff;
+  box-shadow: 0 8px 0 rgba(0,0,0,.08);
+  line-height: 1.35;
+  font-size: 14px;
+}
+.phoneMsg.me{
+  margin-left: auto;
+  background: #e7d4c1;
+}
+
+.phoneMeta{
+  font-size: 11px;
+  font-weight: 900;
+  opacity: .75;
+  margin-bottom: 6px;
+}
+
+.phoneComposer{
+  display:flex;
+  gap: 10px;
+  padding: 12px;
+  border-top: 2px solid #2f2a24;
+  background: #fbf7ee;
+}
+
+#phoneInput{
+  flex: 1;
+  resize: none;
+  border: 2px solid #2f2a24;
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: #fff;
+  outline: none;
+  max-height: 120px;
+}
+
+/* 手机端：小手机全屏覆盖（更像“真的在手机里发消息”） */
+@media (max-width: 980px){
+  .phoneOverlay{
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: auto;
+    height: 100vh;
+    border-radius: 0;
+    border-width: 0;
+  }
+}
+/* ===== Device Panel (设置面板) ===== */
+.deviceMask{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.28);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: .18s ease;
+  z-index: 105;
+}
+.deviceMask[data-open="true"]{
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.devicePanel{
+  position: fixed;
+  right: 26px;
+  top: 26px;
+  width: 420px;
+  height: calc(100vh - 52px);
+  background: #fbf7ee;
+  border: 3px solid #2f2a24;
+  border-radius: 22px;
+  box-shadow: 0 20px 54px rgba(0,0,0,.28);
+  transform: translateY(18px);
+  opacity: 0;
+  pointer-events: none;
+  transition: .18s ease;
+  z-index: 110;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.devicePanel[data-open="true"]{
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.deviceChrome{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 2px solid #2f2a24;
+  background: #fbf7ee;
+}
+.deviceLights{ display:flex; gap:8px; }
+.deviceLight{
+  width: 10px;height: 10px;border-radius: 999px;
+  border: 2px solid #2f2a24;
+  background: #efe6d4;
+}
+.deviceLight.y{ background:#f2dd9a; }
+.deviceLight.g{ background:#cfe7c6; }
+.deviceTitle{
+  flex: 1;
+  font-weight: 900;
+  letter-spacing: .08em;
+  font-size: 12px;
+  opacity: .9;
+}
+.deviceClose{
+  border: 2px solid #2f2a24;
+  background: #f8f4ea;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.deviceBody{
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+  background: #f3ead4;
+}
+
+.deviceTabs{
+  display:flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.deviceTab{
+  border: 2px solid #2f2a24;
+  background: #fbf7ee;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.deviceTab.on{
+  background: #e7d4c1;
+}
+
+.devicePane{ display:none; }
+.devicePane.on{ display:block; }
+
+.deviceCard{
+  border: 2px solid #2f2a24;
+  background: rgba(255,255,255,.85);
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: 0 10px 0 rgba(0,0,0,.08);
+  margin-bottom: 12px;
+}
+.deviceCard.soft{
+  background: rgba(255,255,255,.60);
+  border-style: dashed;
+}
+.deviceCardTitle{ font-weight: 900; margin-bottom: 6px; }
+.deviceCardSub{ opacity:.8; font-size: 12px; margin-bottom: 10px; }
+
+.deviceRow{ display:flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.deviceChip{
+  border: 2px solid #2f2a24;
+  background:#fbf7ee;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.deviceBtn{
+  width: 100%;
+  border: 2px solid #2f2a24;
+  background: #fbf7ee;
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.deviceBtn.primary{ background:#e7d4c1; }
+
+.deviceGrid2{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.deviceField{
+  display:grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.deviceField span{ font-weight: 900; font-size: 12px; opacity: .85; }
+.deviceField input{
+  border: 2px solid #2f2a24;
+  border-radius: 12px;
+  padding: 10px 10px;
+  background:#fff;
+}
+
+.deviceList{ display:flex; gap: 8px; flex-wrap: wrap; }
+.devicePick{
+  border: 2px solid #2f2a24;
+  background:#fbf7ee;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.devicePick.on{ background:#e7d4c1; }
+
+/* 手机端：设置面板全屏覆盖 */
+@media (max-width: 980px){
+  .devicePanel{
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: auto;
+    height: 100vh;
+    border-radius: 0;
+    border-width: 0;
+  }
+}
+/* ===== 顶部：按钮靠左，标题居中，小屏不挤出 ===== */
+.chatTitlebar{
+  justify-content: flex-start;      /* 不再两端分布 */
+}
+
+.chatActions{
+  margin-left: 10px;               /* 在 dots 右侧 */
+  flex: 0 0 auto;                  /* 不参与挤压 */
+  white-space: nowrap;             /* 不换行 */
+}
+
+.chatTitle{
+  flex: 1;                         /* 吃掉剩余空间，形成居中视觉 */
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

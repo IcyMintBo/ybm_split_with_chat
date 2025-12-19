@@ -5,12 +5,24 @@
         <div class="dots" aria-hidden="true">
           <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
         </div>
+
+<div class="chatActions">
+  <button id="chatSwitchContact" class="chatBackBtn" type="button" title="下一个更乖">切换</button>
+
+  <button id="chatDeviceBtn" class="chatIconBtn" aria-label="打开小手机" title="打开小手机">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <rect x="7" y="2.5" width="10" height="19" rx="2.2" ry="2.2" fill="none" stroke="currentColor"
+        stroke-width="1.8" />
+      <circle cx="12" cy="18.2" r="0.9" fill="currentColor" />
+    </svg>
+  </button>
+
+  <button id="chatBack" class="chatBackBtn">返回</button>
+</div>
+
+
+        <!-- ✅ 标题放中间 -->
         <div class="chatTitle">CHAT · EDGEWATER</div>
-        <div class="chatActions">
-          <button class="pill" id="chatLeftBtn" type="button">≡</button>
-          <button class="pill" id="chatRightBtn" type="button">☰</button>
-          <button class="pill primary" id="chatBack" type="button">返回</button>
-        </div>
       </div>
 
       <div class="chatBody">
@@ -35,8 +47,8 @@
         </div>
         <div class="startPanelBody">
           <div class="startList">
-            <div class="startItem"><b>世界书</b><br/>（占位）后续接你的 worldbook 列表。</div>
-            <div class="startItem"><b>预设</b><br/>（占位）后续接 preset/角色卡。</div>
+            <div class="startItem"><b>世界书</b><br />（占位）后续接你的 worldbook 列表。</div>
+            <div class="startItem"><b>预设</b><br />（占位）后续接 preset/角色卡。</div>
           </div>
         </div>
       </div>
@@ -53,15 +65,37 @@
         </div>
         <div class="startPanelBody">
           <div class="startList">
-            <div class="startItem"><b>撤回/偷看</b><br/>（占位）以后接你的撤回逻辑。</div>
-            <div class="startItem"><b>聊天记录</b><br/>（占位）以后接存档。</div>
-            <div class="startItem"><b>API 状态</b><br/>（占位）显示当前模型/接口。</div>
+            <div class="startItem"><b>撤回/偷看</b><br />（占位）以后接你的撤回逻辑。</div>
+            <div class="startItem"><b>聊天记录</b><br />（占位）以后接存档。</div>
+            <div class="startItem"><b>API 状态</b><br />（占位）显示当前模型/接口。</div>
           </div>
         </div>
       </div>
     </aside>
 
     <!-- mobile mask -->
-    <div class="chatMask" id="chatMask" aria-hidden="true"></div>
-  </div>
-</div>
+    <!-- ===== Device Panel (小手机面板) ===== -->
+    <div id="deviceMask" class="deviceMask" data-open="false" aria-hidden="true"></div>
+    <!-- ===== Phone Overlay (虚拟小手机) ===== -->
+    <div id="phoneMask" class="phoneMask" data-open="false" aria-hidden="true"></div>
+
+    <aside id="phoneOverlay" class="phoneOverlay" data-open="false" aria-hidden="true" role="dialog" aria-label="小手机">
+      <div class="phoneChrome">
+        <div class="phoneLights" aria-hidden="true">
+          <span class="phoneLight"></span><span class="phoneLight y"></span><span class="phoneLight g"></span>
+        </div>
+        <div class="phoneTitle">YBM · 微信</div>
+        <button id="phoneClose" class="phoneClose" type="button">关闭</button>
+      </div>
+
+      <div class="phoneBody">
+        <div class="phoneMsgs" id="phoneMsgs" aria-label="小手机消息列表"></div>
+      </div>
+
+      <div class="phoneComposer" aria-label="小手机输入区">
+        <textarea id="phoneInput" rows="1" placeholder="发给 TA…"></textarea>
+        <button id="phoneSend" class="btn primary" type="button">发送</button>
+      </div>
+    </aside>
+
+   

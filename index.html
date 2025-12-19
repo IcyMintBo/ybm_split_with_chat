@@ -133,33 +133,61 @@
           </div>
 
           <template id="startTplApi">
-            <div class="startKvs">
+            <div class="startKvs apiPanel" id="apiPanel">
               <div class="startKv">
                 <div class="startK">API 提供方</div>
-                <select>
-                  <option>OpenAI / 兼容接口</option>
-                  <option>自建代理</option>
-                  <option>本地模型（占位）</option>
+                <select id="apiProvider">
+                  <option value="openai">OpenAI / 兼容接口</option>
+                  <option value="proxy">自建代理</option>
+                  <option value="local" disabled>本地模型（占位）</option>
                 </select>
               </div>
+
               <div class="startKv">
                 <div class="startK">Base URL</div>
-                <input placeholder="例如：https://api.xxx.com/v1" />
+                <input id="apiBaseUrl" placeholder="例如：https://api.xxx.com/v1" autocomplete="off" />
+                <div class="apiHintRow">
+                  <span class="apiHint">会自动补全/修正到 <b>/v1</b>，兼容诺基亚逻辑</span>
+                </div>
               </div>
+
               <div class="startKv">
                 <div class="startK">API Key</div>
-                <input placeholder="sk-..." />
+
+                <div class="apiKeyRow">
+                  <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" />
+                  <button id="apiKeyToggle" class="btn secondary apiKeyToggle" type="button" aria-label="显示/隐藏 Key"
+                    title="显示/隐藏">
+                    👁
+                  </button>
+                </div>
               </div>
+
+              <!-- 连接后才会填充模型列表 -->
               <div class="startKv">
                 <div class="startK">模型</div>
-                <input placeholder="例如：gpt-4.1 / gpt-4o-mini / ..." />
+                <div class="apiModelRow">
+                  <select id="apiModelSelect" class="apiModelSelect">
+                    <option value="">（请先连接）</option>
+                  </select>
+                </div>
               </div>
-              <button class="btn primary" type="button">保存（占位）</button>
-              <div class="startItem" style="opacity:.85">
-                <b>提示：</b>这里只是起始页入口。你后续可以把它对接到你现有的配置存储逻辑（localStorage/配置文件/后端）。
+
+
+              <div class="apiBtnRow">
+                <button class="btn secondary" id="btnApiConnect" type="button">连接</button>
+                <button class="btn" id="btnApiTest" type="button" disabled>测试</button>
+                <button class="btn primary" id="btnApiSave" type="button" disabled>保存</button>
+              </div>
+
+              <div class="apiStatus" id="apiStatus" aria-live="polite">未连接</div>
+
+              <div class="startItem apiTip">
+                <b>操作顺序：</b>填 BaseURL + Key → 点<b>连接</b> → 选择模型 → 点<b>测试</b> → <b>保存</b>。
               </div>
             </div>
           </template>
+
 
           <template id="startTplHelp">
             <div class="startList">
