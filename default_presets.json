@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "presets": {
+    "global": [
+      {
+        "id": "p_sms",
+        "title": "手机短信风格",
+        "content": "【短信风格】回复短句为主，节奏快。少解释，多动作与情绪暗线。不要总结陈词。",
+        "enabled": true
+      },
+      {
+        "id": "p_format",
+        "title": "输出格式约束",
+        "content": "【格式】用自然口吻推进情节。必要时用少量对白+动作。避免长段说明。",
+        "enabled": true
+      }
+    ]
+  }
+}

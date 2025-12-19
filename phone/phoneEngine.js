@@ -1,5 +1,6 @@
 /* =========================================================
  * PhoneEngine.js
+ * - 非流式（stream:false）稳定版
  * ========================================================= */
 
 (function () {
@@ -65,7 +66,7 @@
   }
 
   /* =========================
-   * Prompt Config / 世界书
+   * Prompt Config / 世界书 / 预设
    * ========================= */
   function loadPromptCfg() {
     return loadLS(PROMPT_KEY, null);
@@ -84,26 +85,29 @@
 
   function buildSystemPrompt() {
     const cfg = loadPromptCfg();
-    if (!cfg || !cfg.worldbook) return '';
+    if (!cfg) return '';
 
     const parts = [];
 
-    // Global / ALWAYS
-    if (Array.isArray(cfg.worldbook.global)) {
+    // Worldbook: Global / ALWAYS
+    if (cfg.worldbook && Array.isArray(cfg.worldbook.global)) {
       cfg.worldbook.global.forEach(wb => {
-        if (wb.enabled && wb.content) {
-          parts.push(wb.content);
-        }
+        if (wb && wb.enabled && wb.content) parts.push(wb.content);
       });
     }
 
-    // Contact / ACTIVE_CONTACT
+    // Worldbook: Contact / ACTIVE_CONTACT
     const cid = state.activeContactId;
-    if (cid && cfg.worldbook.contact && Array.isArray(cfg.worldbook.contact[cid])) {
+    if (cid && cfg.worldbook && cfg.worldbook.contact && Array.isArray(cfg.worldbook.contact[cid])) {
       cfg.worldbook.contact[cid].forEach(wb => {
-        if (wb.enabled && wb.content) {
-          parts.push(wb.content);
-        }
+        if (wb && wb.enabled && wb.content) parts.push(wb.content);
+      });
+    }
+
+    // Presets: global（拼在世界书后面）
+    if (cfg.presets && Array.isArray(cfg.presets.global)) {
+      cfg.presets.global.forEach(p => {
+        if (p && p.enabled && p.content) parts.push(p.content);
       });
     }
 
@@ -154,6 +158,19 @@
   }
 
   /* =========================
+   * URL Helper
+   * ========================= */
+  function buildChatCompletionsUrl(baseUrl) {
+    const u = (baseUrl || '').trim().replace(/\/+$/, '');
+
+    // 用户填的是 .../v1
+    if (u.endsWith('/v1')) return u + '/chat/completions';
+
+    // 用户填的是根域名（不含 /v1）
+    return u + '/v1/chat/completions';
+  }
+
+  /* =========================
    * Context Builder
    * ========================= */
   function buildContext() {
@@ -164,78 +181,79 @@
 
     const systemPrompt = buildSystemPrompt();
     if (systemPrompt) {
-      context.push({
-        role: 'system',
-        content: systemPrompt
-      });
+      context.push({ role: 'system', content: systemPrompt });
     }
 
     msgs.forEach(m => {
-      context.push({
-        role: m.role,
-        content: m.content
-      });
+      context.push({ role: m.role, content: m.content });
     });
 
     return context;
   }
 
   /* =========================
-   * Send
+   * Response extract (兼容)
+   * ========================= */
+  function extractAssistantText(data) {
+    // OpenAI compatible: choices[0].message.content
+    const t1 = data?.choices?.[0]?.message?.content;
+    if (typeof t1 === 'string' && t1.trim()) return t1;
+
+    // 某些兼容：choices[0].text
+    const t2 = data?.choices?.[0]?.text;
+    if (typeof t2 === 'string' && t2.trim()) return t2;
+
+    // 兜底：把整个对象 stringify（方便你排查）
+    return '';
+  }
+
+  /* =========================
+   * Send（非流式）
    * ========================= */
   async function send({ text, channel = 'main', onChunk, onDone, onError }) {
     try {
       const api = readApiFromDOM();
-      if (!api.baseUrl || !api.apiKey || !api.model) {
-        throw new Error('API 未配置');
+      if (!api.baseUrl || !api.model) {
+        throw new Error('API 未配置（缺少 BaseURL 或 模型）');
       }
 
+      // 记录用户消息
       pushMessage({ role: 'user', content: text, channel });
 
       const messages = buildContext();
+      const url = buildChatCompletionsUrl(api.baseUrl);
 
-      const res = await fetch(api.baseUrl, {
+      // headers：跟你的“测试”逻辑一致（有 key 才加 Authorization）
+      const headers = { 'Content-Type': 'application/json' };
+      if (api.apiKey) headers['Authorization'] = `Bearer ${api.apiKey}`;
+
+      const payload = {
+        model: api.model,
+        messages,
+        stream: false
+      };
+
+      const res = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${api.apiKey}`
-        },
-        body: JSON.stringify({
-          model: api.model,
-          messages,
-          stream: true
-        })
+        headers,
+        body: JSON.stringify(payload)
       });
 
-      if (!res.ok || !res.body) {
-        throw new Error(`API 错误：${res.status}`);
+      if (!res.ok) {
+        const t = await res.text().catch(() => '');
+        throw new Error(`API 错误：${res.status}${t ? ` | ${t.slice(0, 300)}` : ''}`);
       }
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let assistantText = '';
+      const data = await res.json();
+      const assistantText = extractAssistantText(data);
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter(Boolean);
-
-        for (const line of lines) {
-          if (!line.startsWith('data:')) continue;
-          const data = line.replace(/^data:\s*/, '');
-          if (data === '[DONE]') break;
-
-          const json = JSON.parse(data);
-          const delta = json.choices?.[0]?.delta?.content;
-          if (delta) {
-            assistantText += delta;
-            onChunk && onChunk(delta);
-          }
-        }
+      if (!assistantText) {
+        // 把原始返回塞到错误里，方便你截图给我看
+        throw new Error(`API 返回无法解析：${JSON.stringify(data).slice(0, 500)}`);
       }
 
+      // 非流式：一次性吐出
+      onChunk && onChunk(assistantText);
       pushMessage({ role: 'assistant', content: assistantText, channel });
       onDone && onDone(assistantText);
 
@@ -263,5 +281,4 @@
     setActiveContact,
     getMessages
   };
-
 })();
