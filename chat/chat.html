@@ -5,24 +5,30 @@
         <div class="dots" aria-hidden="true">
           <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
         </div>
+        <div class="chatTitle">CHAT</div>
 
-<div class="chatActions">
-  <button id="chatSwitchContact" class="chatBackBtn" type="button" title="下一个更乖">切换</button>
+        <div class="chatActions">
+          <!-- 清空按钮（新增） -->
+          <button id="chatClearBtn" class="chatIconBtn" aria-label="清空聊天" title="清空聊天">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path d="M7 7h10l-1 14H8L7 7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M9 7V5.6c0-.9.7-1.6 1.6-1.6h2.8c.9 0 1.6.7 1.6 1.6V7" fill="none" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M5 7h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </button>
 
-  <button id="chatDeviceBtn" class="chatIconBtn" aria-label="打开小手机" title="打开小手机">
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <rect x="7" y="2.5" width="10" height="19" rx="2.2" ry="2.2" fill="none" stroke="currentColor"
-        stroke-width="1.8" />
-      <circle cx="12" cy="18.2" r="0.9" fill="currentColor" />
-    </svg>
-  </button>
+          <!-- 小手机按钮 -->
+          <button id="chatDeviceBtn" class="chatIconBtn" aria-label="打开小手机" title="打开小手机">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <rect x="7" y="2.5" width="10" height="19" rx="2.2" ry="2.2" fill="none" stroke="currentColor"
+                stroke-width="1.8" />
+              <circle cx="12" cy="18.2" r="0.9" fill="currentColor" />
+            </svg>
+          </button>
 
-  <button id="chatBack" class="chatBackBtn">返回</button>
-</div>
-
-
-        <!-- ✅ 标题放中间 -->
-        <div class="chatTitle">CHAT · EDGEWATER</div>
+          <!-- 返回键 -->
+          <button id="chatBack" class="chatBackBtn">返回</button>
+        </div>
       </div>
 
       <div class="chatBody">
@@ -35,47 +41,6 @@
       </div>
     </div>
 
-    <!-- desktop drawers -->
-    <aside class="chatDrawer chatDrawerLeft" id="chatDrawerLeft" aria-label="左侧面板">
-      <div class="startPanel">
-        <div class="startChrome">
-          <div class="startLights" aria-hidden="true">
-            <span class="startLight"></span><span class="startLight y"></span><span class="startLight g"></span>
-          </div>
-          <div class="startChromeTitle">世界书 / 预设</div>
-          <button class="startOverlayCloseBtn" data-chat-close="left" type="button">关闭</button>
-        </div>
-        <div class="startPanelBody">
-          <div class="startList">
-            <div class="startItem"><b>世界书</b><br />（占位）后续接你的 worldbook 列表。</div>
-            <div class="startItem"><b>预设</b><br />（占位）后续接 preset/角色卡。</div>
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <aside class="chatDrawer chatDrawerRight" id="chatDrawerRight" aria-label="右侧面板">
-      <div class="startPanel">
-        <div class="startChrome">
-          <div class="startLights" aria-hidden="true">
-            <span class="startLight"></span><span class="startLight y"></span><span class="startLight g"></span>
-          </div>
-          <div class="startChromeTitle">工具</div>
-          <button class="startOverlayCloseBtn" data-chat-close="right" type="button">关闭</button>
-        </div>
-        <div class="startPanelBody">
-          <div class="startList">
-            <div class="startItem"><b>撤回/偷看</b><br />（占位）以后接你的撤回逻辑。</div>
-            <div class="startItem"><b>聊天记录</b><br />（占位）以后接存档。</div>
-            <div class="startItem"><b>API 状态</b><br />（占位）显示当前模型/接口。</div>
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <!-- mobile mask -->
-    <!-- ===== Device Panel (小手机面板) ===== -->
-    <div id="deviceMask" class="deviceMask" data-open="false" aria-hidden="true"></div>
     <!-- ===== Phone Overlay (虚拟小手机) ===== -->
     <div id="phoneMask" class="phoneMask" data-open="false" aria-hidden="true"></div>
 
@@ -85,6 +50,7 @@
           <span class="phoneLight"></span><span class="phoneLight y"></span><span class="phoneLight g"></span>
         </div>
         <div class="phoneTitle">YBM · 微信</div>
+
         <button id="phoneClose" class="phoneClose" type="button">关闭</button>
       </div>
 
@@ -98,4 +64,18 @@
       </div>
     </aside>
 
-   
+    <!-- 清空确认弹层（新增） -->
+    <div id="chatClearMask" class="chatMask" aria-hidden="true" style="display:none;"></div>
+    <div id="chatClearModal" class="chatClearModal" aria-hidden="true" style="display:none;">
+      <div class="chatClearCard">
+        <div class="chatClearTitle">清空聊天</div>
+        <div class="chatClearSub">默认清空当前联系人，也可以选择全清。</div>
+        <div class="chatClearBtns">
+          <button id="chatClearCurrent" class="btn">清空当前</button>
+          <button id="chatClearAll" class="btn primary">全清</button>
+          <button id="chatClearCancel" class="btn">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

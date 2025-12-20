@@ -1283,248 +1283,135 @@
   min-height:44px;
   border-radius:12px;
 }
-.wb-panel {
-  position: fixed;
-  inset: 0;
-  background: #111;
-  color: #eee;
-  z-index: 9999;
-}
-
-.wb-section {
-  margin: 16px;
-}
-
-.wb-list {
-  margin-top: 8px;
-}
-
-.wb-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 4px 0;
-  border-bottom: 1px solid #333;
-}
-
-.wb-title {
-  flex: 1;
-  opacity: 0.9;
-}
-
-.wb-len {
-  font-size: 12px;
-  opacity: 0.6;
-}
-
-.wb-add {
-  margin-top: 4px;
-}
-/* =========================
-   Worldbook Modal (API风格)
-   - Desktop: right drawer card
-   - Mobile : centered card
-========================= */
-
-.wbModal { position: fixed; inset: 0; z-index: 9999; }
-
-.wbBackdrop{
-  position: absolute; inset: 0;
-  background: rgba(0,0,0,.35);
-  backdrop-filter: blur(2px);
-}
-
-/* 卡片容器 */
-.wbCard{
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  width: min(520px, calc(100vw - 36px));
-  max-height: calc(100vh - 36px);
-  overflow: hidden;
-
-  background: #f3ead1;
-  color: #1f1f1f;
-  border: 3px solid #2b2b2b;
-  border-radius: 18px;
-  box-shadow: 0 14px 40px rgba(0,0,0,.35);
-}
-
-/* 手机端：居中 */
-@media (max-width: 680px){
-  .wbCard{
-    left: 50%;
-    right: auto;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: min(520px, calc(100vw - 28px));
-    max-height: calc(100vh - 28px);
-  }
-}
-
-/* 顶栏 */
-.wbTopbar{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  background: rgba(255,255,255,.55);
-  border-bottom: 2px solid #2b2b2b;
-}
-
-.wbDots{ display:flex; gap:6px; }
-.wbDot{
-  width: 10px; height: 10px; border-radius: 999px;
-  border: 2px solid #2b2b2b;
-  background: #fff;
-  opacity: .9;
-}
-.wbDot.r{ background:#ffb3b3; }
-.wbDot.y{ background:#ffe3a1; }
-.wbDot.g{ background:#bff1c9; }
-
-.wbTopTitle{
-  font-weight: 800;
-  letter-spacing: .5px;
-  flex: 1;
-}
-
-.wbCloseBtn{
-  border: 2px solid #2b2b2b;
-  background: #fff;
+.wbPad{ padding: 12px; }
+.wbSectionTitle{ font-weight: 800; font-size: 16px; margin: 6px 0; }
+.wbHint{ opacity:.75; font-size: 12px; margin-bottom: 10px; }
+.wbTextarea{
+  width: 100%;
+  min-height: 120px;
+  border: 2px solid rgba(0,0,0,.35);
   border-radius: 14px;
-  padding: 6px 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.wbCloseBtn:hover{ transform: translateY(-1px); }
-
-/* 内容区 */
-.wbBody{
-  padding: 14px;
-  overflow: auto;
-  max-height: calc(100vh - 120px);
-}
-
-/* 分块容器（像 API 卡片那种块） */
-.wbSection{
+  padding: 10px;
   background: rgba(255,255,255,.55);
-  border: 2px solid #2b2b2b;
-  border-radius: 16px;
-  padding: 12px;
-  margin-bottom: 12px;
+  resize: vertical;
+  outline: none;
 }
-
-.wbSectionHead{
-  display:flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.wbSectionTitle{ font-weight: 900; }
-.wbSectionSub{ opacity: .75; font-weight: 700; }
-
-.wbHint{
-  font-size: 12px;
-  opacity: .7;
-  margin: 6px 0 10px;
-}
-
-/* 通用按钮 */
+.wbRowBtns{ display:flex; gap:10px; margin:10px 0; flex-wrap: wrap; }
 .wbBtn{
-  border: 2px solid #2b2b2b;
-  background: #fff;
-  border-radius: 14px;
-  padding: 7px 12px;
+  border:2px solid rgba(0,0,0,.5);
+  background: rgba(255,255,255,.65);
+  border-radius: 999px;
+  padding: 8px 14px;
   font-weight: 800;
   cursor: pointer;
 }
-.wbBtn:hover{ transform: translateY(-1px); }
+.wbBtnPrimary{ background: rgba(235, 210, 190, .85); }
+.wbBtn:hover{ filter: brightness(.98); }
 
-.wbBtnPrimary{
-  background: #e6d0b6;
-}
 
-.wbBtnGhost{
-  background: rgba(255,255,255,.9);
-}
+/* ===== 世界书 / 预设 面板（Start） ===== */
+.wbPad{ padding: 14px; }
+.wbHeaderRow{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.wbTitleBig{ font-weight:900; font-size:20px; letter-spacing:1px; }
+.wbSub{ opacity:.75; font-size:12px; margin-top:2px; }
 
-.wbBtnMini{
-  padding: 6px 10px;
-  border-radius: 12px;
-  font-weight: 800;
-  font-size: 12px;
-}
+.wbSection{ margin-top:14px; }
+.wbSectionHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.wbSectionTitle{ font-weight:900; font-size:14px; }
+.wbSectionSub{ opacity:.7; font-weight:700; margin-left:6px; font-size:12px; }
 
-.wbBtnDanger{
-  background: #ffe1e1;
-}
-
-/* 列表条目 */
-.wbList{ display:flex; flex-direction: column; gap: 8px; }
+.wbList{ display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+.wbEmpty{ opacity:.7; font-size:12px; padding:10px 8px; border:2px dashed rgba(0,0,0,.25); border-radius:14px; background:rgba(255,255,255,.35); }
 
 .wbRow{
-  display:flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 10px;
-  border: 2px solid #2b2b2b;
+  border:2px solid rgba(0,0,0,.28);
+  border-radius:16px;
+  padding:10px;
+  background:rgba(255,255,255,.45);
+  display:grid;
+  grid-template-columns: 38px 1fr auto;
+  grid-template-rows: auto auto;
+  gap:10px 10px;
+}
+.wbEntryMain{ min-width:0; }
+.wbTitleInput{
+  width:100%;
+  border:2px solid rgba(0,0,0,.25);
+  border-radius:12px;
+  padding:8px 10px;
+  background:rgba(255,255,255,.55);
+  font-weight:900;
+  outline:none;
+}
+.wbEntryMeta{ margin-top:6px; font-size:12px; opacity:.7; }
+.wbEntryBtns{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+
+.wbEditor{ grid-column: 1 / -1; }
+.wbEditor.hidden{ display:none; }
+
+.wbTextarea{
+  width: 100%;
+  min-height: 120px;
+  border: 2px solid rgba(0,0,0,.25);
   border-radius: 14px;
-  background: rgba(255,255,255,.8);
+  padding: 10px;
+  background: rgba(255,255,255,.55);
+  resize: vertical;
+  outline: none;
 }
+.wbTextareaSmall{ min-height: 110px; }
 
-.wbEntryMain{ flex:1; min-width: 0; }
-.wbEntryTitle{
+.wbRowBtns{ display:flex; gap:10px; flex-wrap:wrap; }
+
+.wbBtn{
+  border:2px solid rgba(0,0,0,.35);
+  background: rgba(255,255,255,.65);
+  border-radius: 999px;
+  padding: 8px 14px;
   font-weight: 900;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  cursor: pointer;
+  user-select:none;
 }
-.wbEntryMeta{
-  font-size: 12px;
-  opacity: .7;
-  margin-top: 2px;
-}
-
-.wbEntryBtns{ display:flex; gap:8px; }
+.wbBtnMini{ padding:6px 10px; font-size:12px; }
+.wbBtnPrimary{ background: rgba(235, 210, 190, .85); }
+.wbBtnDanger{ background: rgba(255, 220, 220, .9); }
+.wbBtn:hover{ filter: brightness(.98); }
 
 /* Toggle */
-.wbToggle{ position: relative; width: 44px; height: 24px; display:inline-block; }
+.wbToggle{ display:inline-flex; align-items:center; justify-content:center; }
 .wbToggle input{ display:none; }
 .wbToggleTrack{
-  position:absolute; inset:0;
-  border: 2px solid #2b2b2b;
-  border-radius: 999px;
-  background: #fff;
+  width:34px; height:18px;
+  border-radius:999px;
+  border:2px solid rgba(0,0,0,.35);
+  background:rgba(255,255,255,.55);
+  position:relative;
 }
 .wbToggleTrack::after{
   content:'';
-  position:absolute;
-  top: 2px; left: 2px;
-  width: 18px; height: 18px;
-  border: 2px solid #2b2b2b;
-  border-radius: 999px;
-  background:#fff;
-  transition: transform .15s ease;
+  position:absolute; top:50%; left:2px;
+  width:12px; height:12px;
+  border-radius:999px;
+  transform:translateY(-50%);
+  background:rgba(0,0,0,.55);
+  transition: all .15s ease;
 }
 .wbToggle input:checked + .wbToggleTrack{
-  background: #d7f3df;
+  background: rgba(210, 235, 210, .85);
 }
 .wbToggle input:checked + .wbToggleTrack::after{
-  transform: translateX(18px);
+  left:18px;
+  background: rgba(0,0,0,.7);
 }
-
-/* IO textarea */
-.wbTextarea{
-  width: 100%;
-  min-height: 90px;
-  resize: vertical;
-  border: 2px solid #2b2b2b;
-  border-radius: 14px;
-  padding: 10px;
-  outline: none;
-  background: rgba(255,255,255,.9);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 12px;
+.wbChip{
+  border:2px solid rgba(0,0,0,.35);
+  background: rgba(255,255,255,.55);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 800;
+  cursor: pointer;
 }
+.wbChipOn{ border-color: rgba(0,0,0,.55); }
+.wbChipGreen.wbChipOn{ box-shadow: 0 0 0 2px rgba(80, 200, 120, .25) inset; }
+.wbChipBlue.wbChipOn{ box-shadow: 0 0 0 2px rgba(80, 140, 240, .25) inset; }
+.wbBtnMini{ padding: 6px 10px; border-radius: 999px; }

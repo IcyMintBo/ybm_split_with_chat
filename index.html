@@ -219,6 +219,87 @@
           </template>
         </div>
       </div>
+      <template id="startTplWorldbook">
+        <div class="wbRowBtns">
+          <button class="wbBtn wbBtnPrimary" id="wb-load-default" type="button">载入默认</button>
+          <button class="wbBtn" id="wb-import-file" type="button">导入文件</button>
+          <button class="wbBtn wbBtnPrimary" id="wb-export-file" type="button">导出下载</button>
+        </div>
+        <input id="wb-file" type="file" accept="application/json" style="display:none;">
+
+        <div class="wbPad">
+          <div class="wbHeaderRow">
+            <div>
+              <div class="wbTitleBig">世界书</div>
+              <div class="wbSub">全局 + 联系人两套，按开关决定是否注入。</div>
+            </div>
+          </div>
+
+          <div class="wbSection">
+            <div class="wbSectionHead">
+              <div class="wbSectionTitle">全局世界书 <span class="wbSectionSub">（总是注入）</span></div>
+              <button class="wbBtn wbBtnPrimary" id="wb-add-global" type="button">＋ 新增</button>
+            </div>
+            <div id="wb-global-list" class="wbList"></div>
+          </div>
+
+          <div class="wbSection">
+            <div class="wbSectionHead">
+              <div class="wbSectionTitle">联系人世界书 <span class="wbSectionSub wbSectionSubContact">（当前：—）</span></div>
+              <button class="wbBtn wbBtnPrimary" id="wb-add-contact" type="button">＋ 新增</button>
+            </div>
+            <div id="wb-contact-list" class="wbList"></div>
+          </div>
+
+          <div class="wbSection">
+            <div class="wbSectionHead">
+              <div class="wbSectionTitle">导入 / 导出</div>
+              <div class="wbRowBtns">
+                <button class="wbBtn" id="wb-export" type="button">导出</button>
+                <button class="wbBtn wbBtnPrimary" id="wb-import" type="button">导入</button>
+              </div>
+            </div>
+            <textarea id="wb-io" class="wbTextarea" placeholder="这里放 JSON（导入 / 导出用）"></textarea>
+          </div>
+        </div>
+      </template>
+
+      <template id="startTplPresets">
+        <div class="wbRowBtns">
+  <button class="wbBtn wbBtnPrimary" id="preset-load-default" type="button">载入默认</button>
+  <button class="wbBtn" id="preset-import-file" type="button">导入文件</button>
+  <button class="wbBtn wbBtnPrimary" id="preset-export-file" type="button">导出下载</button>
+</div>
+<input id="preset-file" type="file" accept="application/json" style="display:none;">
+
+        <div class="wbPad">
+          <div class="wbHeaderRow">
+            <div>
+              <div class="wbTitleBig">预设</div>
+              <div class="wbSub">按开关注入 system prompt（影响剧情写作风格）。</div>
+            </div>
+          </div>
+
+          <div class="wbSection">
+            <div class="wbSectionHead">
+              <div class="wbSectionTitle">全局预设</div>
+              <button class="wbBtn wbBtnPrimary" id="preset-add-global" type="button">＋ 新增</button>
+            </div>
+            <div id="preset-global-list" class="wbList"></div>
+          </div>
+
+          <div class="wbSection">
+            <div class="wbSectionHead">
+              <div class="wbSectionTitle">导入 / 导出</div>
+              <div class="wbRowBtns">
+                <button class="wbBtn" id="preset-export" type="button">导出</button>
+                <button class="wbBtn wbBtnPrimary" id="preset-import" type="button">导入</button>
+              </div>
+            </div>
+            <textarea id="preset-io" class="wbTextarea" placeholder="这里放 JSON（导入 / 导出用）"></textarea>
+          </div>
+        </div>
+      </template>
 
       <!-- ===== View 1: Main window ===== -->
       <div class="view" id="viewMain" aria-label="Main Entry">
@@ -377,8 +458,9 @@
     </div>
   </div>
 
-  <script src="./app.js" defer></script>
-  <script src="./chat/chat.js" defer></script>
+<script src="./phone/phoneEngine.js"></script>
+<script src="./app.js"></script>
+<script src="./chat/chat.js"></script>
 </body>
 
 </html>

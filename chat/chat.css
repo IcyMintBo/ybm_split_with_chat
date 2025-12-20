@@ -1,6 +1,8 @@
 /* =========================
-   CHAT (SillyTavern-ish, fits your style)
+   CHAT (clean final)
    ========================= */
+
+/* --- layout shell --- */
 .chatWrap{
   width: min(1100px, 94vw);
   height: min(var(--panel-h), calc(100vh - 2*var(--gutter)));
@@ -44,13 +46,31 @@
 .chatActions{
   display:flex;
   align-items:center;
-  gap: 8px;
+  gap: 10px;
 }
 
+/* 圆形图标按钮（顶部 trash / phone 等） */
+.chatIconBtn{
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--paper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.chatIconBtn:hover{ background:#fff; }
+
+.chatBackBtn{ padding: 6px 14px; }
+
+/* --- body / list --- */
 .chatBody{
   flex: 1;
   overflow: hidden;
   position: relative;
+  min-height: 0;
 }
 
 .chatMessages{
@@ -60,7 +80,61 @@
   display:flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
 }
+
+/* =========================
+   Name outside bubble (final)
+   ========================= */
+
+/* 外层消息条：名字在外 */
+.chatItem{
+  display:flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.chatItem.me{ align-items: flex-end; }
+
+/* 名字标签行（卡片外） */
+.nameTag{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  max-width: 78%;
+  padding: 0 6px;
+  font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace;
+  font-size: 12px;
+  letter-spacing: .08em;
+  opacity: .82;
+}
+.chatItem.me .nameTag{
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.nameAvatar{
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid rgba(0,0,0,.22);
+  background: rgba(0,0,0,.06);
+  box-shadow: 0 6px 0 rgba(0,0,0,.08);
+}
+.nameText{
+  min-width: 0;
+  max-width: 100%;
+  line-height: 1.1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* =========================
+   Message bubble (content + actions only)
+   ========================= */
 
 .chatMsg{
   max-width: 78%;
@@ -68,25 +142,65 @@
   border-radius: 18px;
   background: rgba(255,255,255,.82);
   box-shadow: 0 10px 0 rgba(0,0,0,.08);
-  padding: 10px 12px;
+  padding: 12px 12px 10px;
   line-height: 1.55;
   font-size: 14px;
   white-space: pre-wrap;
+  position: relative;
 }
 
+/* user bubble */
 .chatMsg.me{
-  align-self: flex-end;
   background: rgba(143,58,47,.10);
 }
 
+/* 卡片内部不再显示旧 avatar（头像走 nameTag） */
+.chatMsg .avatar{ display:none !important; }
+
+/* 右上角动作按钮区 */
 .chatMeta{
-  font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace;
-  font-size: 11px;
-  letter-spacing: .08em;
-  opacity: .75;
-  margin-bottom: 6px;
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  left: auto;
+  margin: 0;
+  padding: 0;
+  display:flex;
+  justify-content: flex-end;
+  opacity: 1;
 }
 
+.msgActions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.msgActBtn{
+  width:28px;
+  height:28px;
+  border-radius:999px;
+  border:2px solid rgba(0,0,0,.16);
+  background: rgba(255,255,255,.55);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:0;
+}
+.msgActBtn:hover{ background: rgba(255,255,255,.78); }
+.msgActBtn svg{ width:14px; height:14px; }
+
+/* 内容区（你 JS 里用的 class） */
+.chatText{
+  white-space: pre-wrap;
+  line-height: 1.55;
+  /* 给右上角按钮留点呼吸，不让首行文字顶到按钮 */
+  padding-top: 18px;
+}
+
+/* =========================
+   Composer (input + send)
+   ========================= */
 .chatComposer{
   border-top: var(--line);
   background: rgba(255,255,255,.65);
@@ -109,7 +223,75 @@
   max-height: 140px;
 }
 
-/* drawers */
+/* 发送按钮固定成圆形（纸飞机/等待态方块都适配） */
+#chatSend{
+  width:44px;
+  min-width:44px;
+  max-width:44px;
+  height:44px;
+  border-radius:999px !important;
+  padding:0 !important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:0;
+}
+#chatSend svg{ width:18px; height:18px; }
+
+/* =========================
+   Contact bar (四个联系人)
+   ========================= */
+.chatContactBar{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  border-top:2px solid rgba(0,0,0,.12);
+  border-bottom:2px solid rgba(0,0,0,.12);
+  background: rgba(255,255,255,.25);
+
+  /* ✅ 强制单行 */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.chatContactBar .chatChip{
+  flex: 0 0 auto;  /* ✅ 不压缩、不换行 */
+}
+
+.chatChip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:999px;
+  border:2px solid rgba(0,0,0,.18);
+  background: rgba(255,255,255,.45);
+  font-weight:900;
+  cursor:pointer;
+  user-select:none;
+}
+.chatChipDot{
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  border:2px solid rgba(0,0,0,.35);
+  background: rgba(0,0,0,.10);
+}
+.chatChip.active{
+  border-color: rgba(0,0,0,.35);
+  background: rgba(255,255,255,.70);
+  box-shadow: 0 8px 16px rgba(0,0,0,.06);
+}
+.chatChip.active .chatChipDot{
+  background: rgba(70,140,255,.92);
+  border-color: rgba(30,70,160,.55);
+}
+
+/* =========================
+   Drawers + mask
+   ========================= */
 .chatDrawer{
   position: absolute;
   top: 0;
@@ -120,7 +302,6 @@
 }
 .chatDrawerLeft{ left: -18px; }
 .chatDrawerRight{ right: -18px; }
-
 .chatDrawer[data-open="true"]{ display:block; }
 
 .chatMask{
@@ -132,47 +313,9 @@
 }
 .chatMask[data-open="true"]{ display:block; }
 
-@media (max-width: 980px){
-  .chatWrap{
-    width: min(520px, 92vw);
-    height: calc(100vh - 20px);
-  }
-  .chatWindow{ box-shadow: var(--shadow2); }
-  .chatDrawer{
-    position: fixed;
-    inset: 14px;
-    width: auto;
-    z-index: 120;
-  }
-}
-.chatActions{
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-/* 圆形图标按钮 */
-.chatIconBtn{
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  border: 2px solid var(--line);
-  background: var(--paper);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.chatIconBtn:hover{
-  background: #fff;
-}
-
-/* 返回按钮你原来如果已经有样式，这里不会冲突 */
-.chatBackBtn{
-  padding: 6px 14px;
-}
-/* ===== Phone Overlay (虚拟小手机) ===== */
+/* =========================
+   Phone Overlay (虚拟小手机)
+   ========================= */
 .phoneMask{
   position: fixed;
   inset: 0;
@@ -207,7 +350,6 @@
   flex-direction: column;
   overflow: hidden;
 }
-
 .phoneOverlay[data-open="true"]{
   transform: translateY(0);
   opacity: 1;
@@ -299,7 +441,6 @@
   max-height: 120px;
 }
 
-/* 手机端：小手机全屏覆盖（更像“真的在手机里发消息”） */
 @media (max-width: 980px){
   .phoneOverlay{
     left: 0;
@@ -312,7 +453,10 @@
     border-width: 0;
   }
 }
-/* ===== Device Panel (设置面板) ===== */
+
+/* =========================
+   Device Panel (设置面板)
+   ========================= */
 .deviceMask{
   position: fixed;
   inset: 0;
@@ -392,95 +536,18 @@
   background: #f3ead4;
 }
 
-.deviceTabs{
-  display:flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-.deviceTab{
-  border: 2px solid #2f2a24;
-  background: #fbf7ee;
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-weight: 900;
-  cursor: pointer;
-}
-.deviceTab.on{
-  background: #e7d4c1;
-}
-
-.devicePane{ display:none; }
-.devicePane.on{ display:block; }
-
-.deviceCard{
-  border: 2px solid #2f2a24;
-  background: rgba(255,255,255,.85);
-  border-radius: 16px;
-  padding: 10px 12px;
-  box-shadow: 0 10px 0 rgba(0,0,0,.08);
-  margin-bottom: 12px;
-}
-.deviceCard.soft{
-  background: rgba(255,255,255,.60);
-  border-style: dashed;
-}
-.deviceCardTitle{ font-weight: 900; margin-bottom: 6px; }
-.deviceCardSub{ opacity:.8; font-size: 12px; margin-bottom: 10px; }
-
-.deviceRow{ display:flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-.deviceChip{
-  border: 2px solid #2f2a24;
-  background:#fbf7ee;
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-weight: 900;
-  font-size: 12px;
-}
-
-.deviceBtn{
-  width: 100%;
-  border: 2px solid #2f2a24;
-  background: #fbf7ee;
-  border-radius: 999px;
-  padding: 10px 12px;
-  font-weight: 900;
-  cursor: pointer;
-}
-.deviceBtn.primary{ background:#e7d4c1; }
-
-.deviceGrid2{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.deviceField{
-  display:grid;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-.deviceField span{ font-weight: 900; font-size: 12px; opacity: .85; }
-.deviceField input{
-  border: 2px solid #2f2a24;
-  border-radius: 12px;
-  padding: 10px 10px;
-  background:#fff;
-}
-
-.deviceList{ display:flex; gap: 8px; flex-wrap: wrap; }
-.devicePick{
-  border: 2px solid #2f2a24;
-  background:#fbf7ee;
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-weight: 900;
-  cursor: pointer;
-}
-.devicePick.on{ background:#e7d4c1; }
-
-/* 手机端：设置面板全屏覆盖 */
 @media (max-width: 980px){
+  .chatWrap{
+    width: min(520px, 92vw);
+    height: calc(100vh - 20px);
+  }
+  .chatWindow{ box-shadow: var(--shadow2); }
+  .chatDrawer{
+    position: fixed;
+    inset: 14px;
+    width: auto;
+    z-index: 120;
+  }
   .devicePanel{
     left: 0;
     right: 0;
@@ -492,20 +559,178 @@
     border-width: 0;
   }
 }
-/* ===== 顶部：按钮靠左，标题居中，小屏不挤出 ===== */
-.chatTitlebar{
-  justify-content: flex-start;      /* 不再两端分布 */
+
+/* =========================
+   Edit modal (居中弹窗编辑)
+   ========================= */
+body.chat-editing{ overflow: hidden; }
+
+.chatEditMask{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.34);
+  z-index: 9990;
 }
 
-.chatActions{
-  margin-left: 10px;               /* 在 dots 右侧 */
-  flex: 0 0 auto;                  /* 不参与挤压 */
-  white-space: nowrap;             /* 不换行 */
+.chatEditModal{
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -48%);
+  width: min(760px, 92vw);
+  max-height: min(70vh, 640px);
+  display: flex;
+  flex-direction: column;
+  border: 3px solid #2f2a24;
+  border-radius: 22px;
+  background: rgba(251,247,238,.96);
+  box-shadow: 0 26px 70px rgba(0,0,0,.32);
+  z-index: 9991;
+  animation: chatEditPop .14s ease-out both;
+  overflow: hidden;
 }
 
-.chatTitle{
-  flex: 1;                         /* 吃掉剩余空间，形成居中视觉 */
-  text-align: center;
+@keyframes chatEditPop{
+  from { opacity: 0; transform: translate(-50%, -46%) scale(.98); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.chatEditHeader{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 2px solid rgba(0,0,0,.14);
+  background: rgba(255,255,255,.30);
+}
+
+.chatEditTitle{
+  font-weight: 900;
+  letter-spacing: .02em;
+  font-size: 13px;
+  opacity: .92;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.chatEditHeaderRight{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+
+.chatEditIcon{
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 2px solid rgba(0,0,0,.18);
+  background: rgba(255,255,255,.65);
+  cursor: pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height: 0;
+}
+.chatEditIcon:hover{ background: rgba(255,255,255,.88); }
+.chatEditIcon svg{ width: 16px; height: 16px; }
+
+.chatEditArea{
+  flex: 1;
+  min-height: 220px;
+  padding: 12px 12px;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: rgba(255,255,255,.82);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+/* =========================
+   Clear modal (如果 chat.html 用到了)
+   ========================= */
+.chatClearModal{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  pointer-events:none;
+}
+.chatClearModal[aria-hidden="false"]{ pointer-events:auto; }
+.chatClearCard{
+  width:min(360px, 92vw);
+  border-radius:18px;
+  border:2px solid rgba(0,0,0,.16);
+  background: rgba(255,255,255,.86);
+  box-shadow: 0 18px 40px rgba(0,0,0,.18);
+  padding:14px 14px 12px;
+}
+.chatClearTitle{ font-weight:900; font-size:16px; margin-bottom:6px; }
+.chatClearSub{ opacity:.8; font-size:13px; margin-bottom:12px; }
+.chatClearBtns{ display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
+/* =========================
+   FINAL FIX: message actions & text layout
+   ========================= */
+
+/* 1️⃣ 消息卡片本体：给顶部留足空间，避免压字 */
+.chatMsg{
+  position: relative;
+  padding-top: 8px !important; /* 给右上角按钮的安全区 */
+  padding-right: 14px !important;
+  padding-left: 14px !important;
+  box-sizing: border-box;
+}
+
+/* 2️⃣ 右上角操作区：只定位，不占内容流 */
+.chatMsg .chatMeta{
+  position: absolute !important;
+  top: 8px;
+  right: 10px;
+  left: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: none !important;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  z-index: 2;
+}
+
+/* 3️⃣ 操作按钮：取消圆底，只保留图标 */
+.chatMsg .msgActions button,
+.chatMsg .msgActions .msgActBtn{
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  box-shadow: none !important;
+  opacity: .55;
+  cursor: pointer;
+}
+
+/* hover 只做“变深”，不出现底 */
+.chatMsg .msgActions button:hover{
+  opacity: .9;
+}
+
+/* 4️⃣ 文本内容区：明确独立，不被 meta 影响 */
+.chatText{
+  position: relative;
+  z-index: 1;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+/* 5️⃣ 彻底禁用旧 avatar（现在头像在 nameTag） */
+.chatMsg .avatar{
+  display: none !important;
 }
