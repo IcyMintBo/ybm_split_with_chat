@@ -428,26 +428,36 @@ function pushMsg(engine, msg, isLastAssistant) {
     smartScrollToBottom(box, true);
   }
 
-  // ===== clear modal =====
-  function openClearModal() {
-    const mask = qs('chatClearMask');
-    const modal = qs('chatClearModal');
-    if (!mask || !modal) return;
-    mask.style.display = 'block';
-    modal.style.display = 'flex';
-    mask.setAttribute('aria-hidden', 'false');
-    modal.setAttribute('aria-hidden', 'false');
-  }
+function openClearModal() {
+  const mask = qs('chatClearMask');
+  const modal = qs('chatClearModal');
+  if (!mask || !modal) return;
 
-  function closeClearModal() {
-    const mask = qs('chatClearMask');
-    const modal = qs('chatClearModal');
-    if (!mask || !modal) return;
-    mask.style.display = 'none';
-    modal.style.display = 'none';
-    mask.setAttribute('aria-hidden', 'true');
-    modal.setAttribute('aria-hidden', 'true');
-  }
+  // 显示遮罩和弹窗
+  mask.style.display = 'block';
+  modal.style.display = 'flex';
+
+  // 确保 aria-hidden 设置为 false
+  mask.setAttribute('aria-hidden', 'false');
+  modal.setAttribute('aria-hidden', 'false');
+
+  // 点击遮罩层时关闭弹窗
+  mask.addEventListener('click', closeClearModal);
+}
+
+
+function closeClearModal() {
+  const mask = qs('chatClearMask');
+  const modal = qs('chatClearModal');
+  if (!mask || !modal) return;
+
+  mask.style.display = 'none';
+  modal.style.display = 'none';
+
+  mask.setAttribute('aria-hidden', 'true');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
 
   // ===== mount chat.html into #mountChat =====
   async function ensureMounted() {
@@ -536,20 +546,21 @@ function pushMsg(engine, msg, isLastAssistant) {
     qs('chatClearCancel')?.addEventListener('click', closeClearModal);
     qs('chatClearMask')?.addEventListener('click', closeClearModal);
 
-    qs('chatClearCurrent')?.addEventListener('click', () => {
-      const contactId = engine.getActiveContact?.() || 'ybm';
-      if (!confirm(`清空【${getActiveContactName(engine)}】的聊天记录？`)) return;
-      engine.clearMessages?.({ contactId });
-      closeClearModal();
-      renderHistory(engine);
-    });
+qs('chatClearCurrent')?.addEventListener('click', () => {
+  const contactId = engine.getActiveContact?.() || 'ybm'; // 获取当前联系人ID
+  if (!confirm(`清空【${getActiveContactName(engine)}】的聊天记录？`)) return; // 弹窗确认
+  engine.clearMessages?.({ contactId }); // 调用清空当前聊天函数
+  closeClearModal(); // 关闭弹窗
+  renderHistory(engine); // 刷新界面
+});
 
-    qs('chatClearAll')?.addEventListener('click', () => {
-      if (!confirm('全清：清空所有联系人的聊天记录？')) return;
-      engine.clearAllMessages?.();
-      closeClearModal();
-      renderHistory(engine);
-    });
+qs('chatClearAll')?.addEventListener('click', () => {
+  if (!confirm('全清：清空所有联系人的聊天记录，确认继续？')) return; // 弹窗确认
+  engine.clearAllMessages?.(); // 调用清空所有聊天函数
+  closeClearModal(); // 关闭弹窗
+  renderHistory(engine); // 刷新界面
+});
+
   }
 
   // expose

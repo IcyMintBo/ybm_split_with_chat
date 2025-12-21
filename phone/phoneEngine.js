@@ -143,20 +143,21 @@
     return true;
   }
 
-  function clearMessages({ contactId } = {}) {
-    contactId = ensureContact(contactId || getActiveContact());
-    state.messages[contactId] = [];
-    save();
-    return true;
+function clearMessages({ contactId }) {
+  const messages = getMessages({ contactId });
+  if (messages) {
+    messages.length = 0; // 清空数组
+    saveMessages({ contactId, messages }); // 保存清空后的状态
   }
+}
 
-  function clearAllMessages() {
-    for (const cid of Object.keys(state.messages)) {
-      state.messages[cid] = [];
-    }
-    save();
-    return true;
-  }
+function clearAllMessages() {
+  const allContacts = getContacts(); // 获取所有联系人
+  allContacts.forEach(contact => {
+    clearMessages({ contactId: contact.id }); // 清空每个联系人的消息
+  });
+}
+
 
   // ====== reroll: only last assistant in a channel ======
   async function rerollLastAssistant({ contactId, channel, maxChars } = {}) {
