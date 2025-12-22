@@ -143,20 +143,32 @@
     return true;
   }
 
-function clearMessages({ contactId }) {
-  const messages = getMessages({ contactId });
-  if (messages) {
-    messages.length = 0; // 清空数组
-    saveMessages({ contactId, messages }); // 保存清空后的状态
+function clearMessages({ contactId, channel } = {}) {
+  contactId = ensureContact(contactId || getActiveContact());
+
+  // channel 为空：清空该联系人的全部消息（包含 main + phone）
+  if (!channel) {
+    state.messages[contactId] = [];
+    save();
+    return true;
   }
+
+  // 指定 channel：只清掉该 channel 的消息
+  const arr = state.messages[contactId] || [];
+  state.messages[contactId] = arr.filter(m => m && m.channel !== channel);
+  save();
+  return true;
 }
 
-function clearAllMessages() {
-  const allContacts = getContacts(); // 获取所有联系人
-  allContacts.forEach(contact => {
-    clearMessages({ contactId: contact.id }); // 清空每个联系人的消息
+function clearAllMessages({ channel } = {}) {
+  // 遍历所有联系人
+  Object.keys(state.contacts || {}).forEach((cid) => {
+    clearMessages({ contactId: cid, channel });
   });
+  save();
+  return true;
 }
+
 
 
   // ====== reroll: only last assistant in a channel ======

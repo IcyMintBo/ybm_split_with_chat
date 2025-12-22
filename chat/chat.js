@@ -518,6 +518,10 @@ function openClearModal() {
 
   mask.style.display = 'block';
   modal.style.display = 'flex';
+
+  // ✅ 关键：配合 chat.css 的 data-open
+  modal.dataset.open = 'true';
+
   mask.setAttribute('aria-hidden', 'false');
   modal.setAttribute('aria-hidden', 'false');
 }
@@ -527,8 +531,12 @@ function closeClearModal() {
   const modal = qs('chatClearModal');
   if (!mask || !modal) return;
 
+  // ✅ 关键：关掉 data-open
+  modal.dataset.open = 'false';
+
   mask.style.display = 'none';
   modal.style.display = 'none';
+
   mask.setAttribute('aria-hidden', 'true');
   modal.setAttribute('aria-hidden', 'true');
 }
