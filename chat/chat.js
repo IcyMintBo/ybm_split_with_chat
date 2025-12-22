@@ -56,9 +56,9 @@
     return 'user';
   }
 
-function injectPolishOnce() {
-  // 已迁移到 chat.css：避免 JS 注入样式覆盖 CSS，防止后续维护混乱
-}
+  function injectPolishOnce() {
+    // 已迁移到 chat.css：避免 JS 注入样式覆盖 CSS，防止后续维护混乱
+  }
 
 
   function setSendingState(isSending) {
@@ -111,13 +111,63 @@ function injectPolishOnce() {
       el.setAttribute('aria-hidden', open ? 'false' : 'true');
     });
   }
-  function openPhone() {
-    setOpenByIdAll('phoneOverlay', true);
-    setOpenByIdAll('phoneMask', true);
+function ensurePhoneOverlayDOM() {
+  // 遮罩
+  if (!document.getElementById('phoneMask')) {
+    const mask = document.createElement('div');
+    mask.id = 'phoneMask';
+    mask.className = 'phoneMask';
+    mask.dataset.open = 'false';
+    mask.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(mask);
   }
-  function closePhone() {
-    setOpenByIdAll('phoneOverlay', false);
-    setOpenByIdAll('phoneMask', false);
+
+  // 容器
+  if (!document.getElementById('phoneOverlay')) {
+    const overlay = document.createElement('div');
+    overlay.id = 'phoneOverlay';
+    overlay.className = 'phoneOverlay';
+    overlay.dataset.open = 'false';
+    overlay.setAttribute('aria-hidden', 'true');
+
+    // mini_phone 自己会往里渲染内容；这里留一个 mount 口
+    overlay.innerHTML = `<div id="miniPhoneMount" class="miniPhoneMount"></div>`;
+    document.body.appendChild(overlay);
+  }
+}
+
+function openPhone() {
+  ensurePhoneOverlayDOM();
+  setOpenByIdAll('phoneOverlay', true);
+  setOpenByIdAll('phoneMask', true);
+}
+
+function closePhone() {
+  setOpenByIdAll('phoneOverlay', false);
+  setOpenByIdAll('phoneMask', false);
+}
+
+  // ===== load mini_phone module once =====
+  function ensureMiniPhoneLoaded() {
+    return new Promise((resolve) => {
+      if (window.MiniPhone?.open) return resolve(true);
+
+      const existed = document.querySelector('script[data-mini-phone="1"]');
+      if (existed) {
+        // 可能正在加载
+        existed.addEventListener('load', () => resolve(true), { once: true });
+        existed.addEventListener('error', () => resolve(false), { once: true });
+        return;
+      }
+
+      const s = document.createElement('script');
+      s.type = 'module';
+      s.src = new URL('./mini_phone/mini_phone.js?v=1', document.baseURI).href;
+      s.dataset.miniPhone = '1';
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
+      document.body.appendChild(s);
+    });
   }
 
   // ===== engine helpers =====
@@ -205,204 +255,204 @@ function injectPolishOnce() {
     if (box) box.innerHTML = '';
   }
 
-function pushMsg(engine, msg, isLastAssistant) {
-  const box = qs('chatMessages');
-  if (!box) return;
+  function pushMsg(engine, msg, isLastAssistant) {
+    const box = qs('chatMessages');
+    if (!box) return;
 
-  const role = msg.role === 'user' ? 'me' : 'assistant';
-  const contactId = engine.getActiveContact?.() || 'ybm';
+    const role = msg.role === 'user' ? 'me' : 'assistant';
+    const contactId = engine.getActiveContact?.() || 'ybm';
 
-  // ===== 外层 item：名字在外面 =====
-  const item = document.createElement('div');
-  item.className = 'chatItem' + (role === 'me' ? ' me' : ' assistant');
-  item.dataset.msgId = msg.id;
-  item.dataset.role = msg.role;
+    // ===== 外层 item：名字在外面 =====
+    const item = document.createElement('div');
+    item.className = 'chatItem' + (role === 'me' ? ' me' : ' assistant');
+    item.dataset.msgId = msg.id;
+    item.dataset.role = msg.role;
 
-  // ===== 名字标签行 =====
-  const tag = document.createElement('div');
-  tag.className = 'nameTag';
+    // ===== 名字标签行 =====
+    const tag = document.createElement('div');
+    tag.className = 'nameTag';
 
-  // 助手显示头像，user 不显示头像（你要求的）
-  if (role !== 'me') {
-    const av = document.createElement('img');
-    av.className = 'nameAvatar';
-    // 头像路径：按联系人 id 放
-    // 例：assets/avatars/ybm.png / caishu.png / dantuo.png / zhoubin.png
-    const cid = engine.getActiveContact?.() || 'ybm';
-    av.src = `./assets/avatars/${cid}.png`;
-    av.alt = '';
-    // 头像缺失就隐藏，避免 console 一直刷
-    av.onerror = () => { av.style.display = 'none'; };
-    tag.appendChild(av);
-  }
+    // 助手显示头像，user 不显示头像（你要求的）
+    if (role !== 'me') {
+      const av = document.createElement('img');
+      av.className = 'nameAvatar';
+      // 头像路径：按联系人 id 放
+      // 例：assets/avatars/ybm.png / caishu.png / dantuo.png / zhoubin.png
+      const cid = engine.getActiveContact?.() || 'ybm';
+      av.src = `./assets/avatars/${cid}.png`;
+      av.alt = '';
+      // 头像缺失就隐藏，避免 console 一直刷
+      av.onerror = () => { av.style.display = 'none'; };
+      tag.appendChild(av);
+    }
 
-  const nameText = document.createElement('div');
-  nameText.className = 'nameText';
-  nameText.textContent = role === 'me' ? getUserDisplayName() : getActiveContactName(engine);
-  tag.appendChild(nameText);
+    const nameText = document.createElement('div');
+    nameText.className = 'nameText';
+    nameText.textContent = role === 'me' ? getUserDisplayName() : getActiveContactName(engine);
+    tag.appendChild(nameText);
 
-  // ===== 卡片本体 =====
-  const wrap = document.createElement('div');
-  wrap.className = 'chatMsg' + (role === 'me' ? ' me' : '');
-  wrap.dataset.msgId = msg.id;
-  wrap.dataset.role = msg.role;
+    // ===== 卡片本体 =====
+    const wrap = document.createElement('div');
+    wrap.className = 'chatMsg' + (role === 'me' ? ' me' : '');
+    wrap.dataset.msgId = msg.id;
+    wrap.dataset.role = msg.role;
 
-  // 顶部只放操作按钮（不再放名字）
-  const meta = document.createElement('div');
-  meta.className = 'chatMeta';
+    // 顶部只放操作按钮（不再放名字）
+    const meta = document.createElement('div');
+    meta.className = 'chatMeta';
 
-  const actions = document.createElement('div');
-  actions.className = 'msgActions';
+    const actions = document.createElement('div');
+    actions.className = 'msgActions';
 
-  // 编辑
-  const btnEdit = document.createElement('button');
-  btnEdit.type = 'button';
-  btnEdit.className = 'msgActBtn';
-  btnEdit.title = '编辑';
-  btnEdit.innerHTML = iconEdit();
+    // 编辑
+    const btnEdit = document.createElement('button');
+    btnEdit.type = 'button';
+    btnEdit.className = 'msgActBtn';
+    btnEdit.title = '编辑';
+    btnEdit.innerHTML = iconEdit();
 
-  // 删除
-  const btnDel = document.createElement('button');
-  btnDel.type = 'button';
-  btnDel.className = 'msgActBtn';
-  btnDel.title = '删除';
-  btnDel.innerHTML = iconTrash();
+    // 删除
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button';
+    btnDel.className = 'msgActBtn';
+    btnDel.title = '删除';
+    btnDel.innerHTML = iconTrash();
 
-  // 重roll：只允许最后一条 assistant
-  let btnReroll = null;
-  if (msg.role === 'assistant' && isLastAssistant) {
-    btnReroll = document.createElement('button');
-    btnReroll.type = 'button';
-    btnReroll.className = 'msgActBtn';
-    btnReroll.title = '重roll（仅最后一条）';
-    btnReroll.innerHTML = iconReroll();
-    actions.appendChild(btnReroll);
-  }
+    // 重roll：只允许最后一条 assistant
+    let btnReroll = null;
+    if (msg.role === 'assistant' && isLastAssistant) {
+      btnReroll = document.createElement('button');
+      btnReroll.type = 'button';
+      btnReroll.className = 'msgActBtn';
+      btnReroll.title = '重roll（仅最后一条）';
+      btnReroll.innerHTML = iconReroll();
+      actions.appendChild(btnReroll);
+    }
 
-  actions.appendChild(btnEdit);
-  actions.appendChild(btnDel);
-  meta.appendChild(actions);
+    actions.appendChild(btnEdit);
+    actions.appendChild(btnDel);
+    meta.appendChild(actions);
 
-  // 内容（注意：不要再用 chatBody 这个 class，避免和页面容器 .chatBody 撞名）
-  const body = document.createElement('div');
-  body.className = 'chatText';
-  body.textContent = applyRenderRegex(sanitizeModelText(msg.content || ''));
+    // 内容（注意：不要再用 chatBody 这个 class，避免和页面容器 .chatBody 撞名）
+    const body = document.createElement('div');
+    body.className = 'chatText';
+    body.textContent = applyRenderRegex(sanitizeModelText(msg.content || ''));
 
-  wrap.appendChild(meta);
-  wrap.appendChild(body);
+    wrap.appendChild(meta);
+    wrap.appendChild(body);
 
-  item.appendChild(tag);
-  item.appendChild(wrap);
-  box.appendChild(item);
+    item.appendChild(tag);
+    item.appendChild(wrap);
+    box.appendChild(item);
 
-  // ===== handlers =====
-  btnDel.addEventListener('click', () => {
-    if (!confirm('删除这条消息？')) return;
-    engine.deleteMessage?.({ contactId, msgId: msg.id });
-    renderHistory(engine);
-  });
+    // ===== handlers =====
+    btnDel.addEventListener('click', () => {
+      if (!confirm('删除这条消息？')) return;
+      engine.deleteMessage?.({ contactId, msgId: msg.id });
+      renderHistory(engine);
+    });
 
-  btnEdit.addEventListener('click', () => {
-    const oldText = msg.content || '';
+    btnEdit.addEventListener('click', () => {
+      const oldText = msg.content || '';
 
-    if (document.getElementById('chatEditModal')) return;
+      if (document.getElementById('chatEditModal')) return;
 
-    const mask = document.createElement('div');
-    mask.id = 'chatEditMask';
-    mask.className = 'chatEditMask';
+      const mask = document.createElement('div');
+      mask.id = 'chatEditMask';
+      mask.className = 'chatEditMask';
 
-    const modal = document.createElement('div');
-    modal.id = 'chatEditModal';
-    modal.className = 'chatEditModal';
-    modal.setAttribute('role', 'dialog');
-    modal.setAttribute('aria-modal', 'true');
+      const modal = document.createElement('div');
+      modal.id = 'chatEditModal';
+      modal.className = 'chatEditModal';
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
 
-    const header = document.createElement('div');
-    header.className = 'chatEditHeader';
+      const header = document.createElement('div');
+      header.className = 'chatEditHeader';
 
-    const title = document.createElement('div');
-    title.className = 'chatEditTitle';
-    title.textContent = `编辑：${msg.role === 'user' ? getUserDisplayName() : getActiveContactName(engine)}`;
+      const title = document.createElement('div');
+      title.className = 'chatEditTitle';
+      title.textContent = `编辑：${msg.role === 'user' ? getUserDisplayName() : getActiveContactName(engine)}`;
 
-    const btnOk = document.createElement('button');
-    btnOk.type = 'button';
-    btnOk.className = 'chatEditIcon ok';
-    btnOk.title = '保存（Ctrl/Cmd + Enter）';
-    btnOk.innerHTML = `
+      const btnOk = document.createElement('button');
+      btnOk.type = 'button';
+      btnOk.className = 'chatEditIcon ok';
+      btnOk.title = '保存（Ctrl/Cmd + Enter）';
+      btnOk.innerHTML = `
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M20 6 9.5 17 4 11.5" fill="none" stroke="currentColor" stroke-width="2.2"
           stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`;
 
-    const btnX = document.createElement('button');
-    btnX.type = 'button';
-    btnX.className = 'chatEditIcon cancel';
-    btnX.title = '取消（Esc）';
-    btnX.innerHTML = `
+      const btnX = document.createElement('button');
+      btnX.type = 'button';
+      btnX.className = 'chatEditIcon cancel';
+      btnX.title = '取消（Esc）';
+      btnX.innerHTML = `
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M6 6 18 18M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2"
           stroke-linecap="round"/>
       </svg>`;
 
-    const right = document.createElement('div');
-    right.className = 'chatEditHeaderRight';
-    right.appendChild(btnOk);
-    right.appendChild(btnX);
+      const right = document.createElement('div');
+      right.className = 'chatEditHeaderRight';
+      right.appendChild(btnOk);
+      right.appendChild(btnX);
 
-    header.appendChild(title);
-    header.appendChild(right);
+      header.appendChild(title);
+      header.appendChild(right);
 
-    const area = document.createElement('textarea');
-    area.className = 'chatEditArea';
-    area.value = oldText;
+      const area = document.createElement('textarea');
+      area.className = 'chatEditArea';
+      area.value = oldText;
 
-    modal.appendChild(header);
-    modal.appendChild(area);
+      modal.appendChild(header);
+      modal.appendChild(area);
 
-    document.body.appendChild(mask);
-    document.body.appendChild(modal);
-    document.body.classList.add('chat-editing');
+      document.body.appendChild(mask);
+      document.body.appendChild(modal);
+      document.body.classList.add('chat-editing');
 
-    const cleanup = () => {
-      document.body.classList.remove('chat-editing');
-      mask.remove();
-      modal.remove();
-    };
+      const cleanup = () => {
+        document.body.classList.remove('chat-editing');
+        mask.remove();
+        modal.remove();
+      };
 
-    const save = () => {
-      const newText = (area.value || '').trim();
-      engine.updateMessage?.({ contactId, msgId: msg.id, content: newText });
-      cleanup();
-      renderHistory(engine);
-    };
-
-    mask.addEventListener('click', cleanup);
-    btnX.addEventListener('click', cleanup);
-    btnOk.addEventListener('click', save);
-
-    area.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { e.preventDefault(); cleanup(); return; }
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); save(); }
-    });
-
-    requestAnimationFrame(() => {
-      area.focus();
-      area.setSelectionRange(area.value.length, area.value.length);
-    });
-  });
-
-  if (btnReroll) {
-    btnReroll.addEventListener('click', async () => {
-      setSendingState(true);
-      try {
-        await engine.rerollLastAssistant?.({ contactId, channel: 'main' });
+      const save = () => {
+        const newText = (area.value || '').trim();
+        engine.updateMessage?.({ contactId, msgId: msg.id, content: newText });
+        cleanup();
         renderHistory(engine);
-      } finally {
-        setSendingState(false);
-      }
+      };
+
+      mask.addEventListener('click', cleanup);
+      btnX.addEventListener('click', cleanup);
+      btnOk.addEventListener('click', save);
+
+      area.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); cleanup(); return; }
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); save(); }
+      });
+
+      requestAnimationFrame(() => {
+        area.focus();
+        area.setSelectionRange(area.value.length, area.value.length);
+      });
     });
+
+    if (btnReroll) {
+      btnReroll.addEventListener('click', async () => {
+        setSendingState(true);
+        try {
+          await engine.rerollLastAssistant?.({ contactId, channel: 'main' });
+          renderHistory(engine);
+        } finally {
+          setSendingState(false);
+        }
+      });
+    }
   }
-}
 
   function renderHistory(engine) {
     const box = qs('chatMessages');
@@ -428,23 +478,49 @@ function pushMsg(engine, msg, isLastAssistant) {
     smartScrollToBottom(box, true);
   }
 
+function ensureClearModalDOM() {
+  // 如果没有，就动态创建，避免“点了没反应”
+  if (!qs('chatClearMask')) {
+    const mask = document.createElement('div');
+    mask.id = 'chatClearMask';
+    mask.className = 'chatClearMask';
+    mask.style.display = 'none';
+    mask.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(mask);
+  }
+
+  if (!qs('chatClearModal')) {
+    const modal = document.createElement('div');
+    modal.id = 'chatClearModal';
+    modal.className = 'chatClearModal';
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    modal.innerHTML = `
+      <div class="chatClearCard" role="dialog" aria-modal="true">
+        <div class="chatClearTitle">清空聊天</div>
+        <div class="chatClearBtns">
+          <button id="chatClearCurrent" type="button">清空当前</button>
+          <button id="chatClearAll" type="button">全清</button>
+          <button id="chatClearCancel" type="button">取消</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+}
+
 function openClearModal() {
+  ensureClearModalDOM();
+
   const mask = qs('chatClearMask');
   const modal = qs('chatClearModal');
   if (!mask || !modal) return;
 
-  // 显示遮罩和弹窗
   mask.style.display = 'block';
   modal.style.display = 'flex';
-
-  // 确保 aria-hidden 设置为 false
   mask.setAttribute('aria-hidden', 'false');
   modal.setAttribute('aria-hidden', 'false');
-
-  // 点击遮罩层时关闭弹窗
-  mask.addEventListener('click', closeClearModal);
 }
-
 
 function closeClearModal() {
   const mask = qs('chatClearMask');
@@ -453,10 +529,22 @@ function closeClearModal() {
 
   mask.style.display = 'none';
   modal.style.display = 'none';
-
   mask.setAttribute('aria-hidden', 'true');
   modal.setAttribute('aria-hidden', 'true');
 }
+
+
+  function closeClearModal() {
+    const mask = qs('chatClearMask');
+    const modal = qs('chatClearModal');
+    if (!mask || !modal) return;
+
+    mask.style.display = 'none';
+    modal.style.display = 'none';
+
+    mask.setAttribute('aria-hidden', 'true');
+    modal.setAttribute('aria-hidden', 'true');
+  }
 
 
   // ===== mount chat.html into #mountChat =====
@@ -475,7 +563,7 @@ function closeClearModal() {
 
     if (!document.getElementById('viewChat')) {
       try {
-        const r = await fetch('./chat/chat.html', { cache: 'no-store' });
+        const r = await fetch(new URL('./chat/chat.html', document.baseURI).href, { cache: 'no-store' });
         if (!r.ok) throw new Error('chat.html fetch failed: ' + r.status);
         mount.innerHTML = await r.text();
       } catch (e) {
@@ -486,6 +574,7 @@ function closeClearModal() {
 
     initChat(engine);
     return true;
+
   }
 
   function initChat(engine) {
@@ -536,30 +625,83 @@ function closeClearModal() {
       });
     }
 
-    // 小手机
-    qs('chatDeviceBtn')?.addEventListener('click', openPhone);
-    qs('phoneClose')?.addEventListener('click', closePhone);
-    qs('phoneMask')?.addEventListener('click', closePhone);
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest?.('#chatDeviceBtn');
+  if (!btn) return;
 
-    // 清空
-    qs('chatClearBtn')?.addEventListener('click', openClearModal);
-    qs('chatClearCancel')?.addEventListener('click', closeClearModal);
-    qs('chatClearMask')?.addEventListener('click', closeClearModal);
+  const ok = await ensureMiniPhoneLoaded();
+  if (!ok) {
+    console.warn('[mini_phone] load failed');
+    alert('小手机模块加载失败：请打开F12看 Console 的红色报错（一般是路径/404）');
+    return;
+  }
 
-qs('chatClearCurrent')?.addEventListener('click', () => {
-  const contactId = engine.getActiveContact?.() || 'ybm'; // 获取当前联系人ID
-  if (!confirm(`清空【${getActiveContactName(engine)}】的聊天记录？`)) return; // 弹窗确认
-  engine.clearMessages?.({ contactId }); // 调用清空当前聊天函数
-  closeClearModal(); // 关闭弹窗
-  renderHistory(engine); // 刷新界面
-});
+  openPhone();
+  window.MiniPhone?.open?.();
+}, true); // ✅ capture=true，绕开 stopPropagation
 
-qs('chatClearAll')?.addEventListener('click', () => {
-  if (!confirm('全清：清空所有联系人的聊天记录，确认继续？')) return; // 弹窗确认
-  engine.clearAllMessages?.(); // 调用清空所有聊天函数
-  closeClearModal(); // 关闭弹窗
-  renderHistory(engine); // 刷新界面
-});
+
+
+// 关闭 mini_phone：用委托（phoneMask 是动态创建的）
+if (!document.documentElement.dataset.phoneMaskBound) {
+  document.documentElement.dataset.phoneMaskBound = '1';
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest?.('#phoneMask')) return;
+    closePhone();
+    window.MiniPhone?.close?.();
+  }, true);
+}
+
+    // 返回键：强制显示文字，避免字体丢失出现 ?
+    const back = qs('chatBack');
+    if (back && !back.dataset.bound) {
+      back.dataset.bound = '1';
+      back.textContent = '返回';
+      back.addEventListener('click', () => {
+        // 如果你有自己的导航方法，就优先用它
+        if (window.PhoneEngine?.goHome) { window.PhoneEngine.goHome(); return; }
+        if (window.PhoneEngine?.navigate) { window.PhoneEngine.navigate('home'); return; }
+
+        // 兜底：浏览器返回
+        history.back();
+      });
+    }
+
+
+// 清空：用 capture，避免点击被上层逻辑吞掉
+if (!document.documentElement.dataset.chatClearBound) {
+  document.documentElement.dataset.chatClearBound = '1';
+
+  document.addEventListener('click', (e) => {
+    if (e.target.closest?.('#chatClearBtn')) {
+      openClearModal();
+      return;
+    }
+    if (e.target.closest?.('#chatClearCancel')) {
+      closeClearModal();
+      return;
+    }
+    if (e.target.closest?.('#chatClearMask')) {
+      closeClearModal();
+      return;
+    }
+    if (e.target.closest?.('#chatClearCurrent')) {
+      const contactId = engine.getActiveContact?.() || 'default';
+      if (!confirm('清空当前联系人的聊天记录？')) return;
+      engine.clearMessages?.({ contactId });
+      closeClearModal();
+      renderHistory(engine);
+      return;
+    }
+    if (e.target.closest?.('#chatClearAll')) {
+      if (!confirm('全清：清空所有联系人的聊天记录，确认继续？')) return;
+      engine.clearAllMessages?.();
+      closeClearModal();
+      renderHistory(engine);
+      return;
+    }
+  }, true); // 👈 capture=true
+}
 
   }
 
