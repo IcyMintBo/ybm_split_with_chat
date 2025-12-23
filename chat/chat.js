@@ -644,8 +644,8 @@ document.addEventListener('click', async (e) => {
     return;
   }
 
-  openPhone();
-  window.MiniPhone?.open?.();
+await window.MiniPhone?.open?.();
+openPhone();
 }, true); // ✅ capture=true，绕开 stopPropagation
 
 

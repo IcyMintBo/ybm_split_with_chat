@@ -1,21 +1,47 @@
-#mini-phone-root {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-}
-
-.phone-shell {
+#mini-phone-root{
+  /* ✅ 关键：不要 fixed，不要 inset:0 —— 否则按全屏算 */
   position: relative;
-  width: 360px;
-  aspect-ratio: 9 / 19.5;
-  margin: auto;
-}
-
-.phone-bg {
   width: 100%;
   height: 100%;
-  display: block;
+  z-index: 9999;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  --mp-scale: 0.78; /* 这里调大小 */
 }
+
+.phone-shell{
+  position: relative;
+
+  /* ✅ 让壳子按 overlay 容器缩放，而不是写死比例 */
+  width: 100%;
+  height: 100%;
+  max-width: 380px;     /* 你想更小就改这里，比如 360px */
+  max-height: 80vh;
+
+  /* ✅ 用你的底图比例（beijin.png：1369x2416）避免拉伸 */
+  aspect-ratio: 1369 / 2416;
+
+  overflow: visible;
+
+  transform: scale(var(--mp-scale, 0.78));
+  transform-origin: center;
+}
+
+/* ✅ 底图：永远“完整显示”，不放大裁切 */
+.phone-bg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit: contain;
+  z-index: 1;
+  pointer-events: none;
+}
+
+
 
 /* 左下角小人 */
 .phone-ren {
@@ -76,4 +102,11 @@
 
 .page.active {
   display: block;
+}
+.phone-left-icons,
+.phone-bottom-icons,
+.phone-content,
+.phone-ren{
+  position: absolute; /* 你本来就大概率是 absolute */
+  z-index: 2;
 }
