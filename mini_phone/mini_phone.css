@@ -140,7 +140,7 @@
 /* 左下角贴纸小人 */
 .phone-ren {
   left: var(--ren-left, 0.2%);
-  bottom: var(--ren-bottom, -3.6%);
+  bottom: var(--ren-bottom, -4.2%);
   width: var(--ren-w, 18%);
   transform: scale(var(--ren-scale, 2.5));
   /* 单独给小人一个缩放 */
@@ -218,7 +218,6 @@
   height: var(--content-h, 74%);
 }
 /* ============ 返回按钮 ============ */
-/* 左上角返回：纯加粗箭头 */
 .phone-shell{ position: relative; }
 
 .phone-back{
