@@ -1,44 +1,29 @@
-// mini_phone.js (module)
-const MOUNT_ID = 'miniPhoneMount';
-const OVERLAY_ID = 'phoneOverlay';
-const MASK_ID = 'phoneMask';
+(function () {
+  const root = document.getElementById("mini-phone-root");
+  const pages = root.querySelectorAll(".page");
+  const ren = root.querySelector(".phone-ren");
 
-let mounted = false;
+  function showPage(name) {
+    pages.forEach(p => p.classList.remove("active"));
 
-async function ensureMounted(){
-  if (mounted) return;
+    const page = root.querySelector(".page-" + name);
+    if (page) page.classList.add("active");
 
-  const mount = document.getElementById(MOUNT_ID);
-  if (!mount) return;
+    // 主界面才显示小人
+    if (name === "home") {
+      ren.style.display = "block";
+    } else {
+      ren.style.display = "none";
+    }
+  }
 
-  // 把独立 html 塞进挂载点
-  const res = await fetch('../mini_phone/mini_phone.html?v=1');
-  const html = await res.text();
-  mount.innerHTML = html;
+  root.querySelectorAll("img[data-page]").forEach(icon => {
+    icon.addEventListener("click", () => {
+      const page = icon.dataset.page;
+      showPage(page);
+    });
+  });
 
-  // 绑定关闭按钮
-  mount.querySelector('[data-mp-close]')?.addEventListener('click', close);
-
-  mounted = true;
-}
-
-function setOpen(id, on){
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.style.display = on ? '' : 'none';
-  el.setAttribute('aria-hidden', on ? 'false' : 'true');
-}
-
-export async function open(){
-  await ensureMounted();
-  setOpen(OVERLAY_ID, true);
-  setOpen(MASK_ID, true);
-}
-
-export function close(){
-  setOpen(OVERLAY_ID, false);
-  setOpen(MASK_ID, false);
-}
-
-// 暴露给 chat 调用
-window.MiniPhone = { open, close };
+  // 默认进入主界面
+  showPage("home");
+})();

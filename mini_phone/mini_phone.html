@@ -1,13 +1,33 @@
-<div class="mp-root" role="dialog" aria-label="小手机面板">
-  <div class="mp-head">
-    <div class="mp-title">PHONE</div>
-    <button class="mp-close" type="button" data-mp-close>×</button>
-  </div>
+<div id="mini-phone-root">
+  <!-- 手机壳背景 -->
+  <div class="phone-shell">
+    <img class="phone-bg" src="../assets/avatars/beijin.png" />
 
-  <div class="mp-body">
-    <div class="mp-placeholder">
-      小手机模块已拆分成功 ✅<br>
-      下一步：做人物切换 / 好感度 / 资产 / 当前任务。
+    <!-- 左下角小人（主界面才显示） -->
+    <img class="phone-ren" src="../assets/avatars/ren.png" />
+
+    <!-- 左侧功能图标 -->
+    <div class="phone-left-icons">
+      <img src="../assets/avatars/duanxin.png" data-page="duanxin" />
+      <img src="../assets/avatars/luntan.png" data-page="luntan" />
+      <img src="../assets/avatars/heike.png" data-page="heike" />
+      <img src="../assets/avatars/shezhi.png" data-page="shezhi" />
+    </div>
+
+    <!-- 底部图标 -->
+    <div class="phone-bottom-icons">
+      <img src="../assets/avatars/shezhi.png" data-page="shezhi" />
+      <img src="../assets/avatars/qunliao.png" data-page="qunliao" />
+    </div>
+
+    <!-- 可编辑内容区域 -->
+    <div class="phone-content" id="phone-content">
+      <div class="page page-home active">主界面（占位）</div>
+      <div class="page page-duanxin">短信页面</div>
+      <div class="page page-luntan">论坛页面</div>
+      <div class="page page-heike">黑客页面</div>
+      <div class="page page-shezhi">设置页面</div>
+      <div class="page page-qunliao">群聊页面</div>
     </div>
   </div>
 </div>
