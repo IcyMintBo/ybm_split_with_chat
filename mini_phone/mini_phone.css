@@ -32,14 +32,11 @@
   transform-origin: center;
 }
 
-/* ✅ 底图：永远“完整显示”，不放大裁切 */
-.phone-bg {
-  position: absolute;
-  inset: 0;
+.phone-bg{
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  z-index: 1;
+  object-fit: cover;      /* ✅ 关键：不留空白 */
+  object-position: center;
   pointer-events: none;
 }
 
@@ -93,23 +90,40 @@
   bottom: 90px;
 }
 
-/* 页面 */
-.page {
-  display: none;
-  width: 100%;
-  height: 100%;
+/* 页面：做成 App 弹出覆盖动画 */
+.page{
+  position: absolute;
+  inset: 0;
+
+  display: block;        /* 不用 display none */
+  opacity: 0;
+  pointer-events: none;
+
+  /* 从点击点弹出（JS 写 --app-x/--app-y） */
+  transform: translate(var(--app-x, 0px), var(--app-y, 0px)) scale(0.12);
+  transform-origin: 0 0;
+  transition: transform .26s ease, opacity .18s ease;
+  will-change: transform, opacity;
+
   font-size: 18px;
   color: #666;
 }
 
+.page.active{
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(0px, 0px) scale(1);
+}
 
+/* 主界面：默认可见；进入 app 时会被淡出（更像覆盖） */
+.page.page-home{
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
 
-.phone-left-icons,
-.phone-bottom-icons,
-.phone-content,
 .phone-ren {
   position: absolute;
-  /* 你本来就大概率是 absolute */
   z-index: 2;
 }
 
@@ -289,3 +303,71 @@
 .phone-bottom-icons{
   transition: opacity .18s ease;
 }
+/* ============ stage：跟随底图 contain 后的可视框 ============ */
+/* phone-shell 已经是 position:relative 了，这里兜底 */
+.phone-shell{ position: relative; }
+
+/* 底图保持 contain */
+.phone-bg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit: contain;
+  object-position: center;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* stage：由 JS 写入 --stage-x/y/w/h，保证手机端/电脑端精准对齐 */
+.phone-stage{
+  position: absolute;
+  left: var(--stage-x, 0px);
+  top: var(--stage-y, 0px);
+  width: var(--stage-w, 100%);
+  height: var(--stage-h, 100%);
+  z-index: 2;
+
+  /* ✅ 关键：让子元素 absolute 都相对 stage */
+  pointer-events: none; /* 默认不吃点击，下面对图标/按钮单独开 */
+}
+
+/* 让可点击的元素能点 */
+.phone-stage .phone-left-icons,
+.phone-stage .phone-bottom-icons,
+.phone-stage .phone-back,
+.phone-stage .page{
+  pointer-events: auto;
+}
+
+/* 返回按钮（左上角） */
+.phone-back{
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  z-index: 999;
+
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(0,0,0,.8);
+  cursor: pointer;
+}
+.phone-back.hidden{ display:none; }
+
+/* 非主界面：隐藏小人 + 隐藏导航图标（更像真实 app 覆盖） */
+.phone-shell:not(.is-home) .phone-ren{ display:none; }
+.phone-shell:not(.is-home) .phone-left-icons,
+.phone-shell:not(.is-home) .phone-bottom-icons{
+  opacity: 0;
+  pointer-events: none;
+}
+.phone-left-icons,
+.phone-bottom-icons{ transition: opacity .18s ease; }
+
+/* 内容区像屏幕：裁切 app 页面 */
+.phone-content{ overflow: hidden; }

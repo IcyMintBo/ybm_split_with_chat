@@ -32,12 +32,9 @@ async function ensureMounted() {
   if (mounted) return true;
 
   const mount = byId(MOUNT_ID);
-  if (!mount) {
-    // chat 还没 mount 完，先别报错，等 open 的时候再试
-    return false;
-  }
+  if (!mount) return false;
 
-  // 先把 HTML 塞进去（否则第一次 querySelector 会找不到 .page/.phone-content）
+  // 1) 塞入 HTML（只做一次）
   if (!mount.dataset.mpMounted) {
     const htmlUrl = new URL('./mini_phone.html?v=1', import.meta.url);
     const res = await fetch(htmlUrl.href);
@@ -46,7 +43,43 @@ async function ensureMounted() {
     mount.dataset.mpMounted = '1';
   }
 
-  // ✅ 绑定：图标点击 -> App 打开动效切页；返回按钮（只绑定一次）
+  // 2) stage 同步：让定位相对“底图实际显示区域”
+  const syncStageToBg = () => {
+    const shell = mount.querySelector('.phone-shell');
+    const bg = mount.querySelector('.phone-bg');
+    const stage = mount.querySelector('.phone-stage');
+    if (!shell || !bg || !stage) return;
+
+    const W = shell.clientWidth;
+    const H = shell.clientHeight;
+
+    const iw = bg.naturalWidth || 1;
+    const ih = bg.naturalHeight || 1;
+
+    const s = Math.min(W / iw, H / ih);
+    const rw = iw * s;
+    const rh = ih * s;
+
+    const x = (W - rw) / 2;
+    const y = (H - rh) / 2;
+
+    stage.style.setProperty('--stage-x', `${x}px`);
+    stage.style.setProperty('--stage-y', `${y}px`);
+    stage.style.setProperty('--stage-w', `${rw}px`);
+    stage.style.setProperty('--stage-h', `${rh}px`);
+  };
+
+  const bg = mount.querySelector('.phone-bg');
+  if (bg) {
+    if (bg.complete) syncStageToBg();
+    else bg.addEventListener('load', syncStageToBg, { once: true });
+  }
+  if (!mount.dataset.stageResizeBound) {
+    mount.dataset.stageResizeBound = '1';
+    window.addEventListener('resize', syncStageToBg);
+  }
+
+  // 3) 导航绑定（只绑定一次）
   if (!mount.dataset.mpNavBound) {
     mount.dataset.mpNavBound = '1';
 
@@ -55,20 +88,23 @@ async function ensureMounted() {
     const backBtn = mount.querySelector('[data-mp-back]');
     const pages = Array.from(mount.querySelectorAll('.page'));
 
-    function setHome(isHome) {
+    function setHome(isHome){
       if (shell) shell.classList.toggle('is-home', isHome);
       if (backBtn) backBtn.classList.toggle('hidden', isHome);
     }
 
-    function showPage(name) {
-      pages.forEach(p => {
+    function showPage(name){
+      pages.forEach(p=>{
         const isTarget = p.classList.contains(`page-${name}`);
         p.classList.toggle('active', isTarget);
       });
       setHome(name === 'home');
     }
 
-    function setAppOriginFrom(el) {
+    // 初始：home
+    showPage('home');
+
+    function setAppOriginFrom(el){
       if (!content || !el) return;
 
       const iconRect = el.getBoundingClientRect();
@@ -81,25 +117,24 @@ async function ensureMounted() {
       content.style.setProperty('--app-y', `${cy}px`);
     }
 
-    // 初始：home
-    showPage('home');
-
     // 图标：带 data-page 的都当按钮
-    mount.querySelectorAll('[data-page]').forEach(icon => {
+    mount.querySelectorAll('[data-page]').forEach(icon=>{
       icon.style.cursor = 'pointer';
-      icon.addEventListener('click', (e) => {
+      icon.addEventListener('click', (e)=>{
         const page = icon.getAttribute('data-page');
         if (!page) return;
+
         setAppOriginFrom(icon);
         showPage(page);
+
         e.preventDefault();
         e.stopPropagation();
       });
     });
 
     // 返回：回 home
-    if (backBtn) {
-      backBtn.addEventListener('click', (e) => {
+    if (backBtn){
+      backBtn.addEventListener('click', (e)=>{
         showPage('home');
         e.preventDefault();
         e.stopPropagation();
@@ -107,7 +142,7 @@ async function ensureMounted() {
     }
   }
 
-  // 点击遮罩关闭
+  // 4) 点击遮罩关闭（只绑一次）
   const mask = byId(MASK_ID);
   if (mask && !mask.dataset.bound) {
     mask.dataset.bound = '1';
@@ -119,19 +154,19 @@ async function ensureMounted() {
 }
 
 
+
 export async function open() {
-  // 确保 DOM 已经有挂载点（移动端更需要这一句）
   if (document.readyState === 'loading') {
     await new Promise((r) => document.addEventListener('DOMContentLoaded', r, { once: true }));
   }
+
   const ok = await ensureMounted();
-  if (!ok) {
-    // mount 还没出来：不要抛错，直接退出（下次再 open 会成功）
-    return;
-  }
+  if (!ok) return;
+
   setOpen(OVERLAY_ID, true);
   setOpen(MASK_ID, true);
 }
+
 
 export function close() {
   setOpen(OVERLAY_ID, false);

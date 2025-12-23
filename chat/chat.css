@@ -455,3 +455,26 @@
   background: rgba(60,120,255,.95);
   border-color: rgba(0,0,0,.25);
 }
+/* ✅ 手机端：miniPhone 居中覆盖（不拖动） */
+@media (pointer: coarse), (max-width: 768px){
+  .phoneOverlay{
+    left: 50% !important;
+    top: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+
+    /* 让它更像覆盖层：宽高更贴近屏幕 */
+    width: min(92vw, 420px) !important;
+    height: min(86vh, 740px) !important;
+
+    /* ⚠️ 你的桌面动画是 translateY(18px) -> translateY(0)
+       手机端我们要在居中基础上再叠加这段动画 */
+    transform: translate(-50%, calc(-50% + 18px)) !important;
+  }
+
+  /* ✅ 适配你的“打开态”选择器：二选一，哪个存在用哪个 */
+  .phoneOverlay.open,
+  .phoneOverlay[data-open="true"]{
+    transform: translate(-50%, -50%) !important;
+  }
+}
