@@ -68,12 +68,60 @@ export async function open() {
   if (document.readyState === 'loading') {
     await new Promise((r) => document.addEventListener('DOMContentLoaded', r, { once: true }));
   }
+function enableDrag(el){
+  // ✅ 只在电脑端启用（鼠标/触控板）
+  if (!window.matchMedia('(pointer: fine)').matches) return;
+
+  let dragging = false;
+  let startX = 0, startY = 0;
+  let baseX = 0, baseY = 0;
+
+  const getXY = () => {
+    const x = parseFloat(el.dataset.dragX || '0');
+    const y = parseFloat(el.dataset.dragY || '0');
+    return { x, y };
+  };
+
+  el.style.cursor = 'grab';
+
+  el.addEventListener('mousedown', (e) => {
+    // 避免拖拽时误触按钮：你也可以按住Alt才拖
+    if (e.button !== 0) return;
+    dragging = true;
+    el.style.cursor = 'grabbing';
+    startX = e.clientX;
+    startY = e.clientY;
+    const { x, y } = getXY();
+    baseX = x; baseY = y;
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    const x = baseX + dx;
+    const y = baseY + dy;
+
+    el.dataset.dragX = String(x);
+    el.dataset.dragY = String(y);
+    el.style.transform = `translate(${x}px, ${y}px) scale(var(--mp-scale, 1))`;
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    el.style.cursor = 'grab';
+  });
+}
 
   const ok = await ensureMounted();
   if (!ok) {
     // mount 还没出来：不要抛错，直接退出（下次再 open 会成功）
     return;
   }
+const shell = document.querySelector('.phone-shell');
+if (shell) enableDrag(shell);
 
   setOpen(OVERLAY_ID, true);
   setOpen(MASK_ID, true);

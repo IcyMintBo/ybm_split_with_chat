@@ -1,24 +1,26 @@
-#mini-phone-root{
+#mini-phone-root {
   /* ✅ 关键：不要 fixed，不要 inset:0 —— 否则按全屏算 */
   position: relative;
   width: 100%;
   height: 100%;
   z-index: 9999;
 
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  --mp-scale: 0.78; /* 这里调大小 */
+  --mp-scale: 1;
+  /* 这里调大小 */
 }
 
-.phone-shell{
+.phone-shell {
   position: relative;
 
   /* ✅ 让壳子按 overlay 容器缩放，而不是写死比例 */
   width: 100%;
   height: 100%;
-  max-width: 380px;     /* 你想更小就改这里，比如 360px */
+  max-width: 380px;
+  /* 你想更小就改这里，比如 360px */
   max-height: 80vh;
 
   /* ✅ 用你的底图比例（beijin.png：1369x2416）避免拉伸 */
@@ -31,11 +33,11 @@
 }
 
 /* ✅ 底图：永远“完整显示”，不放大裁切 */
-.phone-bg{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
+.phone-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   z-index: 1;
   pointer-events: none;
@@ -103,10 +105,103 @@
 .page.active {
   display: block;
 }
+
 .phone-left-icons,
 .phone-bottom-icons,
 .phone-content,
-.phone-ren{
-  position: absolute; /* 你本来就大概率是 absolute */
+.phone-ren {
+  position: absolute;
+  /* 你本来就大概率是 absolute */
   z-index: 2;
+}
+
+/* =========================
+   位置/大小参数区
+   ========================= */
+/* 底图（一般不动） */
+.phone-bg {
+  transform: translate(var(--bg-x, 0px), var(--bg-y, 0px));
+  width: var(--bg-w, 100%);
+  height: var(--bg-h, 100%);
+}
+
+/* 左下角贴纸小人 */
+.phone-ren {
+  left: var(--ren-left, 0.2%);
+  bottom: var(--ren-bottom, -3.6%);
+  width: var(--ren-w, 18%);
+  transform: scale(var(--ren-scale, 2.5));
+  /* 单独给小人一个缩放 */
+  transform-origin: left bottom;
+}
+
+/* =========================
+    左侧：在指定高度内“均分”
+   ========================= */
+.phone-left-icons {
+  left: var(--left-icons-x, 10%);
+  top: var(--left-icons-y, 30%);
+  transform: scale(var(--ren-scale, 1.7));
+
+  /* 均分关键 */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  /* 可控：均分的“总高度” */
+  height: var(--left-icons-h, 120px);
+
+  /* 可选：限制最大/最小高度，防止太挤/太散 */
+  min-height: var(--left-icons-min-h, 50px);
+  max-height: var(--left-icons-max-h, 320px);
+
+  /* space-between 就别再用 gap 了 */
+  gap: 0;
+}
+
+.phone-left-icons img {
+  width: var(--left-icon-size, 34px);
+  height: auto;
+
+  /* 修正：左侧图标用 left-icon-scale */
+  transform-origin: left center;
+}
+
+/* =========================
+   底部：在指定宽度内“均分”
+   ========================= */
+.phone-bottom-icons {
+  left: var(--bottom-icons-x, 60%);
+  bottom: var(--bottom-icons-y, 6%);
+
+  /* 均分关键 */
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+
+  /* 可控：均分的“总宽度” */
+  width: var(--bottom-icons-w, 150px);
+
+  /* 可选：限制最大/最小宽度 */
+  min-width: var(--bottom-icons-min-w, 100px);
+  max-width: var(--bottom-icons-max-w, 360px);
+
+  gap: 0;
+}
+
+.phone-bottom-icons img {
+  width: var(--bottom-icon-size, 46px);
+  height: auto;
+
+  transform: scale(var(--bottom-icon-scale, 1.2));
+  transform-origin: center center;
+}
+
+/* 内容区（主界面文字那块）*/
+.phone-content {
+  left: var(--content-left, 18%);
+  top: var(--content-top, 14%);
+  width: var(--content-w, 70%);
+  height: var(--content-h, 74%);
 }
