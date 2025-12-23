@@ -102,9 +102,7 @@
   color: #666;
 }
 
-.page.active {
-  display: block;
-}
+
 
 .phone-left-icons,
 .phone-bottom-icons,
@@ -204,4 +202,90 @@
   top: var(--content-top, 14%);
   width: var(--content-w, 70%);
   height: var(--content-h, 74%);
+}
+/* ============ 返回按钮 ============ */
+/* 左上角返回：纯加粗箭头 */
+.phone-shell{ position: relative; }
+
+.phone-back{
+  position: absolute;
+  left: 25px;
+  top: 45px;
+  z-index: 999;
+
+  padding: 6px 10px;
+  margin: 0;
+
+  background: transparent;
+  border: none;
+  box-shadow: none;
+
+  font-size: 16px;
+  font-weight: 700;        /* 加粗“返回” */
+  color: rgba(0,0,0,.8);
+
+  cursor: pointer;
+  line-height: 1;
+}
+
+.phone-back.hidden{
+  display: none;
+}
+
+.phone-back.hidden{ display:none; }
+
+/* ✅ 只要不是主界面就隐藏小人 */
+.phone-shell:not(.is-home) .phone-ren{ display:none; }
+
+/* ============ App 打开效果 ============ */
+/* 内容区作为“屏幕”，我们在里面让页面弹出覆盖 */
+.phone-content{
+  position: absolute; /* 你本来就是 absolute，这里兜底 */
+  overflow: hidden;   /* ✅ 像手机屏幕一样裁切 */
+}
+
+/* 所有页面都做成覆盖层 */
+.page{
+  position: absolute;
+  inset: 0;
+  display: block;        /* 不再用 display:none 切换 */
+  opacity: 0;
+  pointer-events: none;
+
+  transform: translate(var(--app-x, 0px), var(--app-y, 0px)) scale(0.20);
+  transform-origin: 0 0; /* 由 JS 设置为点击点 */
+  transition: transform .22s ease, opacity .18s ease;
+  will-change: transform, opacity;
+}
+
+/* 当前激活页：可见 + 可交互 */
+.page.active{
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(0px, 0px) scale(1);
+}
+
+/* 让主界面“常驻在底层”，避免闪 */
+.page.page-home{
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+/* 当不在 home 时，让 home 不吃点击（但仍在底层显示也可以，你想纯白也行） */
+.phone-shell:not(.is-home) .page.page-home{
+  opacity: 0;            /* ✅ 非 home 时主界面淡出（更像 app 覆盖） */
+  pointer-events: none;
+}
+/* ✅ 非主界面：隐藏所有导航图标（像真正 App 覆盖） */
+.phone-shell:not(.is-home) .phone-left-icons,
+.phone-shell:not(.is-home) .phone-bottom-icons{
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ✅ 可选：给它一个淡出动画更像系统 */
+.phone-left-icons,
+.phone-bottom-icons{
+  transition: opacity .18s ease;
 }

@@ -28,6 +28,7 @@ function setOpen(id, open) {
 
 async function ensureMounted() {
   ensureCss();
+
   if (mounted) return true;
 
   const mount = byId(MOUNT_ID);
@@ -36,7 +37,7 @@ async function ensureMounted() {
     return false;
   }
 
-  // 防止重复塞入
+  // 先把 HTML 塞进去（否则第一次 querySelector 会找不到 .page/.phone-content）
   if (!mount.dataset.mpMounted) {
     const htmlUrl = new URL('./mini_phone.html?v=1', import.meta.url);
     const res = await fetch(htmlUrl.href);
@@ -45,11 +46,65 @@ async function ensureMounted() {
     mount.dataset.mpMounted = '1';
   }
 
-  // 绑定关闭按钮（若存在）
-  const closeBtn = mount.querySelector('[data-mp-close]');
-  if (closeBtn && !closeBtn.dataset.bound) {
-    closeBtn.dataset.bound = '1';
-    closeBtn.addEventListener('click', () => close());
+  // ✅ 绑定：图标点击 -> App 打开动效切页；返回按钮（只绑定一次）
+  if (!mount.dataset.mpNavBound) {
+    mount.dataset.mpNavBound = '1';
+
+    const shell = mount.querySelector('.phone-shell');
+    const content = mount.querySelector('.phone-content');
+    const backBtn = mount.querySelector('[data-mp-back]');
+    const pages = Array.from(mount.querySelectorAll('.page'));
+
+    function setHome(isHome) {
+      if (shell) shell.classList.toggle('is-home', isHome);
+      if (backBtn) backBtn.classList.toggle('hidden', isHome);
+    }
+
+    function showPage(name) {
+      pages.forEach(p => {
+        const isTarget = p.classList.contains(`page-${name}`);
+        p.classList.toggle('active', isTarget);
+      });
+      setHome(name === 'home');
+    }
+
+    function setAppOriginFrom(el) {
+      if (!content || !el) return;
+
+      const iconRect = el.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+
+      const cx = (iconRect.left + iconRect.right) / 2 - contentRect.left;
+      const cy = (iconRect.top + iconRect.bottom) / 2 - contentRect.top;
+
+      content.style.setProperty('--app-x', `${cx}px`);
+      content.style.setProperty('--app-y', `${cy}px`);
+    }
+
+    // 初始：home
+    showPage('home');
+
+    // 图标：带 data-page 的都当按钮
+    mount.querySelectorAll('[data-page]').forEach(icon => {
+      icon.style.cursor = 'pointer';
+      icon.addEventListener('click', (e) => {
+        const page = icon.getAttribute('data-page');
+        if (!page) return;
+        setAppOriginFrom(icon);
+        showPage(page);
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+
+    // 返回：回 home
+    if (backBtn) {
+      backBtn.addEventListener('click', (e) => {
+        showPage('home');
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    }
   }
 
   // 点击遮罩关闭
@@ -63,66 +118,17 @@ async function ensureMounted() {
   return true;
 }
 
+
 export async function open() {
   // 确保 DOM 已经有挂载点（移动端更需要这一句）
   if (document.readyState === 'loading') {
     await new Promise((r) => document.addEventListener('DOMContentLoaded', r, { once: true }));
   }
-function enableDrag(el){
-  // ✅ 只在电脑端启用（鼠标/触控板）
-  if (!window.matchMedia('(pointer: fine)').matches) return;
-
-  let dragging = false;
-  let startX = 0, startY = 0;
-  let baseX = 0, baseY = 0;
-
-  const getXY = () => {
-    const x = parseFloat(el.dataset.dragX || '0');
-    const y = parseFloat(el.dataset.dragY || '0');
-    return { x, y };
-  };
-
-  el.style.cursor = 'grab';
-
-  el.addEventListener('mousedown', (e) => {
-    // 避免拖拽时误触按钮：你也可以按住Alt才拖
-    if (e.button !== 0) return;
-    dragging = true;
-    el.style.cursor = 'grabbing';
-    startX = e.clientX;
-    startY = e.clientY;
-    const { x, y } = getXY();
-    baseX = x; baseY = y;
-    e.preventDefault();
-  });
-
-  window.addEventListener('mousemove', (e) => {
-    if (!dragging) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-    const x = baseX + dx;
-    const y = baseY + dy;
-
-    el.dataset.dragX = String(x);
-    el.dataset.dragY = String(y);
-    el.style.transform = `translate(${x}px, ${y}px) scale(var(--mp-scale, 1))`;
-  });
-
-  window.addEventListener('mouseup', () => {
-    if (!dragging) return;
-    dragging = false;
-    el.style.cursor = 'grab';
-  });
-}
-
   const ok = await ensureMounted();
   if (!ok) {
     // mount 还没出来：不要抛错，直接退出（下次再 open 会成功）
     return;
   }
-const shell = document.querySelector('.phone-shell');
-if (shell) enableDrag(shell);
-
   setOpen(OVERLAY_ID, true);
   setOpen(MASK_ID, true);
 }

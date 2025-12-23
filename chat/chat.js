@@ -130,9 +130,11 @@ function ensurePhoneOverlayDOM() {
     overlay.dataset.open = 'false';
     overlay.setAttribute('aria-hidden', 'true');
 
-    // mini_phone 自己会往里渲染内容；这里留一个 mount 口
     overlay.innerHTML = `<div id="miniPhoneMount" class="miniPhoneMount"></div>`;
     document.body.appendChild(overlay);
+
+    // ✅ 新增：只在创建时绑定一次拖动
+    enableOverlayDrag(overlay);
   }
 }
 
@@ -145,6 +147,51 @@ function openPhone() {
 function closePhone() {
   setOpenByIdAll('phoneOverlay', false);
   setOpenByIdAll('phoneMask', false);
+}
+function enableOverlayDrag(overlay){
+  if (!overlay) return;
+
+  // 只在电脑端启用
+  if (!window.matchMedia('(pointer: fine)').matches) return;
+
+  if (overlay.dataset.dragBound) return;
+  overlay.dataset.dragBound = '1';
+
+  let dragging = false;
+  let startX = 0, startY = 0;
+  let baseLeft = 0, baseTop = 0;
+
+  // 用 left/top 定位，方便拖动
+  overlay.style.right = 'auto';
+  overlay.style.bottom = 'auto';
+  overlay.style.left = overlay.style.left || '16px';
+  overlay.style.top  = overlay.style.top  || '64px';
+
+  overlay.addEventListener('mousedown', (e) => {
+    // 点在图标/按钮/输入框上不拖，避免影响 app 点击
+    if (e.target.closest?.('img,button,input,textarea,select,a')) return;
+
+    const r = overlay.getBoundingClientRect();
+    baseLeft = r.left;
+    baseTop = r.top;
+    startX = e.clientX;
+    startY = e.clientY;
+
+    dragging = true;
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    overlay.style.left = `${baseLeft + dx}px`;
+    overlay.style.top  = `${baseTop + dy}px`;
+  });
+
+  window.addEventListener('mouseup', () => {
+    dragging = false;
+  });
 }
 
   // ===== load mini_phone module once =====
