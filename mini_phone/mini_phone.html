@@ -184,7 +184,55 @@
           </section>
         </div>
 
-        <div class="page page-duanxin">短信页面</div>
+<div class="page page-duanxin">
+  <!-- ✅ 短信App底图：联系人页/会话页共用 -->
+  <img class="sms-app-bg" src="./assets/avatars/beijing2.png" alt="" />
+
+  <!-- 列表页（联系人） -->
+  <section class="sms-view active" data-sms-view="list" aria-label="sms list">
+    <header class="sms-app-topbar">
+      <div class="sms-app-top-center">
+        <div class="sms-app-title">短信</div>
+      </div>
+    </header>
+
+    <!-- ✅ 四个框：由JS渲染成卡片 -->
+    <div class="sms-contact-list" data-sms-list>
+      <div class="sms-empty">暂无联系人</div>
+    </div>
+  </section>
+
+  <!-- 会话页 -->
+  <section class="sms-view" data-sms-view="thread" aria-label="sms thread">
+    <header class="sms-app-topbar sms-app-topbar-thread">
+      <button class="sms-app-icon" type="button" data-sms-back aria-label="back">‹</button>
+      <div class="sms-app-top-center">
+        <div class="sms-app-thread-title" data-sms-thread-name>联系人</div>
+      </div>
+      <button class="sms-app-icon" type="button" aria-label="menu">≡</button>
+    </header>
+
+    <!-- ✅ 透明舞台：气泡渲染在这里 -->
+    <div class="sms-thread" data-sms-thread>
+      <div class="sms-empty">暂无短信记录</div>
+    </div>
+
+    <!-- 底部输入条：暗色半透明 -->
+    <footer class="sms-compose">
+      <div class="sms-compose-toolbar">
+        <button class="sms-pill-btn" type="button" data-sms-reroll>重roll</button>
+        <button class="sms-pill-btn" type="button" data-sms-stash>暂存</button>
+      </div>
+
+      <div class="sms-compose-bar">
+        <textarea class="sms-input" data-sms-input rows="1"
+          placeholder="输入想发送的消息，或输入 /? 获取帮助"></textarea>
+        <button class="sms-send" type="button" data-sms-send aria-label="send">➤</button>
+      </div>
+    </footer>
+  </section>
+</div>
+
         <div class="page page-luntan">论坛页面</div>
         <div class="page page-heike">黑客页面</div>
         <div class="page page-shezhi">设置页面</div>

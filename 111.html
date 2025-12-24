@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>SMS Demo</title>
+    <style>
+        :root {
+            --bg: #f4dae4;
+            /* 整体插画底：粉 */
+            --paper: #fdeee6;
+            /* 聊天舞台：浅米 */
+            --bar: #bbaaea;
+            /* 标题条：黄 */
+            --ink: rgba(35, 28, 22, .90);
+            --muted: rgba(35, 28, 22, .55);
+
+            --line: 2px solid rgba(35, 28, 22, .65);
+            --shadow: 0 10px 0 rgba(35, 28, 22, .18);
+
+            --bubble-left: rgba(241, 228, 241, 0.92);
+            --bubble-right: rgba(255, 255, 255, 0.96);
+
+            --radius: 16px;
+        }
+
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", Arial;
+            background: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* 手机画布（你看效果用） */
+        .phone {
+            width: min(420px, 92vw);
+            height: min(820px, 92vh);
+            border-radius: 40px;
+            overflow: hidden;
+            background: var(--bg);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, .35);
+            position: relative;
+        }
+
+        /* 顶部栏 */
+        .topbar {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 14px;
+
+            background: var(--bar);
+            border-bottom: var(--line);
+            box-shadow: var(--shadow);
+            backdrop-filter: none;
+        }
+.btn{
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: var(--line);
+  background: rgba(255,255,255,.60);
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 950;
+  cursor: pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 6px 0 rgba(35,28,22,.18);
+}
+.btn:active{
+  transform: translateY(2px);
+  box-shadow: 0 4px 0 rgba(35,28,22,.18);
+}
+
+
+.stash{
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: var(--line);
+  background: rgba(255,255,255,.65);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 950;
+  cursor: pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 8px 0 rgba(35,28,22,.16);
+}
+
+
+ .stash:active,
+.send:active{
+  transform: translateY(2px);
+  box-shadow: 0 6px 0 rgba(35,28,22,.16);
+}
+
+
+        .topbar .btn:active {
+            transform: translateY(1px);
+        }
+
+.title{
+  flex:1;
+  text-align:center;
+  font-weight: 950;
+  color: var(--ink);
+  font-size: 22px;
+  letter-spacing: .4px;
+  margin: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 0 rgba(255,255,255,.45);
+}
+
+
+.thread{
+  height: calc(100% - 64px - 96px);
+  overflow:auto;
+  padding: 16px 14px 18px;
+  scroll-behavior:smooth;
+  background: var(--paper);
+}
+
+
+        /* 时间戳 */
+        .time {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+            font-size: 12px;
+            color: rgba(0, 0, 0, .45);
+            user-select: none;
+        }
+
+        .time span {
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .26);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, .18);
+        }
+
+        /* 行：左/右 */
+        .row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            margin: 10px 0;
+        }
+
+        .row.them {
+            justify-content: flex-start;
+        }
+
+        .row.me {
+            justify-content: flex-end;
+        }
+
+        /* 头像（只左边） */
+        .ava {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex: 0 0 auto;
+            background: rgba(255, 255, 255, .35);
+            border: 1px solid rgba(0, 0, 0, .08);
+        }
+
+        .ava img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .ava.hidden {
+            visibility: hidden;
+        }
+
+        /* 连续消息：隐藏但占位，保证对齐 */
+
+        /* 气泡 */
+.bubble{
+  position: relative;
+  max-width: 74%;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink);
+
+  border: var(--line);
+  box-shadow: 0 8px 0 rgba(35,28,22,.14);
+  background: var(--bubble-left);
+
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+
+.row.them .bubble{
+  background: var(--bubble-left);
+  border-top-left-radius: 8px;
+}
+.row.me .bubble{
+  background: var(--bubble-right);
+  border-top-right-radius: 8px;
+}
+
+
+        /* 底部输入区 */
+        .compose {
+            height: 96px;
+            padding: 10px 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(226, 203, 233, 0.14);
+            backdrop-filter: blur(6px);
+            border-top: 1px solid rgba(165, 112, 230, 0.14);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pill {
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 0, 0, .14);
+            background: rgba(255, 255, 255, .35);
+            color: rgba(0, 0, 0, .70);
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .pill:active {
+            transform: translateY(1px);
+        }
+
+.bar{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  padding: 10px 12px;
+  border-radius: 14px;
+
+  background: rgba(255,255,255,.78);
+  border: var(--line);
+  box-shadow: 0 10px 0 rgba(35,28,22,.14);
+}
+
+
+textarea{
+  flex:1;
+  resize:none;
+  border:0;
+  outline:none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.25;
+  min-height: 22px;
+  max-height: 72px;
+}
+textarea::placeholder{
+  color: rgba(35,28,22,.45);
+}
+
+
+        textarea::placeholder {
+            color: rgba(255, 255, 255, .45);
+        }
+
+.send{
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: var(--line);
+  background: rgba(255,255,255,.65);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 950;
+  cursor: pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 8px 0 rgba(35,28,22,.16);
+}
+
+
+        .send:active {
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="phone" id="phone">
+        <header class="topbar">
+            <button class="btn" id="back" aria-label="back">‹</button>
+            <div class="title" id="contactName">联系人A</div>
+            <button class="btn" id="menu" aria-label="menu">≡</button>
+        </header>
+
+        <main class="thread" id="thread"></main>
+
+        <footer class="compose">
+            <div class="bar">
+                <textarea id="input" rows="1" placeholder="输入消息，Enter 发送，Shift+Enter 换行"></textarea>
+
+                <!-- 暂存按钮：和发送并排 -->
+                <button class="stash" id="stash" aria-label="stash">⇢</button>
+
+                <button class="send" id="send" aria-label="send">➤</button>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        const thread = document.getElementById('thread');
+        const input = document.getElementById('input');
+        const sendBtn = document.getElementById('send');
+
+        // 你可替换成真实头像
+        const avatarUrl = 'https://picsum.photos/80?random=9';
+
+        // 简单消息模型：side: 'them' | 'me'
+        const messages = [
+            { type: 'time', text: '22:00' },
+            { side: 'me', text: '我还想着切点水果给你' },
+            { side: 'me', text: '那我现在端上来' },
+
+            { side: 'them', text: '不用' },
+            { side: 'them', text: '电脑在边几上' },
+            { side: 'them', text: '我回去了' },
+
+            { type: 'time', text: '22:03' },
+            { side: 'me', text: '哦哦哦，谢谢' },
+            { side: 'me', text: '太谢谢你了…… :)' },
+
+            { type: 'time', text: '22:05' },
+            { side: 'them', text: '不用' },
+            { side: 'them', text: '下载了维修模式插件' },
+            { side: 'them', text: '以后修电脑开维修模式' },
+        ];
+
+        function el(tag, cls) {
+            const e = document.createElement(tag);
+            if (cls) e.className = cls;
+            return e;
+        }
+
+        function render() {
+            thread.innerHTML = '';
+            let lastSide = null;
+
+            messages.forEach((m) => {
+                if (m.type === 'time') {
+                    const t = el('div', 'time');
+                    const s = el('span');
+                    s.textContent = m.text;
+                    t.appendChild(s);
+                    thread.appendChild(t);
+                    lastSide = null; // 时间戳打断连续头像规则
+                    return;
+                }
+
+                const side = m.side === 'me' ? 'me' : 'them';
+                const row = el('div', `row ${side}`);
+
+                if (side === 'them') {
+                    const ava = el('div', 'ava' + (lastSide === 'them' ? ' hidden' : ''));
+                    const img = document.createElement('img');
+                    img.src = avatarUrl;
+                    img.alt = '';
+                    ava.appendChild(img);
+                    row.appendChild(ava);
+
+                    const bubble = el('div', 'bubble');
+                    bubble.textContent = m.text;
+                    row.appendChild(bubble);
+                } else {
+                    const bubble = el('div', 'bubble');
+                    bubble.textContent = m.text;
+                    row.appendChild(bubble);
+                }
+
+                thread.appendChild(row);
+                lastSide = side;
+            });
+
+            requestAnimationFrame(() => thread.scrollTop = thread.scrollHeight);
+        }
+
+        function pushMe(text) {
+            messages.push({ side: 'me', text });
+            // 模拟对方实时回复（演示用）
+            setTimeout(() => {
+                messages.push({ side: 'them', text: '收到。' });
+                render();
+            }, 550);
+            render();
+        }
+
+        function autoGrow() {
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 72) + 'px';
+        }
+
+        sendBtn.addEventListener('click', () => {
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            autoGrow();
+            pushMe(text);
+        });
+
+        input.addEventListener('input', autoGrow);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendBtn.click();
+            }
+        });
+
+        // demo: 这些按钮先不做事，但不报错
+        document.getElementById('stash').onclick = () => { };
+        document.getElementById('back').onclick = () => { };
+        document.getElementById('menu').onclick = () => { };
+
+        render();
+    </script>
+</body>
+
+</html>

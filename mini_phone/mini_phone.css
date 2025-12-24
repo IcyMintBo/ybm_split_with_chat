@@ -126,10 +126,11 @@
   transform: scale(var(--ren-scale, 2.5));
   transform-origin: left bottom;
 }
-.phone-shell:not(.is-home) .phone-ren{ display:none; }
-/* ✅ 进入任何非主界面：隐藏顶部状态栏贴纸 */
+/* ✅ 进入任何非主界面：只隐藏状态栏内容，不要把容器干掉（避免影响App页布局层级） */
 .phone-shell:not(.is-home) .mp-topbar{
-  display: none;
+  display: block;         /* 保留容器 */
+  opacity: 0;             /* 视觉隐藏 */
+  pointer-events: none;   /* 不可点 */
 }
 
 
@@ -226,6 +227,9 @@
   pointer-events: auto;
   transform: translate(0px,0px) scale(1);
 }
+.page.active{ z-index: 50; }
+.phone-ren{ z-index: 1; }  /* 贴纸永远比页面低 */
+
 .page.page-home{
   opacity: 1;
   pointer-events: auto;
@@ -628,3 +632,394 @@
   from { transform: translateX(10px); opacity:.92; }
   to   { transform: translateX(0); opacity:1; }
 }
+/* =======================
+   SMS（智能手机风：透明舞台 + 暗色输入条）
+======================= */
+
+.page-duanxin{
+  height: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  /* 不要大块底色：用你手机自己的底图 */
+}
+/* ===== 短信App底图层（联系人页/会话页共用） ===== */
+.page-duanxin{ position: relative; }
+.sms-app-bg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit: cover;     /* ✅ 铺满内容区 */
+  object-position: center;
+  z-index:0;
+  pointer-events:none;
+}
+
+/* 让两种 view 都在底图之上 */
+.page-duanxin .sms-view{
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== 顶部条：贴合你画的简洁标题 ===== */
+.sms-app-topbar{
+  height: 64px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: transparent;     /* ✅ 不盖底图 */
+}
+.sms-app-topbar-thread{
+  justify-content: space-between;
+  padding: 0 14px;
+}
+
+.sms-app-title{
+  font-size: 22px;
+  font-weight: 950;
+  color: rgba(0,0,0,0.78);
+  letter-spacing: .5px;
+}
+.sms-app-thread-title{
+  font-size: 24px;
+  font-weight: 950;
+  color: rgba(0,0,0,0.82);
+  letter-spacing: .5px;
+}
+
+.sms-app-icon{
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 2px solid rgba(30, 25, 60, 0.65);
+  background: rgba(255,255,255,0.35);
+  cursor:pointer;
+  font-size: 28px;
+  font-weight: 950;
+  color: rgba(30, 25, 60, 0.75);
+}
+.sms-app-icon:active{ transform: translateY(1px); }
+
+/* ===== 联系人列表区域：留出你图里那种上下安全距离 ===== */
+.sms-contact-list{
+  flex:1;
+  overflow:auto;
+  padding: 18px 18px 26px;
+}
+
+/* ===== 联系人卡片：就是你画的四个框 ===== */
+.sms-item{
+  border-radius: 22px;
+  padding: 18px 16px;
+  gap: 14px;
+
+  background: rgba(235, 220, 245, 0.55);  /* 浅紫 */
+  border: 3px solid rgba(30, 25, 60, 0.65); /* 深描边 */
+  box-shadow: 0 10px 18px rgba(0,0,0,0.10);
+
+  display:flex;
+  align-items:center;
+  cursor:pointer;
+}
+.sms-item + .sms-item{ margin-top: 16px; }
+
+.sms-item .sms-ava{
+  width: 44px;
+  height: 44px;
+  border-radius: 18px;
+  overflow:hidden;
+  background: rgba(0,0,0,0.08);
+  border: 2px solid rgba(30, 25, 60, 0.35);
+}
+.sms-item .sms-ava img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+.sms-meta{ flex:1; min-width:0; }
+.sms-name{
+  font-size: 18px;
+  font-weight: 950;
+  color: rgba(0,0,0,0.78);
+}
+.sms-preview{
+  margin-top: 6px;
+  font-size: 13px;
+  color: rgba(0,0,0,0.52);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 右侧：时间 + 未读点 */
+.sms-right{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap: 8px;
+  min-width: 44px;
+}
+.sms-time{
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(0,0,0,0.55);
+  font-variant-numeric: tabular-nums;
+}
+.sms-dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 80, 120, 0.95);
+  box-shadow: 0 4px 10px rgba(255, 80, 120, 0.35);
+}
+.sms-dot.hidden{ display:none; }
+
+/* 视图切换 */
+.sms-view{ display:none; height:100%; }
+.sms-view.active{ display:flex; flex-direction:column; }
+
+/* 顶部栏：半透明玻璃 */
+.sms-topbar{
+  height: 56px;
+  padding: 0 14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 10px;
+
+  background: rgba(255,255,255,0.42);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  backdrop-filter: blur(8px);
+}
+
+.sms-topbar-thread{
+  justify-content:space-between;
+}
+
+.sms-top-center{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  line-height: 1.1;
+}
+
+.sms-top-title{
+  font-size: 20px;
+  font-weight: 900;
+  color: rgba(0,0,0,0.78);
+}
+
+.sms-top-sub{
+  margin-top: 3px;
+  font-size: 12px;
+  color: rgba(0,0,0,0.45);
+}
+
+.sms-thread-title{
+  font-size: 22px;
+  font-weight: 950;
+  color: rgba(0,0,0,0.82);
+}
+
+/* 顶部左右图标按钮（返回 / 菜单） */
+.sms-icon-btn{
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.10);
+  background: rgba(255,255,255,0.35);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color: rgba(0,0,0,0.65);
+}
+.sms-icon-btn:active{ transform: translateY(1px); }
+
+/* 列表：透明底上浮卡片 */
+.sms-list{
+  flex: 1;
+  overflow:auto;
+  padding: 12px 12px 18px;
+}
+
+.sms-item{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  padding: 12px 12px;
+  border-radius: 16px;
+  cursor:pointer;
+
+  background: rgba(255,255,255,0.40);
+  border: 1px solid rgba(0,0,0,0.08);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.10);
+}
+.sms-item + .sms-item{ margin-top: 10px; }
+.sms-item:hover{ background: rgba(255,255,255,0.52); }
+
+.sms-item .sms-ava{
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  overflow:hidden;
+  background: rgba(0,0,0,0.10);
+  flex: 0 0 auto;
+}
+.sms-item .sms-ava img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+.sms-meta{ flex:1; min-width:0; }
+.sms-name{
+  font-size: 16px;
+  font-weight: 900;
+  color: rgba(0,0,0,0.78);
+}
+.sms-preview{
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(0,0,0,0.48);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 会话：透明舞台（不铺蓝底） */
+.sms-thread{
+  flex: 1;
+  overflow:auto;
+  padding: 16px 14px 12px;
+  background: transparent;
+}
+
+/* 消息行：头像 + 气泡（你 JS 渲染 sms-row / sms-ava / sms-bubble 时直接生效） */
+.sms-row{
+  display:flex;
+  gap: 10px;
+  align-items:flex-end;
+  margin: 10px 0;
+}
+.sms-row.them{ justify-content:flex-start; }
+.sms-row.me{ justify-content:flex-end; }
+
+.sms-ava{
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow:hidden;
+  background: rgba(255,255,255,0.38);
+  border: 1px solid rgba(0,0,0,0.08);
+  backdrop-filter: blur(6px);
+  flex: 0 0 auto;
+}
+.sms-ava.hidden{ visibility: hidden; } /* 连续消息隐藏头像但保留对齐 */
+.sms-ava img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+/* 气泡：玻璃质感，不靠大底色 */
+.sms-bubble{
+  max-width: 74%;
+  padding: 10px 12px;
+  border-radius: 18px;
+  line-height: 1.4;
+  font-size: 14px;
+
+  border: 1px solid rgba(0,0,0,0.08);
+  backdrop-filter: none;      /* ✅ 微信感：不要玻璃模糊 */
+  box-shadow: 0 6px 14px rgba(0,0,0,0.10);
+}
+
+/* 左：白玻璃 */
+.sms-row.them .sms-bubble{
+  background: rgba(255,255,255,0.95);
+  border-top-left-radius: 8px;
+}
+
+/* 右：轻暖玻璃（不抢底图） */
+.sms-row.me .sms-bubble{
+  background: rgba(255, 230, 80, 0.92);
+  border-top-right-radius: 8px;
+}
+
+.sms-empty{
+  padding: 12px 4px;
+  color: rgba(0,0,0,0.45);
+}
+
+/* 底部：暗色输入条（参考你给的黑条） */
+.sms-compose{
+  padding: 10px 12px 12px;
+  background: transparent;
+}
+
+/* 工具按钮：小胶囊 */
+.sms-compose-toolbar{
+  display:flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.sms-pill-btn{
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.14);
+  background: rgba(255,255,255,0.50);
+  backdrop-filter: blur(8px);
+  cursor:pointer;
+
+  font-weight: 900;
+  color: rgba(0,0,0,0.70);
+}
+.sms-pill-btn:active{ transform: translateY(1px); }
+
+/* 输入条：暗色半透明胶囊 */
+.sms-compose-bar{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+
+  padding: 10px 12px;
+  border-radius: 18px;
+
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 18px 26px rgba(0,0,0,0.22);
+}
+
+.sms-input{
+  flex: 1;
+  resize: none;
+  border: 0;
+  outline: none;
+  background: transparent;
+
+  color: rgba(255,255,255,0.88);
+  font-size: 13px;
+  line-height: 1.2;
+
+  min-height: 20px;
+  max-height: 72px;
+}
+
+.sms-input::placeholder{
+  color: rgba(255,255,255,0.40);
+}
+
+/* 发送：圆形图标按钮 */
+.sms-send{
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.92);
+  cursor:pointer;
+
+  font-size: 18px;
+  font-weight: 900;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.sms-send:active{ transform: translateY(1px); }
