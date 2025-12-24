@@ -642,6 +642,14 @@ function closeClearModal() {
     mountContactBar(engine);
     renderHistory(engine);
 
+    if (!document.documentElement.dataset.chatChangeBound) {
+      document.documentElement.dataset.chatChangeBound = '1';
+      engine.onChange?.((type) => {
+        if (type === 'reload' || type === 'save') renderHistory(engine);
+      });
+    }
+
+
     // 输入
     const input = qs('chatInput');
     const send = qs('chatSend');

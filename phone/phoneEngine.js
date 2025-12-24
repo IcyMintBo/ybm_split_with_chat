@@ -8,7 +8,7 @@
   const PROMPT_LS_KEY = 'YBM_PROMPT_CFG_V1';
   const VERSION = 1;
 
-  const state = load() || {
+  let state = load() || {
     version: VERSION,
     activeContactId: 'ybm',
     contacts: {
@@ -25,6 +25,19 @@
     }
   };
 
+  const listeners = new Set();
+  function notifyChange(type, payload) {
+    listeners.forEach((fn) => {
+      try { fn(type, payload); } catch { /* ignore listener errors */ }
+    });
+  }
+
+  function onChange(fn) {
+    if (typeof fn !== 'function') return () => {};
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  }
+
   function uid() {
     return 'm_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
   }
@@ -33,6 +46,7 @@
 
   function save() {
     try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch { /* ignore */ }
+    notifyChange('save', { source: 'local' });
   }
   function load() {
     try {
@@ -41,6 +55,31 @@
     } catch {
       return null;
     }
+  }
+
+  function reloadFromStorage() {
+    const next = load();
+    if (!next || typeof next !== 'object') return false;
+
+    const base = {
+      version: VERSION,
+      activeContactId: 'ybm',
+      contacts: {},
+      messages: {},
+      api: { baseUrl: '', apiKey: '', model: '' }
+    };
+
+    state = {
+      ...base,
+      ...next,
+      contacts: { ...base.contacts, ...(next.contacts || {}) },
+      messages: { ...base.messages, ...(next.messages || {}) },
+      api: { ...base.api, ...(next.api || {}) }
+    };
+
+    ensureContact(state.activeContactId || 'ybm');
+    notifyChange('reload', { source: 'storage' });
+    return true;
   }
 
   function ensureContact(contactId) {
@@ -479,7 +518,17 @@ function clearAllMessages({ channel } = {}) {
     setApiConfig,
 
     send,
+
+    onChange,
+    reloadFromStorage,
   };
 
   window.ChatEngine = window.PhoneEngine;
+
+  let storageDebounce = null;
+  window.addEventListener('storage', (e) => {
+    if (!e || (e.key !== LS_KEY && e.key !== API_LS_KEY && e.key !== PROMPT_LS_KEY)) return;
+    clearTimeout(storageDebounce);
+    storageDebounce = setTimeout(() => reloadFromStorage(), 60);
+  });
 })();
