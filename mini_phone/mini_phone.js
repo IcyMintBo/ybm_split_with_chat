@@ -103,6 +103,52 @@ async function ensureMounted() {
 
     // 初始：home
     showPage('home');
+        // ====== Home：左右切换角色（复用 mpTab1~4 radio） ======
+    (function bindSwitchBar(){
+      const prevBtn = mount.querySelector('.mp-prev');
+      const nextBtn = mount.querySelector('.mp-next');
+      const panelBody = mount.querySelector('.mp-panel-body');
+      const radios = Array.from(mount.querySelectorAll('input[name="mpTab"]'));
+
+      if (!prevBtn || !nextBtn || !panelBody || radios.length < 2) return;
+      if (mount.dataset.mpSwitchBound) return;
+      mount.dataset.mpSwitchBound = '1';
+
+      function getIndex(){
+        const i = radios.findIndex(r => r.checked);
+        return i >= 0 ? i : 0;
+      }
+
+      function setIndex(nextIndex, dir){
+        const from = getIndex();
+        const to = (nextIndex + radios.length) % radios.length;
+        if (from === to) return;
+
+        // 轻量滑动：给 panelBody 一个动画 class，再切 radio
+        panelBody.classList.remove('slide-left','slide-right');
+        void panelBody.offsetWidth; // reflow 触发动画
+        panelBody.classList.add(dir === 'left' ? 'slide-left' : 'slide-right');
+
+        radios[to].checked = true;
+
+        setTimeout(()=> {
+          panelBody.classList.remove('slide-left','slide-right');
+        }, 640);
+      }
+
+      prevBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIndex(getIndex() - 1, 'left');
+      });
+
+      nextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIndex(getIndex() + 1, 'right');
+      });
+    })();
+
 
     function setAppOriginFrom(el){
       if (!content || !el) return;
