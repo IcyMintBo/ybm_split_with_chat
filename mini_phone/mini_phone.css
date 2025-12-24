@@ -118,7 +118,7 @@
 .phone-left-icons{
   position: absolute;
   left: var(--left-icons-x, 10%);
-  top: var(--left-icons-y, 30%);
+  top: var(--left-icons-y, 25%);
 
   transform: scale(var(--left-icons-scale, 1.7));
   transform-origin: left top;
@@ -176,9 +176,9 @@
 /* Screen area */
 .phone-content{
   position: absolute;
-  left: var(--content-left, 18%);
+  left: var(--content-left, 16%);
   top: var(--content-top, 14%);
-  width: var(--content-w, 70%);
+  width: var(--content-w, 80%);
   height: var(--content-h, 74%);
   overflow: hidden;
 }
