@@ -33,7 +33,21 @@
 
   /* Slide */
   --slide-dur: .64s;
+  /* 左侧三张贴图 */
+  --left-icons-x: 7%;
+  --left-icons-y: 22%;
+  --left-icons-h: 220px;
+  --left-icons-scale: 1.0;
+  --left-icon-size: 64px;
+
+  /* 底部两张贴图 */
+  --bottom-icons-x: 60%;
+  --bottom-icons-y: 4%;
+  --bottom-icons-w: 150px;
+  --bottom-icons-scale: 1.0;
+  --bottom-icon-size: 60px;
 }
+
 
 /* Shell */
 .phone-shell{
@@ -83,8 +97,8 @@
 /* Back */
 .phone-back{
   position: absolute;
-  left: 18px;
-  top: 18px;
+  left: 30px;
+  top: 30px;
   z-index: 999;
 
   background: transparent;
@@ -113,53 +127,60 @@
   transform-origin: left bottom;
 }
 .phone-shell:not(.is-home) .phone-ren{ display:none; }
+/* ✅ 进入任何非主界面：隐藏顶部状态栏贴纸 */
+.phone-shell:not(.is-home) .mp-topbar{
+  display: none;
+}
 
-/* Left icons */
+
+/* Left icons：改这个父容器的位置 = 贴图 + 点击区域一起走 */
 .phone-left-icons{
   position: absolute;
   left: var(--left-icons-x, 10%);
   top: var(--left-icons-y, 25%);
 
-  transform: scale(var(--left-icons-scale, 1.7));
+  transform: scale(var(--left-icons-scale, 1.0));
   transform-origin: left top;
 
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 
-  height: var(--left-icons-h, 120px);
-  min-height: var(--left-icons-min-h, 50px);
-  max-height: var(--left-icons-max-h, 320px);
+  height: var(--left-icons-h, 140px);
+  min-height: var(--left-icons-min-h, 80px);
+  max-height: var(--left-icons-max-h, 360px);
+
   gap: 0;
 }
 .phone-left-icons img{
-  width: var(--left-icon-size, 34px);
+  width: var(--left-icon-size, 38px);
   height: auto;
   cursor: pointer;
 }
 
-/* Bottom icons */
+/* Bottom icons：同理，调父容器 */
 .phone-bottom-icons{
   position: absolute;
   left: var(--bottom-icons-x, 60%);
   bottom: var(--bottom-icons-y, 6%);
-  transform: translateX(-50%);
+  transform: translateX(-50%) scale(var(--bottom-icons-scale, 1.0));
+  transform-origin: center bottom;
 
   display: flex;
   justify-content: space-between;
   align-items: center;
 
-  width: var(--bottom-icons-w, 150px);
-  min-width: var(--bottom-icons-min-w, 100px);
+  width: var(--bottom-icons-w, 220px);
+  min-width: var(--bottom-icons-min-w, 160px);
   max-width: var(--bottom-icons-max-w, 360px);
+
   gap: 0;
 }
 .phone-bottom-icons img{
-  width: var(--bottom-icon-size, 46px);
+  width: var(--bottom-icon-size, 54px);
   height: auto;
   cursor: pointer;
-  transform: scale(var(--bottom-icon-scale, 1.2));
-  transform-origin: center center;
+  transform: none;          /* ✅ 禁止二次缩放 */
 }
 
 /* Hide nav when not home */
