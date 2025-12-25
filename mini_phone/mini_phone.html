@@ -184,45 +184,95 @@
           </section>
         </div>
 
-<div class="page page-duanxin">
+        <div class="page page-duanxin">
 
-  <!-- ① 联系人页 -->
-  <section class="sms-view active" data-sms-view="list" aria-label="sms list">
-    <header class="sms-topbar">
-      <div class="sms-title">短信</div>
-    </header>
+          <!-- ① 联系人页 -->
+          <section class="sms-view active" data-sms-view="list" aria-label="sms list">
+            <header class="sms-topbar">
+              <div class="sms-title">短信</div>
+            </header>
 
-    <div class="sms-list" data-sms-list>
-      <button class="sms-card" type="button" data-sms-open-thread="c1">联系人 1</button>
-      <button class="sms-card" type="button" data-sms-open-thread="c2">联系人 2</button>
-      <button class="sms-card" type="button" data-sms-open-thread="c3">联系人 3</button>
-      <button class="sms-card" type="button" data-sms-open-thread="c4">联系人 4</button>
-    </div>
-  </section>
+            <div class="sms-list">
+              <button class="sms-item" data-sms-open-thread data-contact="c1">
+                <div class="sms-ava"><img src="./assets/avatars/ybm.png" alt=""></div>
+                <div class="sms-meta">
+                  <div class="sms-name">联系人 1</div>
+                  <div class="sms-preview">最近一条消息预览……</div>
+                </div>
+                <div class="sms-right">
+                  <div class="sms-time">09:41</div>
+                  <div class="sms-dot"></div>
+                </div>
+              </button>
 
-  <!-- ② 聊天页 -->
-  <section class="sms-view" data-sms-view="thread" aria-label="sms thread">
-    <header class="sms-topbar sms-topbar-thread">
-      <button class="sms-back" type="button" data-sms-back>返回</button>
-      <div class="sms-thread-title" data-sms-thread-name>联系人</div>
-      <div class="sms-topbar-spacer"></div>
-    </header>
+              <button class="sms-item" data-sms-open-thread data-contact="c2">
+                <div class="sms-ava"><img src="./assets/avatars/caishu.png" alt=""></div>
+                <div class="sms-meta">
+                  <div class="sms-name">联系人 2</div>
+                  <div class="sms-preview">另一条预览文本……</div>
+                </div>
+                <div class="sms-right">
+                  <div class="sms-time">昨天</div>
+                  <div class="sms-dot"></div>
+                </div>
+              </button>
 
-    <div class="sms-thread" data-sms-thread>
-      <div class="sms-bubble other">（占位）对方发来的第一句</div>
-      <div class="sms-bubble me">（占位）你发出的回复</div>
-      <div class="sms-bubble other">（占位）继续聊下去……</div>
-    </div>
-  </section>
+              <button class="sms-item" data-sms-open-thread data-contact="c3">
+                <div class="sms-ava"><img src="./assets/avatars/dantuo.png" alt=""></div>
+                <div class="sms-meta">
+                  <div class="sms-name">联系人 3</div>
+                  <div class="sms-preview">你可以把这行当成摘要……</div>
+                </div>
+                <div class="sms-right">
+                  <div class="sms-time">周二</div>
+                  <div class="sms-dot hidden"></div>
+                </div>
+              </button>
 
-</div>
+              <button class="sms-item" data-sms-open-thread data-contact="c4">
+                <div class="sms-ava"><img src="./assets/avatars/zhoubin.png" alt=""></div>
+                <div class="sms-meta">
+                  <div class="sms-name">联系人 4</div>
+                  <div class="sms-preview">（无未读）</div>
+                </div>
+                <div class="sms-right">
+                  <div class="sms-time">12/20</div>
+                  <div class="sms-dot hidden"></div>
+                </div>
+              </button>
+            </div>
 
 
-        <div class="page page-luntan">论坛页面</div>
-        <div class="page page-heike">黑客页面</div>
-        <div class="page page-shezhi">设置页面</div>
-        <div class="page page-qunliao">群聊页面</div>
+            <!-- ② 聊天页（按 111 风格） -->
+            <section class="sms-view" data-sms-view="thread" aria-label="sms thread">
+
+              <!-- 顶部栏 -->
+              <header class="sms-topbar sms-topbar-thread">
+                <button class="sms-btn" type="button" data-sms-back aria-label="back">‹</button>
+                <div class="sms-thread-title" data-sms-thread-name>联系人A</div>
+                <button class="sms-btn" type="button" data-sms-menu aria-label="menu">≡</button>
+              </header>
+
+              <!-- 聊天舞台（纸张底） -->
+              <main class="sms-thread sms-thread-paper" data-sms-thread></main>
+
+              <!-- 底部输入区 -->
+              <footer class="sms-compose">
+                <div class="sms-bar">
+                  <textarea class="sms-input" rows="1"></textarea>
+                  <button class="sms-stash" type="button">⇢</button>
+                  <button class="sms-send" type="button">➤</button>
+                </div>
+              </footer>
+
+            </section>
+
+
+            <div class="page page-luntan">论坛页面</div>
+            <div class="page page-heike">黑客页面</div>
+            <div class="page page-shezhi">设置页面</div>
+            <div class="page page-qunliao">群聊页面</div>
+        </div>
       </div>
     </div>
   </div>
-</div>

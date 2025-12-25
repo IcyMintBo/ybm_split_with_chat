@@ -98,63 +98,59 @@ function setHome(isHome) {
 }
 
 
-    function showPage(rawName) {
-      let name = String(rawName || '').trim();
+function showPage(rawName) {
+  let name = String(rawName || '').trim();
 
-      // 兼容传入 "page page-duanxin active" 这种
-      const m = name.match(/\bpage-([a-z0-9_-]+)\b/i);
-      if (m && m[1]) name = m[1];
-      name = name.replace(/^page-/i, '').trim();
+  // 兼容传入 "page page-duanxin active" / "page-duanxin"
+  const m = name.match(/\bpage-([a-z0-9_-]+)\b/i);
+  if (m && m[1]) name = m[1];
+  name = name.replace(/^page-/i, '').trim();
 
-      // 目标页
-      const targetClass = `page-${name}`;
-      const target = pages.find(p => p.classList.contains(targetClass));
+  // 找目标页
+  const targetClass = `page-${name}`;
+  const target = pages.find(p => p.classList.contains(targetClass));
 
+  // 找不到就回 home，避免空白
+  const finalTarget = target || pages.find(p => p.classList.contains('page-home'));
+  const isHome = !!(finalTarget && finalTarget.classList.contains('page-home'));
 
-      // 兜底：找不到就回 home
-      const finalTarget = target || pages.find(p => p.classList.contains('page-home'));
-      const isHome = !!(finalTarget && finalTarget.classList.contains('page-home'));
-
-      // 关键：不用 opacity/transform，直接 display 切换，永远不会空白
-      pages.forEach(p => {
-        const on = (p === finalTarget);
-        p.classList.toggle('active', on);
-        p.style.display = on ? 'block' : 'none';
-        // 同时把你那套 transform/opacity 的影响掐掉
-        if (on) {
-          p.style.opacity = '1';
-          p.style.pointerEvents = 'auto';
-          p.style.transform = 'none';
-        } else {
-          p.style.pointerEvents = 'none';
-        }
-      });
-
-setHome(isHome);
-
-// 标记短信态（给 CSS 用）
-if (shell) shell.classList.toggle('is-sms', name === 'duanxin');
-
-// ✅ 切换底图：短信页 / 默认页（底图在 HTML 的 <img.phone-bg>）
-const bgImg = mount.querySelector('.phone-bg');
-if (bgImg) {
-  bgImg.src = (name === 'duanxin')
-    ? './assets/avatars/beijing2.png'   // 短信背景
-    : './assets/avatars/beijin.png';    // 默认背景
-}
-
-// ✅ 短信页隐藏左下角小人（你说短信页不显示）
-const ren = mount.querySelector('.phone-ren');
-if (ren) {
-  ren.style.display = (name === 'duanxin') ? 'none' : '';
-  // ✅ 进入短信页：绑定“联系人 -> 聊天页”的第二层切换（背景保持 beijing2 不变）
-if (name === 'duanxin') {
-  initSmsSimple(mount);
-}
-
-}
-
+  // 关键：硬切 display，保证永远能看到页面
+  pages.forEach(p => {
+    const on = (p === finalTarget);
+    p.classList.toggle('active', on);
+    p.style.display = on ? 'block' : 'none';
+    if (on) {
+      p.style.opacity = '1';
+      p.style.pointerEvents = 'auto';
+      p.style.transform = 'none';
+    } else {
+      p.style.pointerEvents = 'none';
     }
+  });
+
+  // 顶部“返回”显示/隐藏
+  setHome(isHome);
+
+  // ===== 你的要求 1：点短信后底图切到 beijing2，并保持（联系人->聊天不再触发 showPage，所以背景会一直是 beijing2）=====
+  const bgImg = mount.querySelector('.phone-bg');
+  if (bgImg) {
+    bgImg.src = (name === 'duanxin')
+      ? './assets/avatars/beijing2.png'   // 短信背景
+      : './assets/avatars/beijin.png';    // 默认背景（你自己的默认文件名）
+  }
+
+  // 短信页隐藏左下角小人（你前面要求短信页不显示）
+  const ren = mount.querySelector('.phone-ren');
+  if (ren) {
+    ren.style.display = (name === 'duanxin') ? 'none' : '';
+  }
+
+  // ===== 你的要求 2：点击联系人切到聊天页（两层切换），背景依旧是 beijing2 =====
+  if (!isHome && name === 'duanxin') {
+    initSmsSimple(mount);
+  }
+}
+
 
     // 初始：home
     showPage('home');
@@ -546,18 +542,25 @@ function initSmsSimple(mount){
   const threadName = mount.querySelector('[data-sms-thread-name]');
   const backBtn = mount.querySelector('[data-sms-back]');
 
-  // 1) 点联系人 -> 进聊天页
-  mount.querySelectorAll('[data-sms-open-thread]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation(); // 防止冒泡触发外层任何切页逻辑
+mount.querySelectorAll('[data-sms-open-thread]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-      const name = (btn.textContent || '联系人').trim();
-      if (threadName) threadName.textContent = name;
+    const contactId = btn.getAttribute('data-contact') || btn.getAttribute('data-sms-open-thread') || 'c1';
+    const title = (btn.querySelector('.sms-name')?.textContent || '联系人').trim();
 
-      showSmsInnerView(mount, 'thread');
-    });
+    // 顶部标题
+    if (threadName) threadName.textContent = title;
+
+    // 切到聊天页
+    showSmsInnerView(mount, 'thread');
+
+    // ✅ 塞预览消息（每个联系人只塞一次，方便你调样式）
+    renderSmsPreview(mount, contactId, title);
   });
+});
+
 
   // 2) 聊天页返回 -> 回联系人列表
   if (backBtn){
@@ -573,5 +576,99 @@ function initSmsSimple(mount){
 function showSmsInnerView(mount, view){
   const fn = window.showSmsInnerView;
   if (typeof fn === 'function') fn(mount, view);
+}
+function renderSmsPreview(mount, contactId, title){
+  const thread = mount.querySelector('[data-sms-thread]');
+  if (!thread) return;
+
+  // 每个联系人只初始化一次（避免你来回点重复刷）
+  const key = `sms_seeded_${contactId}`;
+  if (mount.dataset[key] === '1') return;
+  mount.dataset[key] = '1';
+
+  // 头像映射：按你的资源名改
+  const avatarMap = {
+    c1: './assets/avatars/ybm.png',
+    c2: './assets/avatars/caishu.png',
+    c3: './assets/avatars/dantuo.png',
+    c4: './assets/avatars/zhoubin.png',
+  };
+  const ava = avatarMap[contactId] || './assets/avatars/ybm.png';
+
+  thread.innerHTML = '';
+
+  // 预览消息（你想怎么写都行）
+  const msgs = [
+    { who: 'them', text: '（预览）你在吗？' },
+    { who: 'me',   text: '在。怎么？' },
+    { who: 'them', text: '（预览）我刚看到你发的那个……有点意思。' },
+    { who: 'me',   text: '别卖关子，直说。' },
+  ];
+
+  msgs.forEach(m => appendSmsBubble(thread, m.who, m.text, ava));
+
+  // 滚到底
+  thread.scrollTop = thread.scrollHeight;
+
+  // 绑定发送（只绑一次）
+  bindSmsSendOnce(mount, ava);
+}
+
+function appendSmsBubble(thread, who, text, avatarSrc){
+  const row = document.createElement('div');
+  row.className = `sms-row ${who}`;
+
+  // 左侧头像（me 的头像占位隐藏，保持对齐）
+  const ava = document.createElement('div');
+  ava.className = 'sms-ava' + (who === 'me' ? ' hidden' : '');
+  ava.innerHTML = `<img src="${avatarSrc}" alt="">`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'sms-bubble';
+  bubble.textContent = text;
+
+  if (who === 'me') {
+    row.appendChild(bubble);
+    row.appendChild(ava);
+  } else {
+    row.appendChild(ava);
+    row.appendChild(bubble);
+  }
+
+  thread.appendChild(row);
+}
+
+function bindSmsSendOnce(mount, avatarSrc){
+  if (mount.dataset.smsSendBound === '1') return;
+  mount.dataset.smsSendBound = '1';
+
+  const thread = mount.querySelector('[data-sms-thread]');
+  const input = mount.querySelector('.sms-input');
+  const sendBtn = mount.querySelector('.sms-send');
+
+  if (!thread || !input || !sendBtn) return;
+
+  const doSend = () => {
+    const val = (input.value || '').trim();
+    if (!val) return;
+    appendSmsBubble(thread, 'me', val, avatarSrc);
+    input.value = '';
+    thread.scrollTop = thread.scrollHeight;
+  };
+
+  // 点击发送
+  sendBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    doSend();
+  });
+
+  // 回车发送（Shift+Enter 换行）
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      doSend();
+    }
+  });
 }
 
