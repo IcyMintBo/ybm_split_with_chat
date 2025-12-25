@@ -92,17 +92,11 @@ async function ensureMounted() {
     const backBtn = mount.querySelector('[data-mp-back]');
     const pages = Array.from(mount.querySelectorAll('.page'));
 
-    function setHome(isHome) {
-      if (shell) shell.classList.toggle('is-home', isHome);
-      if (backBtn) backBtn.classList.toggle('hidden', isHome);
-      // 切换底图：短信页 / 默认页
-      const bgImg = mount.querySelector('.phone-bg');
-      if (bgImg) {
-        bgImg.src = (name === 'duanxin')
-          ? './assets/avatars/beijing2.png'   // 短信背景
-          : './assets/avatars/beijin.png';    // 默认背景
-      }
-    }
+function setHome(isHome) {
+  if (shell) shell.classList.toggle('is-home', isHome);
+  if (backBtn) backBtn.classList.toggle('hidden', isHome);
+}
+
 
     function showPage(rawName) {
       let name = String(rawName || '').trim();
@@ -116,8 +110,6 @@ async function ensureMounted() {
       const targetClass = `page-${name}`;
       const target = pages.find(p => p.classList.contains(targetClass));
 
-      // 屏幕可见调试字（不靠控制台）
-      if (content) content.dataset.debug = `active=${targetClass} found=${!!target}`;
 
       // 兜底：找不到就回 home
       const finalTarget = target || pages.find(p => p.classList.contains('page-home'));
@@ -155,6 +147,11 @@ if (bgImg) {
 const ren = mount.querySelector('.phone-ren');
 if (ren) {
   ren.style.display = (name === 'duanxin') ? 'none' : '';
+  // ✅ 进入短信页：绑定“联系人 -> 聊天页”的第二层切换（背景保持 beijing2 不变）
+if (name === 'duanxin') {
+  initSmsSimple(mount);
+}
+
 }
 
     }
