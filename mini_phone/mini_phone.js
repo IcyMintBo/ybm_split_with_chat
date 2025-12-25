@@ -1,4 +1,4 @@
-const CSS_URL = new URL('./mini_phone.css?v=2', import.meta.url).href;
+const CSS_URL = new URL('./mini_phone.css?v=3', import.meta.url).href;
 
 function ensureCss() {
   if (document.querySelector('link[data-mini-phone-css="1"]')) return;
@@ -15,10 +15,10 @@ const OVERLAY_ID = 'phoneOverlay';
 const MASK_ID = 'phoneMask';
 
 let mounted = false;
-// ===== SMS runtime state =====
+// ===== SMS runtime state (simple) =====
 let smsBound = false;
 let smsActiveContactId = null;
-let smsLastPage = 'list'; // 'list' | 'thread'
+let smsLastPage = 'list';
 
 function byId(id) {
   return document.getElementById(id);
@@ -40,7 +40,7 @@ async function ensureMounted() {
 
   // 1) 塞入 HTML（只做一次）
   if (!mount.dataset.mpMounted) {
-    const htmlUrl = new URL('./mini_phone.html?v=2', import.meta.url);
+    const htmlUrl = new URL('./mini_phone.html?v=3', import.meta.url);
     const res = await fetch(htmlUrl.href);
     const html = await res.text();
     mount.innerHTML = html;
@@ -95,42 +95,69 @@ async function ensureMounted() {
     function setHome(isHome) {
       if (shell) shell.classList.toggle('is-home', isHome);
       if (backBtn) backBtn.classList.toggle('hidden', isHome);
-    }
-
-    function showPage(name) {
-      pages.forEach(p => {
-        const isTarget = p.classList.contains(`page-${name}`);
-        p.classList.toggle('active', isTarget);
-      });
-      setHome(name === 'home');
-
-      // ===== SMS auto hook (do NOT rely on name) =====
-      // 只要“当前激活页面里”存在短信DOM，就初始化短信
-      const activePage = pages.find(p => p.classList.contains('active'));
-      const hasSmsDom =
-        !!(activePage && (
-          activePage.querySelector('[data-sms-list]') ||
-          activePage.querySelector('[data-sms-view="list"]') ||
-          activePage.querySelector('[data-sms-view="thread"]')
-        ));
-
-      if (hasSmsDom) {
-        bindSmsUIOnce(mount);
-
-        if (smsLastPage === 'thread' && smsActiveContactId) {
-          openSmsThread(mount, smsActiveContactId, { pushState: false });
-        } else {
-          showSmsView(mount, 'list');
-          renderSmsList(mount);
-        }
-      } else {
-        // 离开短信页：记住当前子视图（如果短信DOM存在的话）
-        const v = getSmsView(mount);
-        if (v) smsLastPage = v;
+      // 切换底图：短信页 / 默认页
+      const bgImg = mount.querySelector('.phone-bg');
+      if (bgImg) {
+        bgImg.src = (name === 'duanxin')
+          ? './assets/avatars/beijing2.png'   // 短信背景
+          : './assets/avatars/beijin.png';    // 默认背景
       }
     }
 
+    function showPage(rawName) {
+      let name = String(rawName || '').trim();
 
+      // 兼容传入 "page page-duanxin active" 这种
+      const m = name.match(/\bpage-([a-z0-9_-]+)\b/i);
+      if (m && m[1]) name = m[1];
+      name = name.replace(/^page-/i, '').trim();
+
+      // 目标页
+      const targetClass = `page-${name}`;
+      const target = pages.find(p => p.classList.contains(targetClass));
+
+      // 屏幕可见调试字（不靠控制台）
+      if (content) content.dataset.debug = `active=${targetClass} found=${!!target}`;
+
+      // 兜底：找不到就回 home
+      const finalTarget = target || pages.find(p => p.classList.contains('page-home'));
+      const isHome = !!(finalTarget && finalTarget.classList.contains('page-home'));
+
+      // 关键：不用 opacity/transform，直接 display 切换，永远不会空白
+      pages.forEach(p => {
+        const on = (p === finalTarget);
+        p.classList.toggle('active', on);
+        p.style.display = on ? 'block' : 'none';
+        // 同时把你那套 transform/opacity 的影响掐掉
+        if (on) {
+          p.style.opacity = '1';
+          p.style.pointerEvents = 'auto';
+          p.style.transform = 'none';
+        } else {
+          p.style.pointerEvents = 'none';
+        }
+      });
+
+setHome(isHome);
+
+// 标记短信态（给 CSS 用）
+if (shell) shell.classList.toggle('is-sms', name === 'duanxin');
+
+// ✅ 切换底图：短信页 / 默认页（底图在 HTML 的 <img.phone-bg>）
+const bgImg = mount.querySelector('.phone-bg');
+if (bgImg) {
+  bgImg.src = (name === 'duanxin')
+    ? './assets/avatars/beijing2.png'   // 短信背景
+    : './assets/avatars/beijin.png';    // 默认背景
+}
+
+// ✅ 短信页隐藏左下角小人（你说短信页不显示）
+const ren = mount.querySelector('.phone-ren');
+if (ren) {
+  ren.style.display = (name === 'duanxin') ? 'none' : '';
+}
+
+    }
 
     // 初始：home
     showPage('home');
@@ -227,7 +254,6 @@ async function ensureMounted() {
           if (threadView && threadView.classList.contains('active')) {
             threadView.classList.remove('active');
             listView.classList.add('active');
-            smsLastPage = 'list';
             return; // ⚠️ 关键：不再继续往下执行
           }
         }
@@ -303,168 +329,6 @@ function getSmsView(mount) {
   if (!listView || !threadView) return null;
   if (threadView.classList.contains('active')) return 'thread';
   return 'list';
-}
-
-function bindSmsUIOnce(mount) {
-  if (smsBound) return;
-  smsBound = true;
-
-  const back = q(mount, '[data-sms-back]');
-  const btnSend = q(mount, '[data-sms-send]');
-  const btnReroll = q(mount, '[data-sms-reroll]');
-  const btnStash = q(mount, '[data-sms-stash]');
-  const input = q(mount, '[data-sms-input]');
-
-  // 返回：会话 -> 列表（不是回 home）
-  if (back) {
-    back.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      showSmsView(mount, 'list');
-      renderSmsList(mount);
-    });
-  }
-
-  // Step1 先不启用发送/重roll/暂存（避免你担心“开始做太多”）
-  // 但为了 UI 体验，我们把按钮先做成“阻止冒泡+不报错”
-  [btnSend, btnReroll, btnStash].forEach((btn) => {
-    if (!btn) return;
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      // 这里先不做任何事（Step2/3 再接）
-    });
-  });
-
-  // 输入框 Enter：默认不发送（避免误触），只阻止表单类行为
-  if (input) {
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-      }
-    });
-  }
-}
-
-function renderSmsList(mount) {
-  const engine = getEngine();
-  const listWrap = q(mount, '[data-sms-list]');
-  if (!listWrap) return;
-
-  listWrap.innerHTML = '';
-
-  // 没引擎：也给你四个“预览联系人卡片”，方便看UI
-  if (!engine || typeof engine.listContacts !== 'function') {
-    const demo = [
-      { id: 'c1', name: '联系人一', avatar: '', preview: '我还想着切点水果给你', time: '22:03', unread: 1 },
-      { id: 'c2', name: '联系人二', avatar: '', preview: '电脑在边儿上', time: '22:07', unread: 0 },
-      { id: 'c3', name: '联系人三', avatar: '', preview: '下载了维修模式插件', time: '22:10', unread: 2 },
-      { id: 'c4', name: '联系人四', avatar: '', preview: '我回去了', time: '22:11', unread: 0 },
-    ];
-
-    demo.forEach((c) => {
-      const item = document.createElement('div');
-      item.className = 'sms-item';
-      item.dataset.smsContactId = c.id;
-
-      item.innerHTML = `
-        <div class="sms-ava">${c.avatar ? `<img alt="" src="${c.avatar}">` : ``}</div>
-        <div class="sms-meta">
-          <div class="sms-name">${escapeHtml(c.name)}</div>
-          <div class="sms-preview">${escapeHtml(c.preview || '')}</div>
-        </div>
-        <div class="sms-right">
-          <span class="sms-time">${escapeHtml(c.time || '')}</span>
-          <span class="sms-dot ${c.unread ? '' : 'hidden'}"></span>
-        </div>
-      `;
-
-      item.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        openSmsThread(mount, c.id, { pushState: true });
-      });
-
-      listWrap.appendChild(item);
-    });
-
-    return;
-  }
-
-  const contacts = engine.listContacts() || [];
-  if (!contacts.length) {
-    const empty = document.createElement('div');
-    empty.className = 'sms-empty';
-    empty.textContent = '暂无联系人';
-    listWrap.appendChild(empty);
-    return;
-  }
-
-  contacts.forEach((c) => {
-    const id = c.id || c.contactId || c.key || c.name;
-    const name = c.name || c.title || '未命名';
-    const avatar = c.avatar || c.ava || c.image || '';
-
-    const { preview, timeText, unread } = getContactSummary(engine, id, c);
-
-    const item = document.createElement('div');
-    item.className = 'sms-item';
-    item.dataset.smsContactId = id;
-
-    item.innerHTML = `
-      <div class="sms-ava">${avatar ? `<img alt="" src="${avatar}">` : ``}</div>
-      <div class="sms-meta">
-        <div class="sms-name">${escapeHtml(name)}</div>
-        <div class="sms-preview">${escapeHtml(preview)}</div>
-      </div>
-      <div class="sms-right">
-        <span class="sms-time">${escapeHtml(timeText)}</span>
-        <span class="sms-dot ${unread > 0 ? '' : 'hidden'}"></span>
-      </div>
-    `;
-
-    item.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openSmsThread(mount, id, { pushState: true });
-    });
-
-    listWrap.appendChild(item);
-  });
-}
-
-function getContactSummary(engine, contactId, contactObj) {
-  // 1) 未读：优先用 contact 上的字段，否则尝试引擎函数
-  let unread = 0;
-  unread = Number(contactObj?.unread ?? contactObj?.unreadCount ?? 0) || 0;
-
-  if (!unread && engine && typeof engine.getUnreadCount === 'function') {
-    try { unread = Number(engine.getUnreadCount(contactId)) || 0; } catch { }
-  }
-
-  // 2) 取最后一条消息：决定预览与时间
-  let preview = '';
-  let timeText = '';
-
-  try {
-    const msgs = engine.getMessages({ contactId, channel: 'phone' }) || [];
-    if (msgs.length) {
-      const last = msgs[msgs.length - 1];
-      const t = (last.text ?? last.content ?? '').toString().trim();
-      preview = t.length > 28 ? t.slice(0, 28) + '…' : t;
-
-      const ts = last.ts ?? last.time ?? last.timestamp ?? last.createdAt;
-      timeText = formatHHMM(ts);
-    } else {
-      preview = '暂无短信';
-      timeText = '';
-    }
-  } catch {
-    preview = '';
-    timeText = '';
-  }
-
-  return { preview, timeText, unread };
 }
 
 function formatHHMM(ts) {
@@ -658,3 +522,59 @@ function escapeHtml(s) {
 
 // 暴露给 chat 调用
 window.MiniPhone = { open, close };
+function initSmsSimple(mount){
+  // 每次进入短信页都可以调用，但只绑定一次事件
+  if (mount.dataset.smsBound === '1') {
+    // 仍然确保默认显示 list
+    showSmsInnerView(mount, 'list');
+    return;
+  }
+  mount.dataset.smsBound = '1';
+
+  function showSmsInnerView(mount, view){
+    const listView = mount.querySelector('[data-sms-view="list"]');
+    const threadView = mount.querySelector('[data-sms-view="thread"]');
+    if (!listView || !threadView) return;
+
+    listView.classList.toggle('active', view === 'list');
+    threadView.classList.toggle('active', view === 'thread');
+  }
+
+  // 暴露给上面复用
+  window.showSmsInnerView = showSmsInnerView;
+
+  // 默认进短信就是联系人列表
+  showSmsInnerView(mount, 'list');
+
+  const threadName = mount.querySelector('[data-sms-thread-name]');
+  const backBtn = mount.querySelector('[data-sms-back]');
+
+  // 1) 点联系人 -> 进聊天页
+  mount.querySelectorAll('[data-sms-open-thread]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // 防止冒泡触发外层任何切页逻辑
+
+      const name = (btn.textContent || '联系人').trim();
+      if (threadName) threadName.textContent = name;
+
+      showSmsInnerView(mount, 'thread');
+    });
+  });
+
+  // 2) 聊天页返回 -> 回联系人列表
+  if (backBtn){
+    backBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showSmsInnerView(mount, 'list');
+    });
+  }
+}
+
+// 让重复进入短信页时也能强制回到 list
+function showSmsInnerView(mount, view){
+  const fn = window.showSmsInnerView;
+  if (typeof fn === 'function') fn(mount, view);
+}
+
