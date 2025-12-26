@@ -3,166 +3,179 @@
    ========================= */
 
 /* --- layout shell --- */
-.chatWrap{
+.chatWrap {
   width: min(1100px, 94vw);
-  height: min(var(--panel-h), calc(100vh - 2*var(--gutter)));
-  display:flex;
+  height: calc(100vh - 2 * var(--gutter));
+  display: flex;
   align-items: stretch;
   justify-content: center;
   position: relative;
 }
 
-.chatWindow{
+
+.chatWindow {
   flex: 1;
   border: var(--line);
   border-radius: 18px;
   overflow: hidden;
   background: var(--desk-paper);
   box-shadow: var(--shadow);
-  display:flex;
+  display: flex;
   flex-direction: column;
 }
 
 /* --- titlebar --- */
-.chatTitlebar{
+.chatTitlebar {
   height: 52px;
   border-bottom: var(--line);
   background: var(--desk-paper-2);
-  display:flex;
-  align-items:center;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   padding: 0 14px;
   gap: 10px;
 }
 
-.chatTitle{
+.chatTitle {
   font-weight: 900;
   letter-spacing: .16em;
   font-size: 15px;
 }
 
-.chatActions{
-  display:flex;
-  align-items:center;
+.chatActions {
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 
-.chatIconBtn{
+.chatIconBtn {
   width: 34px;
   height: 34px;
   border: var(--line);
   border-radius: 10px;
-  background: rgba(255,255,255,.7);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
+  background: rgba(255, 255, 255, .7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
   transition: transform .12s ease;
 }
-.chatIconBtn:hover{ transform: translateY(-1px); }
 
-.chatBackBtn{
+.chatIconBtn:hover {
+  transform: translateY(-1px);
+}
+
+.chatBackBtn {
   height: 34px;
   padding: 0 10px;
   border: var(--line);
   border-radius: 10px;
-  background: rgba(255,255,255,.75);
-  cursor:pointer;
+  background: rgba(255, 255, 255, .75);
+  cursor: pointer;
   font-weight: 700;
 }
 
 /* --- body --- */
-.chatBody{
+.chatBody {
   flex: 1;
-  display:flex;
+  display: flex;
   min-height: 0;
 }
 
-.chatMessages{
-  flex: 1;
-  padding: 12px 14px;
-  overflow: auto;
-  scroll-behavior: smooth;
+.chatMessages {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
 /* message item */
-.chatItem{
-  display:flex;
+.chatItem {
+  display: flex;
   gap: 10px;
   margin: 10px 0;
   align-items: flex-start;
 }
 
-.nameTag{
+.nameTag {
   width: 92px;
   flex: 0 0 92px;
-  display:flex;
+  display: flex;
   gap: 8px;
-  align-items:center;
+  align-items: center;
 }
 
-.nameAvatar{
+.nameAvatar {
   width: 28px;
   height: 28px;
   border-radius: 10px;
   border: var(--line);
-  background: rgba(255,255,255,.75);
-  overflow:hidden;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  background: rgba(255, 255, 255, .75);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.nameAvatar img{ width:100%; height:100%; object-fit: cover; }
 
-.nameText{
+.nameAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nameText {
   font-weight: 800;
   font-size: 13px;
   opacity: .9;
 }
 
 /* bubble */
-.chatMsg{
+.chatMsg {
   flex: 1;
-  border: 2px solid rgba(0,0,0,.18);
+  border: 2px solid rgba(0, 0, 0, .18);
   border-radius: 16px;
-  background: rgba(255,255,255,.68);
-  box-shadow: 0 10px 0 rgba(0,0,0,.18);
+  background: rgba(255, 255, 255, .68);
+  box-shadow: 0 10px 0 rgba(0, 0, 0, .18);
   padding: 10px 12px;
   position: relative;
-  min-width: 0; /* 防止长文本把布局撑爆 */
+  min-width: 0;
+  /* 防止长文本把布局撑爆 */
 }
 
-.chatMeta{
-  display:flex;
+.chatMeta {
+  display: flex;
   justify-content: space-between;
-  align-items:center;
+  align-items: center;
   gap: 10px;
   margin-bottom: 8px;
   font-size: 12px;
   opacity: .75;
 }
 
-.msgActions{
-  display:flex;
+.msgActions {
+  display: flex;
   gap: 6px;
-  align-items:center;
+  align-items: center;
 }
 
-.msgActBtn{
+.msgActBtn {
   width: 28px;
   height: 28px;
   border-radius: 10px;
-  border: 2px solid rgba(0,0,0,.16);
-  background: rgba(255,255,255,.75);
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  border: 2px solid rgba(0, 0, 0, .16);
+  background: rgba(255, 255, 255, .75);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: transform .12s ease;
 }
-.msgActBtn:hover{ transform: translateY(-1px); }
 
-.chatText{
+.msgActBtn:hover {
+  transform: translateY(-1px);
+}
+
+.chatText {
   font-size: 14px;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -170,16 +183,20 @@
 }
 
 /* --- composer --- */
-.chatComposer{
+.chatComposer {
   border-top: var(--line);
   background: var(--desk-paper-2);
   padding: 10px 12px;
-  display:flex;
+  display: flex;
   gap: 10px;
-  align-items:flex-end;
+  align-items: flex-end;
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
 }
 
-#chatInput{
+#chatInput {
   flex: 1;
   min-height: 44px;
   max-height: 120px;
@@ -188,42 +205,43 @@
   border-radius: 14px;
   padding: 10px 12px;
   outline: none;
-  background: rgba(255,255,255,.75);
+  background: rgba(255, 255, 255, .75);
   font-size: 14px;
   line-height: 1.4;
 }
 
-#chatSend{
+#chatSend {
   height: 44px;
   padding: 0 14px;
   border: var(--line);
   border-radius: 14px;
-  background: rgba(255,255,255,.78);
-  cursor:pointer;
+  background: rgba(255, 255, 255, .78);
+  cursor: pointer;
   font-weight: 800;
 }
 
 /* --- drawer / mask (用于清空弹窗遮罩) --- */
-.chatMask{
+.chatMask {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.28);
+  background: rgba(0, 0, 0, .28);
   z-index: 9998;
 }
 
 /* =========================
    Phone Overlay (虚拟小手机)
    ========================= */
-.phoneMask{
+.phoneMask {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.28);
+  background: rgba(0, 0, 0, .28);
   z-index: 9998;
   opacity: 0;
   pointer-events: none;
   transition: opacity .18s ease;
 }
-.phoneOverlay{
+
+.phoneOverlay {
   position: fixed;
   right: 16px;
   top: 64px;
@@ -244,33 +262,36 @@
   box-shadow: none;
 }
 
-.phoneMask[data-open="true"]{
+.phoneMask[data-open="true"] {
   opacity: 1;
   pointer-events: auto;
 }
-.phoneOverlay[data-open="true"]{
+
+.phoneOverlay[data-open="true"] {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
 }
 
-#miniPhoneMount{
+#miniPhoneMount {
   width: 100%;
   height: 100%;
 }
-#miniPhoneMount > *{
+
+#miniPhoneMount>* {
   width: 100%;
   height: 100%;
 }
 
 /* mobile */
-@media (max-width: 980px){
-  .phoneOverlay{
+@media (max-width: 980px) {
+  .phoneOverlay {
     right: 50%;
     transform: translate(50%, 18px);
     top: 76px;
   }
-  .phoneOverlay[data-open="true"]{
+
+  .phoneOverlay[data-open="true"] {
     transform: translate(50%, 0);
   }
 }
@@ -278,48 +299,66 @@
 /* =========================
    Clear modal
    ========================= */
-.chatClearModal{
+.chatClearModal {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
   pointer-events: none;
   transition: opacity .18s ease;
 }
-.chatClearModal[data-open="true"]{
+
+.chatClearModal[data-open="true"] {
   opacity: 1;
   pointer-events: auto;
 }
 
-.chatClearCard{
+.chatClearCard {
   width: min(420px, 88vw);
   border-radius: 18px;
-  border:2px solid rgba(0,0,0,.16);
-  background: rgba(255,255,255,.86);
-  box-shadow: 0 18px 40px rgba(0,0,0,.18);
-  padding:14px 14px 12px;
+  border: 2px solid rgba(0, 0, 0, .16);
+  background: rgba(255, 255, 255, .86);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .18);
+  padding: 14px 14px 12px;
 }
-.chatClearTitle{ font-weight:900; font-size:16px; margin-bottom:6px; }
-.chatClearSub{ opacity:.8; font-size:13px; margin-bottom:12px; }
-.chatClearBtns{ display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
 
-.chatClearBtns button{
-  border: 2px solid rgba(0,0,0,.16);
-  background: rgba(255,255,255,.75);
+.chatClearTitle {
+  font-weight: 900;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.chatClearSub {
+  opacity: .8;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.chatClearBtns {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.chatClearBtns button {
+  border: 2px solid rgba(0, 0, 0, .16);
+  background: rgba(255, 255, 255, .75);
   border-radius: 12px;
   padding: 8px 12px;
   cursor: pointer;
   font-weight: 800;
 }
+
 /* =========================
    Contact Bar (联系人切换条) — restore
    ========================= */
-.chatContactBar{
+.chatContactBar {
   border-bottom: var(--line);
-  background: rgba(255,255,255,.30);
+  background: rgba(255, 255, 255, .30);
   padding: 10px 12px;
   display: flex;
   gap: 10px;
@@ -327,82 +366,94 @@
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
-.chatContactBar::-webkit-scrollbar{ height: 8px; }
-.chatContactBar::-webkit-scrollbar-thumb{
-  background: rgba(0,0,0,.18);
+
+.chatContactBar::-webkit-scrollbar {
+  height: 8px;
+}
+
+.chatContactBar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, .18);
   border-radius: 999px;
 }
 
 /* 每个胶囊 */
-.chatChip{
+.chatChip {
   display: inline-flex;
   align-items: center;
   gap: 10px;
 
   padding: 10px 14px;
   border-radius: 999px;
-  border: 2px solid rgba(0,0,0,.22);
-  background: rgba(255,255,255,.55);
-  box-shadow: 0 6px 0 rgba(0,0,0,.16);
+  border: 2px solid rgba(0, 0, 0, .22);
+  background: rgba(255, 255, 255, .55);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .16);
 
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
   transition: transform .12s ease, background .12s ease, border-color .12s ease;
 }
-.chatChip:hover{ transform: translateY(-1px); }
+
+.chatChip:hover {
+  transform: translateY(-1px);
+}
 
 /* 隐藏原生 radio */
-.chatChip input[type="radio"]{
+.chatChip input[type="radio"] {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
 
 /* 左侧小圆点 */
-.chatChip .dot{
+.chatChip .dot {
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  border: 2px solid rgba(0,0,0,.28);
-  background: rgba(255,255,255,.7);
+  border: 2px solid rgba(0, 0, 0, .28);
+  background: rgba(255, 255, 255, .7);
   flex: 0 0 12px;
 }
 
 /* 文本 */
-.chatChip .label{
+.chatChip .label {
   font-weight: 900;
   letter-spacing: .02em;
 }
 
 /* 选中态：描边更深 + 圆点变色 + 胶囊背景更亮 */
-.chatChip.is-active{
-  border-color: rgba(0,0,0,.45);
-  background: rgba(255,255,255,.78);
+.chatChip.is-active {
+  border-color: rgba(0, 0, 0, .45);
+  background: rgba(255, 255, 255, .78);
 }
-.chatChip.is-active .dot{
-  background: rgba(60,120,255,.95);
-  border-color: rgba(0,0,0,.25);
+
+.chatChip.is-active .dot {
+  background: rgba(60, 120, 255, .95);
+  border-color: rgba(0, 0, 0, .25);
 }
+
 /* 选中态：整体变亮、描边更深、圆点变蓝、文字加重 */
-.chatChip.is-active{
-  border-color: rgba(0,0,0,.45);
-  background: rgba(255,255,255,.78);
+.chatChip.is-active {
+  border-color: rgba(0, 0, 0, .45);
+  background: rgba(255, 255, 255, .78);
 }
-.chatChip.is-active .dot{
-  background: rgba(60,120,255,.95);
-  border-color: rgba(0,0,0,.25);
+
+.chatChip.is-active .dot {
+  background: rgba(60, 120, 255, .95);
+  border-color: rgba(0, 0, 0, .25);
 }
-.chatChip.is-active .label{
+
+.chatChip.is-active .label {
   font-weight: 900;
 }
+
 /* =========================
    Contact Bar — active state (matches chat.js)
    ========================= */
 
-.chatContactBar{
+.chatContactBar {
   border-bottom: var(--line);
-  background: rgba(255,255,255,.30);
+  background: rgba(255, 255, 255, .30);
   padding: 10px 12px;
   display: flex;
   gap: 10px;
@@ -412,52 +463,60 @@
 }
 
 /* 胶囊按钮 */
-.chatChip{
+.chatChip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 
-  padding: 6px 10px;              /* ↓ 缩内边距 */
+  padding: 6px 10px;
+  /* ↓ 缩内边距 */
   border-radius: 999px;
-  border: 2px solid rgba(0,0,0,.22);
-  background: rgba(255,255,255,.55);
-  box-shadow: 0 4px 0 rgba(0,0,0,.16); /* ↓ 阴影高度一起缩 */
+  border: 2px solid rgba(0, 0, 0, .22);
+  background: rgba(255, 255, 255, .55);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .16);
+  /* ↓ 阴影高度一起缩 */
 
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
   transition: transform .12s ease, background .12s ease, border-color .12s ease;
 }
-.chatChip:hover{ transform: translateY(-1px); }
+
+.chatChip:hover {
+  transform: translateY(-1px);
+}
 
 /* 左侧小圆点（你真实 class 叫 chatChipDot） */
-.chatChipDot{
+.chatChipDot {
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  border: 2px solid rgba(0,0,0,.28);
-  background: rgba(255,255,255,.7);
+  border: 2px solid rgba(0, 0, 0, .28);
+  background: rgba(255, 255, 255, .7);
   flex: 0 0 12px;
 }
 
 /* 文字（你 JS 创建的 label 没 class，所以直接取第二个 span） */
-.chatChip > span:last-child{
+.chatChip>span:last-child {
   font-weight: 900;
   letter-spacing: .02em;
 }
 
 /* ✅ 选中态：chat.js 用的是 .active */
-.chatChip.active{
-  border-color: rgba(0,0,0,.45);
-  background: rgba(255,255,255,.78);
+.chatChip.active {
+  border-color: rgba(0, 0, 0, .45);
+  background: rgba(255, 255, 255, .78);
 }
-.chatChip.active .chatChipDot{
-  background: rgba(60,120,255,.95);
-  border-color: rgba(0,0,0,.25);
+
+.chatChip.active .chatChipDot {
+  background: rgba(60, 120, 255, .95);
+  border-color: rgba(0, 0, 0, .25);
 }
+
 /* ✅ 手机端：miniPhone 居中覆盖（不拖动） */
-@media (pointer: coarse), (max-width: 768px){
-  .phoneOverlay{
+@media (pointer: coarse),
+(max-width: 768px) {
+  .phoneOverlay {
     left: 50% !important;
     top: 50% !important;
     right: auto !important;
@@ -474,7 +533,7 @@
 
   /* ✅ 适配你的“打开态”选择器：二选一，哪个存在用哪个 */
   .phoneOverlay.open,
-  .phoneOverlay[data-open="true"]{
+  .phoneOverlay[data-open="true"] {
     transform: translate(-50%, -50%) !important;
   }
 }

@@ -1,48 +1,29 @@
 <div class="view" id="viewChat" aria-label="Chat">
   <div class="chatWrap">
-    <div class="chatWindow" role="application" aria-label="聊天窗口">
-      <div class="chatTitlebar">
-        <div class="dots" aria-hidden="true">
-          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-        </div>
-        <div class="chatTitle">CHAT</div>
-
-        <div class="chatActions">
-          <!-- 清空按钮（新增） -->
-          <button id="chatClearBtn" class="chatIconBtn" aria-label="清空聊天" title="清空聊天">
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-              <path d="M7 7h10l-1 14H8L7 7Z" fill="none" stroke="currentColor" stroke-width="1.8"
-                stroke-linejoin="round" />
-              <path d="M9 7V5.6c0-.9.7-1.6 1.6-1.6h2.8c.9 0 1.6.7 1.6 1.6V7" fill="none" stroke="currentColor"
-                stroke-width="1.8" />
-              <path d="M5 7h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-            </svg>
-          </button>
-
-          <!-- 小手机按钮 -->
-          <button id="chatDeviceBtn" class="chatIconBtn" aria-label="打开小手机" title="打开小手机">
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-              <rect x="7" y="2.5" width="10" height="19" rx="2.2" ry="2.2" fill="none" stroke="currentColor"
-                stroke-width="1.8" />
-              <circle cx="12" cy="18.2" r="0.9" fill="currentColor" />
-            </svg>
-          </button>
-
-          <!-- 返回键 -->
-          <button id="chatBack" type="button">返回</button>
-
-        </div>
-      </div>
-
-      <div class="chatBody">
-        <div class="chatMessages" id="chatMessages" aria-label="消息列表"></div>
-      </div>
-
-      <div class="chatComposer" aria-label="输入区">
-        <textarea id="chatInput" rows="1" placeholder="输入消息…"></textarea>
-        <button class="btn primary" id="chatSend" type="button">发送</button>
-      </div>
+<div class="chatWindow" role="application" aria-label="聊天窗口">
+  <div class="chatTitlebar">
+    <div class="dots" aria-hidden="true">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
     </div>
+    <div class="chatTitle">CHAT</div>
+
+    <div class="chatActions">
+      <button id="chatClearBtn" class="chatIconBtn" aria-label="清空聊天" title="清空聊天">🗑</button>
+      <button id="chatDeviceBtn" class="chatIconBtn" aria-label="打开小手机" title="打开小手机">📱</button>
+      <button id="chatBack" class="chatBackBtn" type="button">返回</button>
+    </div>
+  </div>
+
+  <div class="chatBody">
+    <div class="chatMessages" id="chatMessages" aria-label="消息列表"></div>
+  </div>
+
+  <div class="chatComposer" aria-label="输入区">
+    <textarea id="chatInput" rows="1" placeholder="输入消息…"></textarea>
+    <button id="chatSend" type="button">发送</button>
+  </div>
+</div>
+
 
     <!-- ===== Phone Overlay (虚拟小手机) ===== -->
     <div id="phoneMask" class="phoneMask" data-open="false" aria-hidden="true"></div>

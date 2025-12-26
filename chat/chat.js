@@ -616,16 +616,25 @@ function closeClearModal() {
       return false;
     }
 
-    if (!document.getElementById('viewChat')) {
-      try {
-        const r = await fetch(new URL('./chat/chat.html', document.baseURI).href, { cache: 'no-store' });
-        if (!r.ok) throw new Error('chat.html fetch failed: ' + r.status);
-        mount.innerHTML = await r.text();
-      } catch (e) {
-        console.error('[chat] cannot load ./chat/chat.html', e);
-        return false;
-      }
+// ✅ 只要 mount 里还没有 chatWindow，就加载 chat.html
+if (!mount.querySelector('.chatWindow')) {
+  try {
+    const url = new URL('./chat/chat.html', document.baseURI).href;
+    const resp = await fetch(url, { cache: 'no-store' });
+    if (!resp.ok) throw new Error('chat.html fetch failed: ' + resp.status);
+
+    mount.innerHTML = await resp.text();
+
+    // ✅ 校验：没有输入框就报警（不阻断）
+    if (!mount.querySelector('#chatInput')) {
+      console.error('[chat] mounted html has no #chatInput. First 300 chars:\n', mount.innerHTML.slice(0, 300));
     }
+  } catch (e) {
+    console.error('[chat] cannot load ./chat/chat.html', e);
+    return false;
+  }
+}
+
 
     initChat(engine);
     return true;
