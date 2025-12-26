@@ -27,7 +27,7 @@
 
   /* Home tuning */
   --home-pad-top: 150px;
-  --panel-ml: 30px;
+  --panel-ml: 85px;
   --panel-mt: 0px;
   --panel-scale: 1;
 
@@ -46,6 +46,9 @@
   --bottom-icons-w: 150px;
   --bottom-icons-scale: 1.0;
   --bottom-icon-size: 60px;
+  --panel-w: 230px;   /* 状态栏宽 */
+  --panel-h: 390px;   /* 状态栏高 */
+
 }
 
 
@@ -194,6 +197,27 @@
   pointer-events: none;   /* 不可点 */
 }
 
+/* ✅ 让侧边/底部图标始终可点：压过 page-home */
+.phone-left-icons,
+.phone-bottom-icons{
+  z-index: 3000;
+  position: absolute; /* 保险：明确创建定位层 */
+}
+
+.phone-content{
+  position: absolute;
+  inset: 0;
+  z-index: 1000; /* 页面在下，图标在上 */
+}
+.phone-shell.is-home .phone-left-icons,
+.phone-shell.is-home .phone-bottom-icons{
+  z-index: 3000;
+}
+
+.phone-shell:not(.is-home) .phone-left-icons,
+.phone-shell:not(.is-home) .phone-bottom-icons{
+  z-index: 0;
+}
 
 /* Left icons：改这个父容器的位置 = 贴图 + 点击区域一起走 */
 .phone-left-icons{
@@ -486,7 +510,9 @@
 }
 
 .mp-panel{
-  flex: 1;
+    flex: 0 0 auto; /* 不再被父容器强行拉伸 */
+  width: var(--panel-w);
+  height: var(--panel-h);
   border-radius: 22px;
   background: var(--mp-cream);
   border: var(--mp-border);
@@ -794,6 +820,9 @@
 /* =========================
    SMS 联系人卡片 · 插画软风
    ========================= */
+/* 联系人卡片本体：位置&大小在这里调 */
+
+
 
 .sms-item{
   display: flex;
@@ -929,8 +958,8 @@
   border: 0;
   box-shadow: none;
 
-  /* 位置你要调就改这行 */
-  margin: 14px 16px 8px;
+  /* 位置 */
+  margin: 20px 16px 8px;
   padding: 0;
 
   display: flex;
@@ -942,21 +971,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
-  padding: 14px 26px;
+  padding: 6.2px 26px;
   min-width: 58%;
   border-radius: 18px;
-
-  background: var(--sms-bar);
-  border: var(--sms-line);
-  box-shadow: 0 10px 0 rgba(35,28,22,.14);
-
+  background:transparent;
   font-weight: 950;
   color: var(--sms-ink);
   font-size: 22px;
   letter-spacing: .4px;
 }
-
 
 
 /* 顶栏按钮（‹ / ≡） */
@@ -980,29 +1003,17 @@
   box-shadow: 0 4px 0 rgba(35,28,22,.18);
 }
 
-/* 标题 */
-.page-duanxin .sms-thread-title{
-  flex: 1;
-  text-align: center;
-  font-weight: 950;
-  color: var(--sms-ink);
-  font-size: 22px;
-  letter-spacing: .4px;
-  margin: 0 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-shadow: 0 2px 0 rgba(255,255,255,.45);
-}
 
 /* 聊天舞台（纸张底） */
 .page-duanxin .sms-thread-paper{
   flex: 1;                 /* 用 flex 自动撑满，不用 calc */
   height: auto;
   overflow: auto;
-  padding: 12px 16px 10px;
+  padding: 12px 16px 0px;
   scroll-behavior: smooth;
-  background: transparent; /* ✅ 去掉聊天区大底色 */
+  background: transparent;
+   width: min(115%, 400px);
+  margin: 0 auto;    /* ✅ 去掉聊天区大底色 */
 }
 
 
@@ -1077,17 +1088,13 @@
   display:flex;
   gap:10px;
   align-items:center;
-  padding: 10px 12px;
+  padding: 6px 6px;
   border-radius: 14px;
-
-  /* ✅ 位置：要微调就改这行 */
-  margin: 10px 16px -40px;  /* 上/左右/下 */
-
+  margin: 10px 20px -2px;  /* 上/左右/下 */
   background: rgba(255,255,255,.78);
   border: var(--sms-line);
   box-shadow: 0 10px 0 rgba(35,28,22,.14);
 }
-
 
 /* textarea */
 .page-duanxin .sms-input{
@@ -1127,4 +1134,29 @@
 .page-duanxin .sms-send:active{
   transform: translateY(2px);
   box-shadow: 0 6px 0 rgba(35,28,22,.16);
+}
+/* 联系人列表整体位置：上下左右 */
+.sms-list{
+  padding: 40px 12px 12px 15px; /* 上 右 下 左：左边越小越靠左 */
+  gap: 20px;                   /* 卡片之间的距离 */
+  margin-top: 8px;             /* 离“联系人”标题的距离 */
+}
+/* 顶部“联系人/短信”标题：大小&位置 */
+.sms-topbar{
+  padding-top: 30px;          /* 往下 */
+  padding-left: 130px;         /* 往右 */
+  padding-right: 12px;
+}
+
+.sms-title{
+  font-size: 20px;            /* 标题大小 */
+  font-weight: 900;
+  transform: translate(0px, 0px); /* 微调：x,y */
+}
+/* ===== 顶部控制按钮：强制最上层 ===== */
+.phone-back,
+.phone-menu{
+  position: absolute;
+  z-index: 9999;           /* 直接拉到最高 */
+  pointer-events: auto;    /* 确保可点击 */
 }

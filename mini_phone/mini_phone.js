@@ -594,6 +594,9 @@ function renderSmsPreview(mount, contactId, title) {
     { who: 'them', text: '（预览）你在吗？' },
     { who: 'me', text: '在。怎么？' },
     { who: 'them', text: '（预览）我刚看到你发的那个……有点意思。' },
+    { who: 'them', text: '（预览）我刚看到你发的那个……有点意思。' },
+    { who: 'them', text: '（预览）我刚看到你发的那个……有点意思。' },
+    { who: 'them', text: '（预览）我刚看到你发的那个……有点意思。' },
     { who: 'me', text: '别卖关子，直说。' },
   ];
 
