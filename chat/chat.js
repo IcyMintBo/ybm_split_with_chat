@@ -315,28 +315,45 @@ function enableOverlayDrag(overlay){
     item.dataset.msgId = msg.id;
     item.dataset.role = msg.role;
 
-    // ===== 名字标签行 =====
-    const tag = document.createElement('div');
-    tag.className = 'nameTag';
+// ===== 气泡头部：头像+名字(左) + 操作键(右) =====
+const head = document.createElement('div');
+head.className = 'chatHead';
 
-    // 助手显示头像，user 不显示头像（你要求的）
-    if (role !== 'me') {
-      const av = document.createElement('img');
-      av.className = 'nameAvatar';
-      // 头像路径：按联系人 id 放
-      // 例：assets/avatars/ybm.png / caishu.png / dantuo.png / zhoubin.png
-      const cid = engine.getActiveContact?.() || 'ybm';
-      av.src = `./assets/avatars/${cid}.png`;
-      av.alt = '';
-      // 头像缺失就隐藏，避免 console 一直刷
-      av.onerror = () => { av.style.display = 'none'; };
-      tag.appendChild(av);
-    }
+const whoLeft = document.createElement('div');
+whoLeft.className = 'chatWhoLeft';
 
-    const nameText = document.createElement('div');
-    nameText.className = 'nameText';
-    nameText.textContent = role === 'me' ? getUserDisplayName() : getActiveContactName(engine);
-    tag.appendChild(nameText);
+// 头像（user/assistant 都显示；没有就自动隐藏）
+const ava = document.createElement('div');
+ava.className = 'chatAva';
+
+const avaImg = document.createElement('img');
+avaImg.alt = '';
+
+const cid = engine.getActiveContact?.() || 'ybm';
+avaImg.src = (role === 'me')
+  ? `./assets/avatars/user.png`
+  : `./assets/avatars/${cid}.png`;
+
+// 头像缺失就隐藏容器
+avaImg.onerror = () => { ava.style.display = 'none'; };
+
+ava.appendChild(avaImg);
+
+// 名字
+const who = document.createElement('div');
+who.className = 'chatWho';
+who.textContent = (role === 'me') ? getUserDisplayName() : getActiveContactName(engine);
+
+whoLeft.appendChild(ava);
+whoLeft.appendChild(who);
+
+// 右侧操作区
+const ops = document.createElement('div');
+ops.className = 'chatOps';
+
+head.appendChild(whoLeft);
+head.appendChild(ops);
+
 
     // ===== 卡片本体 =====
     const wrap = document.createElement('div');
@@ -376,20 +393,30 @@ function enableOverlayDrag(overlay){
       actions.appendChild(btnReroll);
     }
 
-    actions.appendChild(btnEdit);
-    actions.appendChild(btnDel);
-    meta.appendChild(actions);
+actions.appendChild(btnEdit);
+actions.appendChild(btnDel);
+
+// ✅ 操作键放到气泡头部右侧
+ops.appendChild(actions);
+
+
 
     // 内容（注意：不要再用 chatBody 这个 class，避免和页面容器 .chatBody 撞名）
     const body = document.createElement('div');
     body.className = 'chatText';
     body.textContent = applyRenderRegex(sanitizeModelText(msg.content || ''));
 
-    wrap.appendChild(meta);
-    wrap.appendChild(body);
+// ✅ 气泡顶部先放 head（名字+头像+操作键）
+wrap.appendChild(head);
 
-    item.appendChild(tag);
-    item.appendChild(wrap);
+// meta 这行你可以保留当“占位容器”，也可以直接不 append
+// wrap.appendChild(meta);
+
+wrap.appendChild(body);
+
+// ✅ 不再把 tag 放在外面了
+item.appendChild(wrap);
+
     box.appendChild(item);
 
     // ===== handlers =====
@@ -701,6 +728,9 @@ document.addEventListener('click', async (e) => {
   const btn = e.target.closest?.('#chatDeviceBtn');
   if (!btn) return;
 
+  // ✅ 先确保 phoneOverlay/phoneMask/miniPhoneMount 存在
+  ensurePhoneOverlayDOM();
+
   const ok = await ensureMiniPhoneLoaded();
   if (!ok) {
     console.warn('[mini_phone] load failed');
@@ -708,21 +738,21 @@ document.addEventListener('click', async (e) => {
     return;
   }
 
-await window.MiniPhone?.open?.();
-openPhone();
-}, true); // ✅ capture=true，绕开 stopPropagation
+  // ✅ 只让 mini_phone 自己负责 open/close（不要再叠一层 openPhone）
+  await window.MiniPhone?.open?.();
+}, true);
+
 
 
 
 // 关闭 mini_phone：用委托（phoneMask 是动态创建的）
 if (!document.documentElement.dataset.phoneMaskBound) {
   document.documentElement.dataset.phoneMaskBound = '1';
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest?.('#phoneMask')) return;
-    closePhone();
-    window.MiniPhone?.close?.();
-  }, true);
-}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest?.('#phoneMask')) return;
+  window.MiniPhone?.close?.();
+}, true);
+
 
     // 返回键：强制显示文字，避免字体丢失出现 ?
     const back = qs('chatBack');

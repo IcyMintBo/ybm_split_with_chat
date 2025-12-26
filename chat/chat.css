@@ -97,13 +97,16 @@
   align-items: flex-start;
 }
 
-.nameTag {
-  width: 92px;
-  flex: 0 0 92px;
-  display: flex;
-  gap: 8px;
-  align-items: center;
+/* ✅ 不再使用左侧名字列：全部放进气泡里 */
+.chatItem .nameTag{
+  width: 0;
+  flex: 0 0 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
+
+
 
 .nameAvatar {
   width: 28px;
@@ -142,14 +145,14 @@
   /* 防止长文本把布局撑爆 */
 }
 
-.chatMeta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-  font-size: 12px;
-  opacity: .75;
+/* chatMeta 退役：不再用于放名字/按钮 */
+.chatMeta{
+  display: none;
+}
+
+/* ✅ 让气泡顶部左右分布：左边留空/右边放按钮 */
+.chatItem.me .chatMeta{
+  justify-content: flex-end;
 }
 
 .msgActions {
@@ -536,4 +539,99 @@
   .phoneOverlay[data-open="true"] {
     transform: translate(-50%, -50%) !important;
   }
+}
+/* ===== 圆形发送键：chatSendBtn ===== */
+#viewChat .chatComposer{
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+#viewChat .chatSendBtn{
+  flex: 0 0 auto;
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  border: 3px solid #2b2b2b;
+  background: #fff7e4;
+  box-shadow:
+    0 4px 0 rgba(0,0,0,0.18),
+    0 10px 18px rgba(0,0,0,0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+#viewChat .chatSendBtn:active{
+  transform: translateY(2px);
+  box-shadow:
+    0 2px 0 rgba(0,0,0,0.18),
+    0 8px 14px rgba(0,0,0,0.18);
+}
+
+#viewChat .chatSendBtn svg{
+  display: block;
+}
+/* ===== 气泡头部：头像+名字进气泡 ===== */
+.chatMsg{
+  position: relative;
+}
+
+/* 头部一行：左=头像+名字，右=操作键 */
+.chatHead{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.chatWhoLeft{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.chatAva{
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 2px solid rgba(0,0,0,0.18);
+  background: rgba(255,255,255,0.75);
+}
+
+.chatAva img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.chatWho{
+  font-weight: 900;
+  font-size: 13px;
+  opacity: .85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+/* 右侧操作键排到最右 */
+.chatOps{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+/* 原来的 .chatMeta 现在只当“容器”，不额外占行高 */
+.chatMeta{
+  padding: 0;
+  margin: 0;
 }
