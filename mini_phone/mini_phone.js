@@ -89,67 +89,69 @@ async function ensureMounted() {
 
     const shell = mount.querySelector('.phone-shell');
     const content = mount.querySelector('.phone-content');
-    const backBtn = mount.querySelector('[data-mp-back]');
     const pages = Array.from(mount.querySelectorAll('.page'));
+    const backBtn = mount.querySelector('[data-mp-back]');
+    const menuBtn = mount.querySelector('.phone-menu');
 
-function setHome(isHome) {
-  if (shell) shell.classList.toggle('is-home', isHome);
-  if (backBtn) backBtn.classList.toggle('hidden', isHome);
-}
-
-
-function showPage(rawName) {
-  let name = String(rawName || '').trim();
-
-  // 兼容传入 "page page-duanxin active" / "page-duanxin"
-  const m = name.match(/\bpage-([a-z0-9_-]+)\b/i);
-  if (m && m[1]) name = m[1];
-  name = name.replace(/^page-/i, '').trim();
-
-  // 找目标页
-  const targetClass = `page-${name}`;
-  const target = pages.find(p => p.classList.contains(targetClass));
-
-  // 找不到就回 home，避免空白
-  const finalTarget = target || pages.find(p => p.classList.contains('page-home'));
-  const isHome = !!(finalTarget && finalTarget.classList.contains('page-home'));
-
-  // 关键：硬切 display，保证永远能看到页面
-  pages.forEach(p => {
-    const on = (p === finalTarget);
-    p.classList.toggle('active', on);
-    p.style.display = on ? 'block' : 'none';
-    if (on) {
-      p.style.opacity = '1';
-      p.style.pointerEvents = 'auto';
-      p.style.transform = 'none';
-    } else {
-      p.style.pointerEvents = 'none';
+    function setHome(isHome) {
+      if (shell) shell.classList.toggle('is-home', isHome);
+      if (backBtn) backBtn.classList.toggle('hidden', isHome);
+      if (menuBtn) menuBtn.classList.toggle('hidden', isHome);
     }
-  });
 
-  // 顶部“返回”显示/隐藏
-  setHome(isHome);
 
-  // ===== 你的要求 1：点短信后底图切到 beijing2，并保持（联系人->聊天不再触发 showPage，所以背景会一直是 beijing2）=====
-  const bgImg = mount.querySelector('.phone-bg');
-  if (bgImg) {
-    bgImg.src = (name === 'duanxin')
-      ? './assets/avatars/beijing2.png'   // 短信背景
-      : './assets/avatars/beijin.png';    // 默认背景（你自己的默认文件名）
-  }
+    function showPage(rawName) {
+      let name = String(rawName || '').trim();
 
-  // 短信页隐藏左下角小人（你前面要求短信页不显示）
-  const ren = mount.querySelector('.phone-ren');
-  if (ren) {
-    ren.style.display = (name === 'duanxin') ? 'none' : '';
-  }
+      // 兼容传入 "page page-duanxin active" / "page-duanxin"
+      const m = name.match(/\bpage-([a-z0-9_-]+)\b/i);
+      if (m && m[1]) name = m[1];
+      name = name.replace(/^page-/i, '').trim();
 
-  // ===== 你的要求 2：点击联系人切到聊天页（两层切换），背景依旧是 beijing2 =====
-  if (!isHome && name === 'duanxin') {
-    initSmsSimple(mount);
-  }
-}
+      // 找目标页
+      const targetClass = `page-${name}`;
+      const target = pages.find(p => p.classList.contains(targetClass));
+
+      // 找不到就回 home，避免空白
+      const finalTarget = target || pages.find(p => p.classList.contains('page-home'));
+      const isHome = !!(finalTarget && finalTarget.classList.contains('page-home'));
+
+      // 关键：硬切 display，保证永远能看到页面
+      pages.forEach(p => {
+        const on = (p === finalTarget);
+        p.classList.toggle('active', on);
+        p.style.display = on ? 'block' : 'none';
+        if (on) {
+          p.style.opacity = '1';
+          p.style.pointerEvents = 'auto';
+          p.style.transform = 'none';
+        } else {
+          p.style.pointerEvents = 'none';
+        }
+      });
+
+      // 顶部“返回”显示/隐藏
+      setHome(isHome);
+
+      // ===== 你的要求 1：点短信后底图切到 beijing2，并保持（联系人->聊天不再触发 showPage，所以背景会一直是 beijing2）=====
+      const bgImg = mount.querySelector('.phone-bg');
+      if (bgImg) {
+        bgImg.src = (name === 'duanxin')
+          ? './assets/avatars/beijing2.png'   // 短信背景
+          : './assets/avatars/beijin.png';    // 默认背景（你自己的默认文件名）
+      }
+
+      // 短信页隐藏左下角小人（你前面要求短信页不显示）
+      const ren = mount.querySelector('.phone-ren');
+      if (ren) {
+        ren.style.display = (name === 'duanxin') ? 'none' : '';
+      }
+
+      // ===== 你的要求 2：点击联系人切到聊天页（两层切换），背景依旧是 beijing2 =====
+      if (!isHome && name === 'duanxin') {
+        initSmsSimple(mount);
+      }
+    }
 
 
     // 初始：home
@@ -173,6 +175,8 @@ function showPage(rawName) {
       function setIndex(nextIndex, dir) {
         const from = getIndex();
         const to = (nextIndex + radios.length) % radios.length;
+        // 全局返回：短信内优先回联系人列表，否则回主页
+
         if (from === to) return;
 
         // 轻量滑动：给 panelBody 一个动画 class，再切 radio
@@ -243,12 +247,11 @@ function showPage(rawName) {
           const listView = duanxinPage.querySelector('[data-sms-view="list"]');
           const threadView = duanxinPage.querySelector('[data-sms-view="thread"]');
 
-          // ② 如果在“会话页”，返回到“短信列表页”
           if (threadView && threadView.classList.contains('active')) {
-            threadView.classList.remove('active');
-            listView.classList.add('active');
-            return; // ⚠️ 关键：不再继续往下执行
+            showSmsInnerView(mount, 'list');
+            return;
           }
+
         }
 
         // ③ 其它情况，才回主界面
@@ -515,7 +518,7 @@ function escapeHtml(s) {
 
 // 暴露给 chat 调用
 window.MiniPhone = { open, close };
-function initSmsSimple(mount){
+function initSmsSimple(mount) {
   // 每次进入短信页都可以调用，但只绑定一次事件
   if (mount.dataset.smsBound === '1') {
     // 仍然确保默认显示 list
@@ -524,7 +527,7 @@ function initSmsSimple(mount){
   }
   mount.dataset.smsBound = '1';
 
-  function showSmsInnerView(mount, view){
+  function showSmsInnerView(mount, view) {
     const listView = mount.querySelector('[data-sms-view="list"]');
     const threadView = mount.querySelector('[data-sms-view="thread"]');
     if (!listView || !threadView) return;
@@ -540,44 +543,33 @@ function initSmsSimple(mount){
   showSmsInnerView(mount, 'list');
 
   const threadName = mount.querySelector('[data-sms-thread-name]');
-  const backBtn = mount.querySelector('[data-sms-back]');
 
-mount.querySelectorAll('[data-sms-open-thread]').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const contactId = btn.getAttribute('data-contact') || btn.getAttribute('data-sms-open-thread') || 'c1';
-    const title = (btn.querySelector('.sms-name')?.textContent || '联系人').trim();
-
-    // 顶部标题
-    if (threadName) threadName.textContent = title;
-
-    // 切到聊天页
-    showSmsInnerView(mount, 'thread');
-
-    // ✅ 塞预览消息（每个联系人只塞一次，方便你调样式）
-    renderSmsPreview(mount, contactId, title);
-  });
-});
-
-
-  // 2) 聊天页返回 -> 回联系人列表
-  if (backBtn){
-    backBtn.addEventListener('click', (e) => {
+  mount.querySelectorAll('[data-sms-open-thread]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      showSmsInnerView(mount, 'list');
+
+      const contactId = btn.getAttribute('data-contact') || btn.getAttribute('data-sms-open-thread') || 'c1';
+      const title = (btn.querySelector('.sms-name')?.textContent || '联系人').trim();
+
+      // 顶部标题
+      if (threadName) threadName.textContent = title;
+
+      // 切到聊天页
+      showSmsInnerView(mount, 'thread');
+
+      // ✅ 塞预览消息（每个联系人只塞一次，方便你调样式）
+      renderSmsPreview(mount, contactId, title);
     });
-  }
+  });
 }
 
 // 让重复进入短信页时也能强制回到 list
-function showSmsInnerView(mount, view){
+function showSmsInnerView(mount, view) {
   const fn = window.showSmsInnerView;
   if (typeof fn === 'function') fn(mount, view);
 }
-function renderSmsPreview(mount, contactId, title){
+function renderSmsPreview(mount, contactId, title) {
   const thread = mount.querySelector('[data-sms-thread]');
   if (!thread) return;
 
@@ -600,9 +592,9 @@ function renderSmsPreview(mount, contactId, title){
   // 预览消息（你想怎么写都行）
   const msgs = [
     { who: 'them', text: '（预览）你在吗？' },
-    { who: 'me',   text: '在。怎么？' },
+    { who: 'me', text: '在。怎么？' },
     { who: 'them', text: '（预览）我刚看到你发的那个……有点意思。' },
-    { who: 'me',   text: '别卖关子，直说。' },
+    { who: 'me', text: '别卖关子，直说。' },
   ];
 
   msgs.forEach(m => appendSmsBubble(thread, m.who, m.text, ava));
@@ -614,7 +606,7 @@ function renderSmsPreview(mount, contactId, title){
   bindSmsSendOnce(mount, ava);
 }
 
-function appendSmsBubble(thread, who, text, avatarSrc){
+function appendSmsBubble(thread, who, text, avatarSrc) {
   const row = document.createElement('div');
   row.className = `sms-row ${who}`;
 
@@ -638,7 +630,7 @@ function appendSmsBubble(thread, who, text, avatarSrc){
   thread.appendChild(row);
 }
 
-function bindSmsSendOnce(mount, avatarSrc){
+function bindSmsSendOnce(mount, avatarSrc) {
   if (mount.dataset.smsSendBound === '1') return;
   mount.dataset.smsSendBound = '1';
 

@@ -31,8 +31,8 @@
       </div>
 
       <!-- 返回按钮：只在非主界面显示 -->
-      <button class="phone-back hidden" type="button" data-mp-back>返回</button>
-
+<button class="phone-back hidden" type="button" data-mp-back aria-label="back"></button>
+<button class="phone-menu hidden" type="button" aria-label="menu"></button>
       <!-- 左下角小人：主界面显示 -->
       <img class="phone-ren" src="./assets/avatars/ren.png" alt="" />
 
@@ -188,7 +188,7 @@
   <!-- ① 联系人页 -->
   <section class="sms-view active" data-sms-view="list" aria-label="sms list">
     <header class="sms-topbar">
-      <div class="sms-title">短信</div>
+      <div class="sms-title">联系人</div>
     </header>
 
     <div class="sms-list">
@@ -245,9 +245,7 @@
   <!-- ② 聊天页（111 风格） -->
   <section class="sms-view" data-sms-view="thread" aria-label="sms thread">
     <header class="sms-topbar sms-topbar-thread">
-      <button class="sms-btn" type="button" data-sms-back aria-label="back">‹</button>
       <div class="sms-thread-title" data-sms-thread-name>联系人A</div>
-      <button class="sms-btn" type="button" data-sms-menu aria-label="menu">≡</button>
     </header>
 
     <main class="sms-thread sms-thread-paper" data-sms-thread></main>
