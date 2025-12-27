@@ -615,20 +615,6 @@ function closeClearModal() {
   modal.setAttribute('aria-hidden', 'true');
 }
 
-
-  function closeClearModal() {
-    const mask = qs('chatClearMask');
-    const modal = qs('chatClearModal');
-    if (!mask || !modal) return;
-
-    mask.style.display = 'none';
-    modal.style.display = 'none';
-
-    mask.setAttribute('aria-hidden', 'true');
-    modal.setAttribute('aria-hidden', 'true');
-  }
-
-
   // ===== mount chat.html into #mountChat =====
   async function ensureMounted() {
     const mount = document.getElementById('mountChat');
@@ -748,11 +734,12 @@ document.addEventListener('click', async (e) => {
 // 关闭 mini_phone：用委托（phoneMask 是动态创建的）
 if (!document.documentElement.dataset.phoneMaskBound) {
   document.documentElement.dataset.phoneMaskBound = '1';
-document.addEventListener('click', (e) => {
-  if (!e.target.closest?.('#phoneMask')) return;
-  window.MiniPhone?.close?.();
-}, true);
 
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest?.('#phoneMask')) return;
+    window.MiniPhone?.close?.();
+  }, true);
+}
 
     // 返回键：强制显示文字，避免字体丢失出现 ?
     const back = qs('chatBack');
