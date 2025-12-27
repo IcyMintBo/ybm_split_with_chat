@@ -15,6 +15,8 @@ const OVERLAY_ID = 'phoneOverlay';
 const MASK_ID = 'phoneMask';
 
 let mounted = false;
+let mountedMount = null; // ✅ 记住上一次绑定的 mount，防止 mount 换了但不重新绑
+
 // ===== SMS runtime state (simple) =====
 let smsBound = false;
 let smsActiveContactId = null;
@@ -33,10 +35,12 @@ function setOpen(id, open) {
 async function ensureMounted() {
   ensureCss();
 
-  if (mounted) return true;
-
   const mount = byId(MOUNT_ID);
   if (!mount) return false;
+
+  // ✅ mount 没变才允许直接返回；mount 换了就必须重新绑定
+  if (mounted && mount === mountedMount) return true;
+
 
   // 1) 塞入 HTML（只做一次）
   if (!mount.dataset.mpMounted) {
@@ -89,18 +93,20 @@ async function ensureMounted() {
 
     const shell = mount.querySelector('.phone-shell');
     const content = mount.querySelector('.phone-content');
-    const pages = Array.from(mount.querySelectorAll('.page'));
     const backBtn = mount.querySelector('[data-mp-back]');
-    const menuBtn = mount.querySelector('.phone-menu');
+const menuBtn = mount.querySelector('.phone-menu');
 
     function setHome(isHome) {
       if (shell) shell.classList.toggle('is-home', isHome);
       if (backBtn) backBtn.classList.toggle('hidden', isHome);
       if (menuBtn) menuBtn.classList.toggle('hidden', isHome);
+
+      // ✅ 补一层：短信/联系人页也标记一下（你 CSS 里已经用 is-sms 做隐藏逻辑了）
+      if (shell) shell.classList.toggle('is-sms', !isHome && mount.querySelector('.page.page-duanxin')?.classList.contains('active'));
     }
 
-
     function showPage(rawName) {
+      const pages = Array.from(mount.querySelectorAll('.page'));
       let name = String(rawName || '').trim();
 
       // 兼容传入 "page page-duanxin active" / "page-duanxin"
@@ -130,27 +136,58 @@ async function ensureMounted() {
         }
       });
 
-      // 顶部“返回”显示/隐藏
+      // 顶部“返回/菜单”显示/隐藏（原有）
       setHome(isHome);
 
-      // ===== 你的要求 1：点短信后底图切到 beijing2，并保持（联系人->聊天不再触发 showPage，所以背景会一直是 beijing2）=====
+      // ✅ 强制：非 home 时彻底隐藏 home-only，并且不吃点击（避免挡住联系人卡片）
+      const homeOnlyEls = Array.from(mount.querySelectorAll('.home-only'));
+      homeOnlyEls.forEach(el => {
+        el.style.display = isHome ? '' : 'none';
+        el.style.pointerEvents = isHome ? '' : 'none';
+      });
+
+      // ✅ 双保险：非 home 时把左侧/底部图标也禁用点击（哪怕没打 home-only 也不会挡）
+      const leftIcons = mount.querySelector('.phone-left-icons');
+      const bottomIcons = mount.querySelector('.phone-bottom-icons');
+      [leftIcons, bottomIcons].forEach(el => {
+        if (!el) return;
+        el.style.pointerEvents = isHome ? '' : 'none';
+        el.style.opacity = isHome ? '' : '0';
+      });
+
+      // ✅ 返回/菜单按钮：再硬控一次，防止 hidden 没被正确切掉
+      if (backBtn) backBtn.classList.toggle('hidden', isHome);
+      if (menuBtn) menuBtn.classList.toggle('hidden', isHome);
+
+      // ===== 背景切换：短信页用 beijing2，其余回默认 =====
       const bgImg = mount.querySelector('.phone-bg');
       if (bgImg) {
         bgImg.src = (name === 'duanxin')
-          ? './assets/avatars/beijing2.png'   // 短信背景
-          : './assets/avatars/beijin.png';    // 默认背景（你自己的默认文件名）
+          ? './assets/avatars/beijing2.png'
+          : './assets/avatars/beijin.png';
       }
 
-      // 短信页隐藏左下角小人（你前面要求短信页不显示）
+      // ✅ 短信页隐藏左下角小人（仍保留你的旧逻辑，但现在由 home-only 也能兜底）
       const ren = mount.querySelector('.phone-ren');
       if (ren) {
         ren.style.display = (name === 'duanxin') ? 'none' : '';
       }
+// ✅ 时间只在 home 显示（你现在的时间是 .mp-clock）
+const clockEl = mount.querySelector('.mp-clock');
+if (clockEl) {
+  clockEl.style.display = isHome ? '' : 'none';
+}
 
-      // ===== 你的要求 2：点击联系人切到聊天页（两层切换），背景依旧是 beijing2 =====
-      if (!isHome && name === 'duanxin') {
+// （可选）如果你连左右的“网络/电量”也只想在 home 显示，就把 topbar 整体一起控：
+ const topbarEl = mount.querySelector('.mp-topbar');
+if (topbarEl) topbarEl.style.opacity = isHome ? '1' : '0';
+      // ✅ 进入短信页时，初始化短信 UI（绑定联系人点击 + 默认显示列表）
+      if (name === 'duanxin') {
         initSmsSimple(mount);
+        setHome(false); // ⭐ 强制退出 home
       }
+
+
     }
 
 
@@ -218,10 +255,14 @@ async function ensureMounted() {
       content.style.setProperty('--app-y', `${cy}px`);
     }
 
-    // 图标：带 data-page 的都当按钮
-    mount.querySelectorAll('[data-page]').forEach(icon => {
-      icon.style.cursor = 'pointer';
-      icon.addEventListener('click', (e) => {
+    // ✅ 事件委托：点击左侧/底部图标切页（独立标记，避免被 mpNavBound 吃掉）
+    if (!mount.dataset.mpNavDelegated) {
+      mount.dataset.mpNavDelegated = '1';
+
+      mount.addEventListener('click', (e) => {
+        const icon = e.target.closest?.('[data-page]');
+        if (!icon) return;
+
         const page = icon.getAttribute('data-page');
         if (!page) return;
 
@@ -229,9 +270,11 @@ async function ensureMounted() {
         showPage(page);
 
         e.preventDefault();
-        e.stopPropagation();
-      });
-    });
+        e.stopImmediatePropagation();
+      }, true); // capture：优先级更高
+    }
+
+
 
     // 返回：优先处理短信页的“上一层”，否则回 home
     if (backBtn) {
@@ -251,7 +294,6 @@ async function ensureMounted() {
             showSmsInnerView(mount, 'list');
             return;
           }
-
         }
 
         // ③ 其它情况，才回主界面
@@ -527,14 +569,29 @@ function initSmsSimple(mount) {
   }
   mount.dataset.smsBound = '1';
 
-  function showSmsInnerView(mount, view) {
-    const listView = mount.querySelector('[data-sms-view="list"]');
-    const threadView = mount.querySelector('[data-sms-view="thread"]');
-    if (!listView || !threadView) return;
+function showSmsInnerView(mount, view) {
+  const listView = mount.querySelector('[data-sms-view="list"]');
+  const threadView = mount.querySelector('[data-sms-view="thread"]');
+  if (!listView || !threadView) return;
 
-    listView.classList.toggle('active', view === 'list');
-    threadView.classList.toggle('active', view === 'thread');
-  }
+  // ✅ 切短信内部视图
+  listView.classList.toggle('active', view === 'list');
+  threadView.classList.toggle('active', view === 'thread');
+
+  // ✅ 关键：只要进入短信（list/thread），外壳就必须退出 home
+  const shell = mount.querySelector('.phone-shell');
+  const backBtn = mount.querySelector('[data-mp-back]');
+  const menuBtn = mount.querySelector('.phone-menu');
+  const topbar = mount.querySelector('.mp-topbar');
+
+  if (shell) shell.classList.remove('is-home');
+  if (backBtn) backBtn.classList.remove('hidden');
+  if (menuBtn) menuBtn.classList.remove('hidden');
+
+  // 保险：把 topbar 也压掉（避免 is-home 残留导致 09:09 盖住）
+  if (topbar) topbar.style.opacity = '0';
+}
+
 
   // 暴露给上面复用
   window.showSmsInnerView = showSmsInnerView;
@@ -544,13 +601,32 @@ function initSmsSimple(mount) {
 
   const threadName = mount.querySelector('[data-sms-thread-name]');
 
-  mount.querySelectorAll('[data-sms-open-thread]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+  // ✅ 委托绑定联系人卡片：点卡片任何位置都能进入 thread
+  if (!mount.dataset.smsOpenDelegated) {
+    mount.dataset.smsOpenDelegated = '1';
 
-      const contactId = btn.getAttribute('data-contact') || btn.getAttribute('data-sms-open-thread') || 'c1';
-      const title = (btn.querySelector('.sms-name')?.textContent || '联系人').trim();
+    mount.addEventListener('click', (e) => {
+      // 只在短信页生效
+      const duanxinPage = mount.querySelector('.page.page-duanxin');
+      if (!duanxinPage || !duanxinPage.classList.contains('active')) return;
+
+      // 命中联系人卡片：兼容多种结构
+      const card = e.target.closest?.('[data-sms-open-thread],[data-contact],.sms-item,.contact-card,.sms-card');
+      if (!card) return;
+
+      // 避免点到“返回/切换角色按钮”
+      if (e.target.closest?.('[data-mp-back],.mp-prev,.mp-next')) return;
+
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      const contactId =
+        card.getAttribute('data-contact') ||
+        card.getAttribute('data-sms-open-thread') ||
+        card.dataset.contactId ||
+        'c1';
+
+      const title = (card.querySelector('.sms-name,.name,.title')?.textContent || '联系人').trim();
 
       // 顶部标题
       if (threadName) threadName.textContent = title;
@@ -558,10 +634,11 @@ function initSmsSimple(mount) {
       // 切到聊天页
       showSmsInnerView(mount, 'thread');
 
-      // ✅ 塞预览消息（每个联系人只塞一次，方便你调样式）
+      // 塞预览（每联系人一次）
       renderSmsPreview(mount, contactId, title);
-    });
-  });
+    }, true);
+  }
+
 }
 
 // 让重复进入短信页时也能强制回到 list

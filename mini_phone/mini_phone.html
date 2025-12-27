@@ -31,23 +31,23 @@
       </div>
 
       <!-- 返回按钮：只在非主界面显示 -->
-<button class="phone-back hidden" type="button" data-mp-back aria-label="back"></button>
-<button class="phone-menu hidden" type="button" aria-label="menu"></button>
+      <button class="phone-back hidden" type="button" data-mp-back aria-label="back"></button>
+      <button class="phone-menu hidden" type="button" aria-label="menu"></button>
       <!-- 左下角小人：主界面显示 -->
-      <img class="phone-ren" src="./assets/avatars/ren.png" alt="" />
+<img class="phone-ren home-only" src="./assets/avatars/ren.png" alt="" />
 
       <!-- 左侧功能图标 -->
-      <div class="phone-left-icons">
+      <div class="phone-left-icons home-only">
         <img src="./assets/avatars/duanxin.png" data-page="duanxin" />
         <img src="./assets/avatars/luntan.png" data-page="luntan" />
         <img src="./assets/avatars/heike.png" data-page="heike" />
       </div>
 
       <!-- 底部图标 -->
-      <div class="phone-bottom-icons">
-        <img src="./assets/avatars/shezhi.png" data-page="shezhi" />
-        <img src="./assets/avatars/qunliao.png" data-page="qunliao" />
-      </div>
+<div class="phone-bottom-icons home-only">
+  <img src="./assets/avatars/shezhi.png" data-page="shezhi" />
+  <img src="./assets/avatars/qunliao.png" data-page="qunliao" />
+</div>
 
       <!-- 内容区 -->
       <div class="phone-content" id="phone-content">
@@ -183,94 +183,94 @@
             </div>
           </section>
         </div>
-<!-- 短信 -->
-<div class="page page-duanxin">
-  <!-- ① 联系人页 -->
-  <section class="sms-view active" data-sms-view="list" aria-label="sms list">
-    <header class="sms-topbar">
-      <div class="sms-title">联系人</div>
-    </header>
+        <!-- 短信 -->
+        <div class="page page-duanxin">
+          <!-- ① 联系人页 -->
+          <section class="sms-view active" data-sms-view="list" aria-label="sms list">
+            <header class="sms-topbar">
+              <div class="sms-title">联系人</div>
+            </header>
 
-    <div class="sms-list">
-      <button class="sms-item" data-sms-open-thread data-contact="c1">
-        <div class="sms-ava"><img src="./assets/avatars/ybm.png" alt=""></div>
-        <div class="sms-meta">
-          <div class="sms-name">联系人 1</div>
-          <div class="sms-preview">最近一条消息预览……</div>
+            <div class="sms-list">
+              <button class="sms-item" data-sms-open-thread data-contact="c1">
+                <div class="sms-ava"><img src="./assets/avatars/ybm.png" alt=""></div>
+                <div class="sms-meta">
+                  <div class="sms-name">联系人 1</div>
+                  <div class="sms-preview">最近一条消息预览……</div>
+                </div>
+                <div class="sms-right">
+                  <div class="sms-time">09:41</div>
+                  <div class="sms-dot"></div>
+                </div>
+              </button>
+
+              <button class="sms-item" data-sms-open-thread data-contact="c2">
+                <div class="sms-ava"><img src="./assets/avatars/caishu.png" alt=""></div>
+                <div class="sms-meta">
+                  <div class="sms-name">联系人 2</div>
+                  <div class="sms-preview">另一条预览文本……</div>
+                </div>
+                <div class="sms-right">
+                  <div class="sms-time">昨天</div>
+                  <div class="sms-dot"></div>
+                </div>
+              </button>
+
+              <button class="sms-item" data-sms-open-thread data-contact="c3">
+                <div class="sms-ava"><img src="./assets/avatars/dantuo.png" alt=""></div>
+                <div class="sms-meta">
+                  <div class="sms-name">联系人 3</div>
+                  <div class="sms-preview">你可以把这行当成摘要……</div>
+                </div>
+                <div class="sms-right">
+                  <div class="sms-time">周二</div>
+                  <div class="sms-dot hidden"></div>
+                </div>
+              </button>
+
+              <button class="sms-item" data-sms-open-thread data-contact="c4">
+                <div class="sms-ava"><img src="./assets/avatars/zhoubin.png" alt=""></div>
+                <div class="sms-meta">
+                  <div class="sms-name">联系人 4</div>
+                  <div class="sms-preview">（无未读）</div>
+                </div>
+                <div class="sms-right">
+                  <div class="sms-time">12/20</div>
+                  <div class="sms-dot hidden"></div>
+                </div>
+              </button>
+            </div>
+          </section>
+
+          <!-- ② 聊天页（111 风格） -->
+          <section class="sms-view" data-sms-view="thread" aria-label="sms thread">
+            <header class="sms-topbar sms-topbar-thread">
+              <div class="sms-thread-title" data-sms-thread-name>联系人A</div>
+            </header>
+
+            <main class="sms-thread sms-thread-paper" data-sms-thread></main>
+
+            <footer class="sms-compose">
+              <div class="sms-bar">
+                <textarea class="sms-input" rows="1"></textarea>
+                <button class="sms-stash" type="button">⇢</button>
+                <button class="sms-send" type="button">➤</button>
+              </div>
+            </footer>
+          </section>
         </div>
-        <div class="sms-right">
-          <div class="sms-time">09:41</div>
-          <div class="sms-dot"></div>
-        </div>
-      </button>
 
-      <button class="sms-item" data-sms-open-thread data-contact="c2">
-        <div class="sms-ava"><img src="./assets/avatars/caishu.png" alt=""></div>
-        <div class="sms-meta">
-          <div class="sms-name">联系人 2</div>
-          <div class="sms-preview">另一条预览文本……</div>
-        </div>
-        <div class="sms-right">
-          <div class="sms-time">昨天</div>
-          <div class="sms-dot"></div>
-        </div>
-      </button>
-
-      <button class="sms-item" data-sms-open-thread data-contact="c3">
-        <div class="sms-ava"><img src="./assets/avatars/dantuo.png" alt=""></div>
-        <div class="sms-meta">
-          <div class="sms-name">联系人 3</div>
-          <div class="sms-preview">你可以把这行当成摘要……</div>
-        </div>
-        <div class="sms-right">
-          <div class="sms-time">周二</div>
-          <div class="sms-dot hidden"></div>
-        </div>
-      </button>
-
-      <button class="sms-item" data-sms-open-thread data-contact="c4">
-        <div class="sms-ava"><img src="./assets/avatars/zhoubin.png" alt=""></div>
-        <div class="sms-meta">
-          <div class="sms-name">联系人 4</div>
-          <div class="sms-preview">（无未读）</div>
-        </div>
-        <div class="sms-right">
-          <div class="sms-time">12/20</div>
-          <div class="sms-dot hidden"></div>
-        </div>
-      </button>
-    </div>
-  </section>
-
-  <!-- ② 聊天页（111 风格） -->
-  <section class="sms-view" data-sms-view="thread" aria-label="sms thread">
-    <header class="sms-topbar sms-topbar-thread">
-      <div class="sms-thread-title" data-sms-thread-name>联系人A</div>
-    </header>
-
-    <main class="sms-thread sms-thread-paper" data-sms-thread></main>
-
-    <footer class="sms-compose">
-      <div class="sms-bar">
-        <textarea class="sms-input" rows="1"></textarea>
-        <button class="sms-stash" type="button">⇢</button>
-        <button class="sms-send" type="button">➤</button>
-      </div>
-    </footer>
-  </section>
-</div>
-
-<!-- 论坛 -->
-<div class="page page-luntan">论坛页面</div>
-<!-- 黑客 -->
-<div class="page page-heike">黑客页面</div>
-<!-- 设置 -->
-<div class="page page-shezhi">设置页面</div>
-<!-- 群聊 -->
-<div class="page page-qunliao">群聊页面</div>
+        <!-- 论坛 -->
+        <div class="page page-luntan">论坛页面</div>
+        <!-- 黑客 -->
+        <div class="page page-heike">黑客页面</div>
+        <!-- 设置 -->
+        <div class="page page-shezhi">设置页面</div>
+        <!-- 群聊 -->
+        <div class="page page-qunliao">群聊页面</div>
 
 
-        </div>
       </div>
     </div>
   </div>
+</div>

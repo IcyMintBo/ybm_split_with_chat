@@ -1160,3 +1160,11 @@
   z-index: 9999;           /* 直接拉到最高 */
   pointer-events: auto;    /* 确保可点击 */
 }
+/* =========================
+   Home 专属元素显隐控制
+   ========================= */
+
+/* 非 home 页面时，隐藏所有 home-only 元素 */
+.phone-shell:not(.is-home) .home-only {
+  display: none !important;
+}
