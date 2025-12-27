@@ -25,6 +25,13 @@ let smsLastPage = 'list';
 function byId(id) {
   return document.getElementById(id);
 }
+
+// 兼容：点在文字/emoji/span 内时 e.target 可能不是元素（比如 Text 节点），需要兜底
+function $closest(target, selector) {
+  const el = (target && target.nodeType === 3) ? target.parentElement : target;
+  return el && el.closest ? el.closest(selector) : null;
+}
+
 function setOpen(id, open) {
   const el = byId(id);
   if (!el) return;
@@ -186,8 +193,6 @@ if (topbarEl) topbarEl.style.opacity = isHome ? '1' : '0';
         initSmsSimple(mount);
         setHome(false); // ⭐ 强制退出 home
       }
-
-
     }
 
 
@@ -260,7 +265,8 @@ if (topbarEl) topbarEl.style.opacity = isHome ? '1' : '0';
       mount.dataset.mpNavDelegated = '1';
 
       mount.addEventListener('click', (e) => {
-        const icon = e.target.closest?.('[data-page]');
+const icon = $closest(e.target, '[data-page]');
+
         if (!icon) return;
 
         const page = icon.getAttribute('data-page');
@@ -311,8 +317,10 @@ if (topbarEl) topbarEl.style.opacity = isHome ? '1' : '0';
   }
 
   mounted = true;
+  mountedMount = mount; // ✅ 记住这次绑定的 mount
   return true;
 }
+
 
 
 
@@ -611,11 +619,11 @@ function showSmsInnerView(mount, view) {
       if (!duanxinPage || !duanxinPage.classList.contains('active')) return;
 
       // 命中联系人卡片：兼容多种结构
-      const card = e.target.closest?.('[data-sms-open-thread],[data-contact],.sms-item,.contact-card,.sms-card');
-      if (!card) return;
+      const card = $closest(e.target, '[data-sms-open-thread],[data-contact],.sms-item,.contact-card,.sms-card');
 
       // 避免点到“返回/切换角色按钮”
-      if (e.target.closest?.('[data-mp-back],.mp-prev,.mp-next')) return;
+if ($closest(e.target, '[data-mp-back],.mp-prev,.mp-next')) return;
+
 
       e.preventDefault();
       e.stopImmediatePropagation();
@@ -638,8 +646,8 @@ function showSmsInnerView(mount, view) {
       renderSmsPreview(mount, contactId, title);
     }, true);
   }
+} // ✅ 关掉 initSmsSimple
 
-}
 
 // 让重复进入短信页时也能强制回到 list
 function showSmsInnerView(mount, view) {

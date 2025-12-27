@@ -33,7 +33,7 @@
   }
 
   function onChange(fn) {
-    if (typeof fn !== 'function') return () => {};
+    if (typeof fn !== 'function') return () => { };
     listeners.add(fn);
     return () => listeners.delete(fn);
   }
@@ -94,15 +94,31 @@
   function listContacts() {
     return Object.values(state.contacts);
   }
+  function getContact(contactId) {
+    contactId = ensureContact(contactId || getActiveContact());
+    return state.contacts[contactId] || null;
+  }
 
-  function addContact({ id, name }) {
+
+  function addContact(contact) {
+    const id = contact?.id;
     if (!id) return false;
     if (state.contacts[id]) return true;
-    state.contacts[id] = { id, name: name || id };
-    state.messages[id] = [];
+
+    // 允许传入 avatar/title 等扩展字段
+    const name = (contact?.name || contact?.title || id);
+
+    state.contacts[id] = {
+      ...contact,
+      id,
+      name,
+    };
+
+    state.messages[id] = state.messages[id] || [];
     save();
     return true;
   }
+
 
   function setActiveContact(contactId) {
     contactId = ensureContact(contactId);
@@ -182,31 +198,31 @@
     return true;
   }
 
-function clearMessages({ contactId, channel } = {}) {
-  contactId = ensureContact(contactId || getActiveContact());
+  function clearMessages({ contactId, channel } = {}) {
+    contactId = ensureContact(contactId || getActiveContact());
 
-  // channel 为空：清空该联系人的全部消息（包含 main + phone）
-  if (!channel) {
-    state.messages[contactId] = [];
+    // channel 为空：清空该联系人的全部消息（包含 main + phone）
+    if (!channel) {
+      state.messages[contactId] = [];
+      save();
+      return true;
+    }
+
+    // 指定 channel：只清掉该 channel 的消息
+    const arr = state.messages[contactId] || [];
+    state.messages[contactId] = arr.filter(m => m && m.channel !== channel);
     save();
     return true;
   }
 
-  // 指定 channel：只清掉该 channel 的消息
-  const arr = state.messages[contactId] || [];
-  state.messages[contactId] = arr.filter(m => m && m.channel !== channel);
-  save();
-  return true;
-}
-
-function clearAllMessages({ channel } = {}) {
-  // 遍历所有联系人
-  Object.keys(state.contacts || {}).forEach((cid) => {
-    clearMessages({ contactId: cid, channel });
-  });
-  save();
-  return true;
-}
+  function clearAllMessages({ channel } = {}) {
+    // 遍历所有联系人
+    Object.keys(state.contacts || {}).forEach((cid) => {
+      clearMessages({ contactId: cid, channel });
+    });
+    save();
+    return true;
+  }
 
 
 
@@ -499,6 +515,7 @@ function clearAllMessages({ channel } = {}) {
   // ✅ 导出：这里现在不会再引用未定义的 getMessages 了
   window.PhoneEngine = {
     listContacts,
+    getContact,
     addContact,
     setActiveContact,
     getActiveContact,

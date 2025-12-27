@@ -9,6 +9,12 @@
 
   // ===== utils =====
   function qs(id) { return document.getElementById(id); }
+
+  // 兼容：点在文字/emoji 上时 e.target 可能是 Text 节点，Text 没有 closest()
+  function $closest(target, selector) {
+    const el = (target && target.nodeType === 3) ? target.parentElement : target;
+    return el && el.closest ? el.closest(selector) : null;
+  }
   function autoGrow(el, maxH = 140) {
     if (!el) return;
     el.style.height = 'auto';
@@ -169,7 +175,8 @@ function enableOverlayDrag(overlay){
 
   overlay.addEventListener('mousedown', (e) => {
     // 点在图标/按钮/输入框上不拖，避免影响 app 点击
-    if (e.target.closest?.('img,button,input,textarea,select,a')) return;
+if ($closest(e.target, 'img,button,input,textarea,select,a')) return;
+
 
     const r = overlay.getBoundingClientRect();
     baseLeft = r.left;
@@ -711,7 +718,7 @@ if (!mount.querySelector('.chatWindow')) {
     }
 
 document.addEventListener('click', async (e) => {
-  const btn = e.target.closest?.('#chatDeviceBtn');
+  const btn = $closest(e.target, '#chatDeviceBtn');
   if (!btn) return;
 
   // ✅ 先确保 phoneOverlay/phoneMask/miniPhoneMount 存在
@@ -736,45 +743,40 @@ if (!document.documentElement.dataset.phoneMaskBound) {
   document.documentElement.dataset.phoneMaskBound = '1';
 
   document.addEventListener('click', (e) => {
-    if (!e.target.closest?.('#phoneMask')) return;
+    if (!$closest(e.target, '#phoneMask')) return;
     window.MiniPhone?.close?.();
   }, true);
 }
 
-    // 返回键：强制显示文字，避免字体丢失出现 ?
-    const back = qs('chatBack');
-    if (back && !back.dataset.bound) {
-      back.dataset.bound = '1';
-      back.textContent = '返回';
-      back.addEventListener('click', () => {
-        // 如果你有自己的导航方法，就优先用它
-        if (window.PhoneEngine?.goHome) { window.PhoneEngine.goHome(); return; }
-        if (window.PhoneEngine?.navigate) { window.PhoneEngine.navigate('home'); return; }
+// 返回键：强制显示文字，避免字体丢失出现 ?
+const back = qs('chatBack');
+if (back && !back.dataset.bound) {
+  back.dataset.bound = '1';
+  back.textContent = '返回';
+  back.addEventListener('click', () => {
+    // 如果你有自己的导航方法，就优先用它
+    if (window.PhoneEngine?.goHome) { window.PhoneEngine.goHome(); return; }
+    if (window.PhoneEngine?.navigate) { window.PhoneEngine.navigate('home'); return; }
 
-        // 兜底：浏览器返回
-        history.back();
-      });
-    }
-
+    // 兜底：浏览器返回
+    history.back();
+  });
+}
 
 // 清空：用 capture，避免点击被上层逻辑吞掉
 if (!document.documentElement.dataset.chatClearBound) {
   document.documentElement.dataset.chatClearBound = '1';
 
   document.addEventListener('click', (e) => {
-    if (e.target.closest?.('#chatClearBtn')) {
+    if ($closest(e.target, '#chatClearBtn')) {
       openClearModal();
       return;
     }
-    if (e.target.closest?.('#chatClearCancel')) {
+    if ($closest(e.target, '#chatClearCancel') || $closest(e.target, '#chatClearMask')) {
       closeClearModal();
       return;
     }
-    if (e.target.closest?.('#chatClearMask')) {
-      closeClearModal();
-      return;
-    }
-    if (e.target.closest?.('#chatClearCurrent')) {
+    if ($closest(e.target, '#chatClearCurrent')) {
       const contactId = engine.getActiveContact?.() || 'default';
       if (!confirm('清空当前联系人的聊天记录？')) return;
       engine.clearMessages?.({ contactId });
@@ -782,15 +784,16 @@ if (!document.documentElement.dataset.chatClearBound) {
       renderHistory(engine);
       return;
     }
-    if (e.target.closest?.('#chatClearAll')) {
+    if ($closest(e.target, '#chatClearAll')) {
       if (!confirm('全清：清空所有联系人的聊天记录，确认继续？')) return;
       engine.clearAllMessages?.();
       closeClearModal();
       renderHistory(engine);
       return;
     }
-  }, true); // 👈 capture=true
+  }, true); // capture=true
 }
+
 
   }
 
