@@ -79,7 +79,6 @@
   pointer-events: none;
 }
 
-/* Stage */
 .phone-stage{
   position: absolute;
   left: var(--stage-x, 0px);
@@ -88,8 +87,9 @@
   height: var(--stage-h, 100%);
   z-index: 2;
   overflow: visible;
-  pointer-events: none;
+  pointer-events: auto;
 }
+
 .phone-stage .phone-left-icons,
 .phone-stage .phone-bottom-icons,
 .phone-stage .phone-back,
@@ -205,9 +205,15 @@
 }
 
 .phone-content{
-  position: absolute;
-  inset: 0;
-  z-index: 1000; /* 页面在下，图标在上 */
+  position:absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+
+  /* ✅ 关键：内容层不吃点击，点击交给 stage 上的返回/菜单 */
+  pointer-events: none;
 }
 .phone-shell.is-home .phone-left-icons,
 .phone-shell.is-home .phone-bottom-icons{
@@ -1157,9 +1163,10 @@
 .phone-back,
 .phone-menu{
   position: absolute;
-  z-index: 9999;           /* 直接拉到最高 */
-  pointer-events: auto;    /* 确保可点击 */
+  z-index: 99999 !important;   /* ✅ 强制压过 phone-content/page */
+  pointer-events: auto !important;
 }
+
 /* =========================
    Home 专属元素显隐控制
    ========================= */
@@ -1168,3 +1175,5 @@
 .phone-shell:not(.is-home) .home-only {
   display: none !important;
 }
+.phone-content{ pointer-events: none !important; }
+.page{ pointer-events: auto !important; }

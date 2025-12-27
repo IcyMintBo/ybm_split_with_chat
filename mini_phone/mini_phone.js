@@ -1,4 +1,7 @@
-const CSS_URL = new URL('./mini_phone.css?v=3', import.meta.url).href;
+// mini_phone/mini_phone.js (module) — safe & stable (FULL REPLACE)
+
+const CSS_URL = new URL('./mini_phone.css?v=4', import.meta.url).href;
+const HTML_URL = new URL('./mini_phone.html?v=4', import.meta.url).href;
 
 function ensureCss() {
   if (document.querySelector('link[data-mini-phone-css="1"]')) return;
@@ -9,24 +12,26 @@ function ensureCss() {
   document.head.appendChild(link);
 }
 
-// mini_phone/mini_phone.js (module) — safe & stable
+// ===== constants =====
 const MOUNT_ID = 'miniPhoneMount';
 const OVERLAY_ID = 'phoneOverlay';
 const MASK_ID = 'phoneMask';
 
+// ===== runtime =====
 let mounted = false;
-let mountedMount = null; // ✅ 记住上一次绑定的 mount，防止 mount 换了但不重新绑
+let mountedMount = null;
 
-// ===== SMS runtime state (simple) =====
-let smsBound = false;
+// SMS runtime state
 let smsActiveContactId = null;
 let smsLastPage = 'list';
 
-function byId(id) {
-  return document.getElementById(id);
-}
+// page stack
+let mpPageStack = [];
+let mpCurrentPage = 'home';
 
-// 兼容：点在文字/emoji/span 内时 e.target 可能不是元素（比如 Text 节点），需要兜底
+// ===== helpers =====
+function byId(id) { return document.getElementById(id); }
+
 function $closest(target, selector) {
   const el = (target && target.nodeType === 3) ? target.parentElement : target;
   return el && el.closest ? el.closest(selector) : null;
@@ -39,26 +44,121 @@ function setOpen(id, open) {
   el.setAttribute('aria-hidden', open ? 'false' : 'true');
 }
 
+function getMount() {
+  return byId(MOUNT_ID);
+}
+
+function setHome(isHome) {
+  const mount = getMount();
+  if (!mount) return;
+
+  const shell = mount.querySelector('.phone-shell');
+  const backBtn = mount.querySelector('[data-mp-back], .phone-back');
+  const menuBtn = mount.querySelector('.phone-menu');
+
+  if (shell) shell.classList.toggle('is-home', !!isHome);
+
+  // ✅ Home 隐藏返回 & 菜单，非 Home 显示
+  if (backBtn) backBtn.classList.toggle('hidden', !!isHome);
+  if (menuBtn) menuBtn.classList.toggle('hidden', !!isHome);
+
+  // 短信态标记（给 CSS 用）
+  const duanxinActive =
+    !!mount.querySelector('.page.page-duanxin')?.classList.contains('active');
+  if (shell) shell.classList.toggle('is-sms', !isHome && duanxinActive);
+}
+
+
+function showPage(rawName, opts = {}) {
+  const { push = true } = opts;
+
+  const mount = getMount();
+  if (!mount) return;
+
+  const pages = Array.from(mount.querySelectorAll('.page'));
+  if (!pages.length) return;
+
+  let name = String(rawName || '').trim();
+  const m = name.match(/\bpage-([a-z0-9_-]+)\b/i);
+  if (m && m[1]) name = m[1];
+  name = name.replace(/^page-/i, '').trim();
+  if (!name) name = 'home';
+
+  const targetClass = `page-${name}`;
+  const target = pages.find(p => p.classList.contains(targetClass));
+  const finalTarget = target || pages.find(p => p.classList.contains('page-home'));
+  const isHome = !!(finalTarget && finalTarget.classList.contains('page-home'));
+
+  // history push
+  if (push) {
+    const nextKey = isHome ? 'home' : name;
+    if (nextKey && nextKey !== mpCurrentPage) {
+      mpPageStack.push(mpCurrentPage);
+      if (mpPageStack.length > 30) mpPageStack.shift();
+    }
+  }
+
+  // render
+  pages.forEach(p => {
+    const on = (p === finalTarget);
+    p.classList.toggle('active', on);
+    p.style.display = on ? 'block' : 'none';
+    p.style.opacity = on ? '1' : '0';
+    p.style.pointerEvents = on ? 'auto' : 'none';
+    if (on) p.style.transform = 'none';
+  });
+
+  mpCurrentPage = isHome ? 'home' : name;
+
+  // set home state
+  setHome(isHome);
+
+  // bg switch
+  const bgImg = mount.querySelector('.phone-bg');
+  if (bgImg) {
+    bgImg.src = (name === 'duanxin')
+      ? './assets/avatars/beijing2.png'
+      : './assets/avatars/beijin.png';
+  }
+
+  // ren hide in duanxin
+  const ren = mount.querySelector('.phone-ren');
+  if (ren) ren.style.display = (name === 'duanxin') ? 'none' : '';
+
+  // clock only on home
+  const clockEl = mount.querySelector('.mp-clock');
+  if (clockEl) clockEl.style.display = isHome ? '' : 'none';
+
+  // topbar follow
+  const topbarEl = mount.querySelector('.mp-topbar');
+  if (topbarEl) topbarEl.style.opacity = isHome ? '1' : '0';
+
+  // enter sms page
+  if (name === 'duanxin') {
+    initSmsSimple(mount);
+    setHome(false);
+  }
+}
+
+// ===== mount & bind =====
 async function ensureMounted() {
   ensureCss();
 
-  const mount = byId(MOUNT_ID);
+  const mount = getMount();
   if (!mount) return false;
 
-  // ✅ mount 没变才允许直接返回；mount 换了就必须重新绑定
+  // mount unchanged -> done
   if (mounted && mount === mountedMount) return true;
 
-
-  // 1) 塞入 HTML（只做一次）
+  // insert html once
   if (!mount.dataset.mpMounted) {
-    const htmlUrl = new URL('./mini_phone.html?v=3', import.meta.url);
-    const res = await fetch(htmlUrl.href);
+    const res = await fetch(HTML_URL);
     const html = await res.text();
     mount.innerHTML = html;
     mount.dataset.mpMounted = '1';
   }
 
-  // 2) stage 同步：让定位相对“底图实际显示区域”
+  // stage sync (bg actual display rect)
   const syncStageToBg = () => {
     const shell = mount.querySelector('.phone-shell');
     const bg = mount.querySelector('.phone-bg');
@@ -94,136 +194,31 @@ async function ensureMounted() {
     window.addEventListener('resize', syncStageToBg);
   }
 
-  // 3) 导航绑定（只绑定一次）
-  if (!mount.dataset.mpNavBound) {
-    mount.dataset.mpNavBound = '1';
+  // initial home
+  showPage('home', { push: false });
 
-    const shell = mount.querySelector('.phone-shell');
-    const content = mount.querySelector('.phone-content');
-    const backBtn = mount.querySelector('[data-mp-back]');
-const menuBtn = mount.querySelector('.phone-menu');
+  // home: switch bar prev/next
+  if (!mount.dataset.mpSwitchBound) {
+    mount.dataset.mpSwitchBound = '1';
 
-    function setHome(isHome) {
-      if (shell) shell.classList.toggle('is-home', isHome);
-      if (backBtn) backBtn.classList.toggle('hidden', isHome);
-      if (menuBtn) menuBtn.classList.toggle('hidden', isHome);
+    const prevBtn = mount.querySelector('.mp-prev');
+    const nextBtn = mount.querySelector('.mp-next');
+    const panelBody = mount.querySelector('.mp-panel-body');
+    const radios = Array.from(mount.querySelectorAll('input[name="mpTab"]'));
 
-      // ✅ 补一层：短信/联系人页也标记一下（你 CSS 里已经用 is-sms 做隐藏逻辑了）
-      if (shell) shell.classList.toggle('is-sms', !isHome && mount.querySelector('.page.page-duanxin')?.classList.contains('active'));
-    }
-
-    function showPage(rawName) {
-      const pages = Array.from(mount.querySelectorAll('.page'));
-      let name = String(rawName || '').trim();
-
-      // 兼容传入 "page page-duanxin active" / "page-duanxin"
-      const m = name.match(/\bpage-([a-z0-9_-]+)\b/i);
-      if (m && m[1]) name = m[1];
-      name = name.replace(/^page-/i, '').trim();
-
-      // 找目标页
-      const targetClass = `page-${name}`;
-      const target = pages.find(p => p.classList.contains(targetClass));
-
-      // 找不到就回 home，避免空白
-      const finalTarget = target || pages.find(p => p.classList.contains('page-home'));
-      const isHome = !!(finalTarget && finalTarget.classList.contains('page-home'));
-
-      // 关键：硬切 display，保证永远能看到页面
-      pages.forEach(p => {
-        const on = (p === finalTarget);
-        p.classList.toggle('active', on);
-        p.style.display = on ? 'block' : 'none';
-        if (on) {
-          p.style.opacity = '1';
-          p.style.pointerEvents = 'auto';
-          p.style.transform = 'none';
-        } else {
-          p.style.pointerEvents = 'none';
-        }
-      });
-
-      // 顶部“返回/菜单”显示/隐藏（原有）
-      setHome(isHome);
-
-      // ✅ 强制：非 home 时彻底隐藏 home-only，并且不吃点击（避免挡住联系人卡片）
-      const homeOnlyEls = Array.from(mount.querySelectorAll('.home-only'));
-      homeOnlyEls.forEach(el => {
-        el.style.display = isHome ? '' : 'none';
-        el.style.pointerEvents = isHome ? '' : 'none';
-      });
-
-      // ✅ 双保险：非 home 时把左侧/底部图标也禁用点击（哪怕没打 home-only 也不会挡）
-      const leftIcons = mount.querySelector('.phone-left-icons');
-      const bottomIcons = mount.querySelector('.phone-bottom-icons');
-      [leftIcons, bottomIcons].forEach(el => {
-        if (!el) return;
-        el.style.pointerEvents = isHome ? '' : 'none';
-        el.style.opacity = isHome ? '' : '0';
-      });
-
-      // ✅ 返回/菜单按钮：再硬控一次，防止 hidden 没被正确切掉
-      if (backBtn) backBtn.classList.toggle('hidden', isHome);
-      if (menuBtn) menuBtn.classList.toggle('hidden', isHome);
-
-      // ===== 背景切换：短信页用 beijing2，其余回默认 =====
-      const bgImg = mount.querySelector('.phone-bg');
-      if (bgImg) {
-        bgImg.src = (name === 'duanxin')
-          ? './assets/avatars/beijing2.png'
-          : './assets/avatars/beijin.png';
-      }
-
-      // ✅ 短信页隐藏左下角小人（仍保留你的旧逻辑，但现在由 home-only 也能兜底）
-      const ren = mount.querySelector('.phone-ren');
-      if (ren) {
-        ren.style.display = (name === 'duanxin') ? 'none' : '';
-      }
-// ✅ 时间只在 home 显示（你现在的时间是 .mp-clock）
-const clockEl = mount.querySelector('.mp-clock');
-if (clockEl) {
-  clockEl.style.display = isHome ? '' : 'none';
-}
-
-// （可选）如果你连左右的“网络/电量”也只想在 home 显示，就把 topbar 整体一起控：
- const topbarEl = mount.querySelector('.mp-topbar');
-if (topbarEl) topbarEl.style.opacity = isHome ? '1' : '0';
-      // ✅ 进入短信页时，初始化短信 UI（绑定联系人点击 + 默认显示列表）
-      if (name === 'duanxin') {
-        initSmsSimple(mount);
-        setHome(false); // ⭐ 强制退出 home
-      }
-    }
-
-
-    // 初始：home
-    showPage('home');
-    // ====== Home：左右切换角色（复用 mpTab1~4 radio） ======
-    (function bindSwitchBar() {
-      const prevBtn = mount.querySelector('.mp-prev');
-      const nextBtn = mount.querySelector('.mp-next');
-      const panelBody = mount.querySelector('.mp-panel-body');
-      const radios = Array.from(mount.querySelectorAll('input[name="mpTab"]'));
-
-      if (!prevBtn || !nextBtn || !panelBody || radios.length < 2) return;
-      if (mount.dataset.mpSwitchBound) return;
-      mount.dataset.mpSwitchBound = '1';
-
-      function getIndex() {
+    if (prevBtn && nextBtn && panelBody && radios.length >= 2) {
+      const getIndex = () => {
         const i = radios.findIndex(r => r.checked);
         return i >= 0 ? i : 0;
-      }
+      };
 
-      function setIndex(nextIndex, dir) {
+      const setIndex = (nextIndex, dir) => {
         const from = getIndex();
         const to = (nextIndex + radios.length) % radios.length;
-        // 全局返回：短信内优先回联系人列表，否则回主页
-
         if (from === to) return;
 
-        // 轻量滑动：给 panelBody 一个动画 class，再切 radio
         panelBody.classList.remove('slide-left', 'slide-right');
-        void panelBody.offsetWidth; // reflow 触发动画
+        void panelBody.offsetWidth;
         panelBody.classList.add(dir === 'left' ? 'slide-left' : 'slide-right');
 
         radios[to].checked = true;
@@ -231,7 +226,7 @@ if (topbarEl) topbarEl.style.opacity = isHome ? '1' : '0';
         setTimeout(() => {
           panelBody.classList.remove('slide-left', 'slide-right');
         }, 640);
-      }
+      };
 
       prevBtn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -244,72 +239,88 @@ if (topbarEl) topbarEl.style.opacity = isHome ? '1' : '0';
         e.stopPropagation();
         setIndex(getIndex() + 1, 'right');
       });
-    })();
-
-
-    function setAppOriginFrom(el) {
-      if (!content || !el) return;
-
-      const iconRect = el.getBoundingClientRect();
-      const contentRect = content.getBoundingClientRect();
-
-      const cx = (iconRect.left + iconRect.right) / 2 - contentRect.left;
-      const cy = (iconRect.top + iconRect.bottom) / 2 - contentRect.top;
-
-      content.style.setProperty('--app-x', `${cx}px`);
-      content.style.setProperty('--app-y', `${cy}px`);
     }
-
-    // ✅ 事件委托：点击左侧/底部图标切页（独立标记，避免被 mpNavBound 吃掉）
-    if (!mount.dataset.mpNavDelegated) {
-      mount.dataset.mpNavDelegated = '1';
-
-      mount.addEventListener('click', (e) => {
-const icon = $closest(e.target, '[data-page]');
-
-        if (!icon) return;
-
-        const page = icon.getAttribute('data-page');
-        if (!page) return;
-
-        setAppOriginFrom(icon);
-        showPage(page);
-
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      }, true); // capture：优先级更高
-    }
-
-
-
-    // 返回：优先处理短信页的“上一层”，否则回 home
-    if (backBtn) {
-      backBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // ① 是否在短信页
-        const duanxinPage = mount.querySelector('.page.page-duanxin');
-        const isDuanxinActive = duanxinPage && duanxinPage.classList.contains('active');
-
-        if (isDuanxinActive) {
-          const listView = duanxinPage.querySelector('[data-sms-view="list"]');
-          const threadView = duanxinPage.querySelector('[data-sms-view="thread"]');
-
-          if (threadView && threadView.classList.contains('active')) {
-            showSmsInnerView(mount, 'list');
-            return;
-          }
-        }
-
-        // ③ 其它情况，才回主界面
-        showPage('home');
-      });
-    }
-
   }
 
-  // 4) 点击遮罩关闭（只绑一次）
+  // helper: origin animation point
+  function setAppOriginFrom(el) {
+    const content = mount.querySelector('.phone-content');
+    if (!content || !el) return;
+
+    const iconRect = el.getBoundingClientRect();
+    const contentRect = content.getBoundingClientRect();
+
+    const cx = (iconRect.left + iconRect.right) / 2 - contentRect.left;
+    const cy = (iconRect.top + iconRect.bottom) / 2 - contentRect.top;
+
+    content.style.setProperty('--app-x', `${cx}px`);
+    content.style.setProperty('--app-y', `${cy}px`);
+  }
+
+  // delegate: click icons -> show page
+  if (!mount.dataset.mpNavDelegated) {
+    mount.dataset.mpNavDelegated = '1';
+
+    mount.addEventListener('click', (e) => {
+      const icon = $closest(e.target, '[data-page]');
+      if (!icon) return;
+
+      const page = icon.getAttribute('data-page');
+      if (!page) return;
+
+      setAppOriginFrom(icon);
+      showPage(page, { push: true });
+
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }, true);
+  }
+
+  // delegate: back button
+  if (!mount.dataset.mpBackDelegated) {
+    mount.dataset.mpBackDelegated = '1';
+
+    mount.addEventListener('click', (e) => {
+      const hit = $closest(e.target, '[data-mp-back], .phone-back');
+      if (!hit) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      // sms page?
+      const duanxinPage = mount.querySelector('.page.page-duanxin');
+      const isDuanxinActive = duanxinPage && duanxinPage.classList.contains('active');
+
+      if (isDuanxinActive) {
+        const threadView = duanxinPage.querySelector('[data-sms-view="thread"]');
+        const listView = duanxinPage.querySelector('[data-sms-view="list"]');
+
+        // thread -> list
+        if (threadView && threadView.classList.contains('active')) {
+          showSmsView(mount, 'list');
+          return;
+        }
+
+        // list -> home
+        if (listView && listView.classList.contains('active')) {
+          mpPageStack.length = 0;
+          mpCurrentPage = 'home';
+          showPage('home', { push: false });
+          return;
+        }
+      }
+
+      // other pages -> pop stack
+      if (mpPageStack.length) {
+        const prev = mpPageStack.pop();
+        showPage(prev, { push: false });
+        return;
+      }
+      showPage('home', { push: false });
+    }, true);
+  }
+
+  // mask click closes
   const mask = byId(MASK_ID);
   if (mask && !mask.dataset.bound) {
     mask.dataset.bound = '1';
@@ -317,18 +328,15 @@ const icon = $closest(e.target, '[data-page]');
   }
 
   mounted = true;
-  mountedMount = mount; // ✅ 记住这次绑定的 mount
+  mountedMount = mount;
   return true;
 }
 
-
-
-
+// ===== public open/close =====
 export async function open() {
   if (document.readyState === 'loading') {
     await new Promise((r) => document.addEventListener('DOMContentLoaded', r, { once: true }));
   }
-
   const ok = await ensureMounted();
   if (!ok) return;
 
@@ -336,26 +344,20 @@ export async function open() {
   setOpen(MASK_ID, true);
 }
 
-
 export function close() {
   setOpen(OVERLAY_ID, false);
   setOpen(MASK_ID, false);
 }
+
+// expose for chat.js
+window.MiniPhone = { open, close };
+
 // =========================
-// SMS UI (Step 1: list <-> thread, render history only)
+// SMS UI (list <-> thread)
 // =========================
 
-function getEngine() {
-  return window.PhoneEngine || window.phoneEngine || null;
-}
-
-function q(root, sel) {
-  return root ? root.querySelector(sel) : null;
-}
-
-function qa(root, sel) {
-  return root ? Array.from(root.querySelectorAll(sel)) : [];
-}
+function q(root, sel) { return root ? root.querySelector(sel) : null; }
+function qa(root, sel) { return root ? Array.from(root.querySelectorAll(sel)) : []; }
 
 function showSmsView(mount, view /* 'list' | 'thread' */) {
   const listView = q(mount, '[data-sms-view="list"]');
@@ -369,261 +371,33 @@ function showSmsView(mount, view /* 'list' | 'thread' */) {
   smsLastPage = view;
 }
 
-function getSmsView(mount) {
-  const listView = q(mount, '[data-sms-view="list"]');
-  const threadView = q(mount, '[data-sms-view="thread"]');
-  if (!listView || !threadView) return null;
-  if (threadView.classList.contains('active')) return 'thread';
-  return 'list';
-}
-
-function formatHHMM(ts) {
-  if (!ts) return '';
-  try {
-    const d = typeof ts === 'number' ? new Date(ts) : new Date(ts);
-    if (Number.isNaN(d.getTime())) return '';
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    return `${hh}:${mm}`;
-  } catch {
-    return '';
-  }
-}
-
-
-function openSmsThread(mount, contactId, { pushState } = { pushState: true }) {
-  smsActiveContactId = contactId;
-
-  // 头像/姓名
-  const engine = getEngine();
-  const contact = engine && typeof engine.getContact === 'function'
-    ? engine.getContact(contactId)
-    : null;
-
-  const nameEl = q(mount, '[data-sms-thread-name]');
-  const avaEl = q(mount, '[data-sms-thread-ava]');
-
-  const name = (contact && (contact.name || contact.title)) || '短信';
-  const avatar = (contact && (contact.avatar || contact.ava || contact.image)) || '';
-
-  if (nameEl) nameEl.textContent = name;
-
-  if (avaEl) {
-    // 这里不假设你的 DOM 是 img 还是容器：做个兼容
-    const img = avaEl.tagName.toLowerCase() === 'img' ? avaEl : q(avaEl, 'img');
-    if (img) {
-      if (avatar) {
-        img.src = avatar;
-        img.classList.remove('hidden');
-      } else {
-        img.removeAttribute('src');
-        img.classList.add('hidden');
-      }
-    } else {
-      // 如果不是 img，就当容器塞背景
-      if (avatar) {
-        avaEl.style.backgroundImage = `url("${avatar}")`;
-      } else {
-        avaEl.style.backgroundImage = '';
-      }
-    }
-  }
-
-  showSmsView(mount, 'thread');
-  renderSmsThread(mount, contactId);
-}
-
-function renderSmsThread(mount, contactId) {
-  const engine = getEngine();
-  const thread = q(mount, '[data-sms-thread]');
-  if (!thread) return;
-
-  thread.innerHTML = '';
-
-  // 为了“预览”，即使没引擎，也给示例气泡
-  if (!engine || typeof engine.getMessages !== 'function') {
-    renderThreadDemo(thread, { avatar: '' });
-    scrollThreadToBottom(thread);
-    return;
-  }
-
-  // 取联系人头像（左侧头像）
-  const contact = (engine && typeof engine.getContact === 'function')
-    ? engine.getContact(contactId)
-    : null;
-
-  const avatar = (contact && (contact.avatar || contact.ava || contact.image)) || '';
-
-  const msgs = engine.getMessages({ contactId, channel: 'phone' }) || [];
-
-  if (!msgs.length) {
-    // 没历史：也给示例气泡，方便你看整体
-    renderThreadDemo(thread, { avatar });
-    scrollThreadToBottom(thread);
-    return;
-  }
-
-  let lastSide = null; // 'them' | 'me'
-
-  msgs.forEach((m) => {
-    const role = (m.role || m.sender || 'assistant');
-    const side = (role === 'user') ? 'me' : 'them';
-    const text = (m.text ?? m.content ?? '').toString();
-
-    const row = document.createElement('div');
-    row.className = `sms-row ${side}`;
-
-    if (side === 'them') {
-      const ava = document.createElement('div');
-      ava.className = 'sms-ava' + (lastSide === 'them' ? ' hidden' : '');
-      ava.innerHTML = avatar ? `<img alt="" src="${avatar}">` : '';
-      row.appendChild(ava);
-
-      const bubble = document.createElement('div');
-      bubble.className = 'sms-bubble';
-      bubble.innerHTML = `<div class="sms-text">${escapeHtml(text)}</div>`;
-      row.appendChild(bubble);
-    } else {
-      const bubble = document.createElement('div');
-      bubble.className = 'sms-bubble';
-      bubble.innerHTML = `<div class="sms-text">${escapeHtml(text)}</div>`;
-      row.appendChild(bubble);
-    }
-
-    thread.appendChild(row);
-    lastSide = side;
-  });
-
-  scrollThreadToBottom(thread);
-}
-
-function renderThreadDemo(threadEl, { avatar }) {
-  const demo = [
-    { side: 'me', text: '我还想着切点水果给你' },
-    { side: 'me', text: '那我现在端上来' },
-    { side: 'them', text: '不用' },
-    { side: 'them', text: '电脑在边儿上' },
-    { side: 'me', text: '哦哦哦，谢谢' },
-    { side: 'me', text: '太谢谢你了…… :)' },
-    { side: 'them', text: '下载了维修模式插件' },
-    { side: 'them', text: '以后修电脑开维修模式' },
-  ];
-
-  let lastSide = null;
-
-  demo.forEach((d) => {
-    const row = document.createElement('div');
-    row.className = `sms-row ${d.side}`;
-
-    if (d.side === 'them') {
-      const ava = document.createElement('div');
-      ava.className = 'sms-ava' + (lastSide === 'them' ? ' hidden' : '');
-      ava.innerHTML = avatar ? `<img alt="" src="${avatar}">` : '';
-      row.appendChild(ava);
-
-      const bubble = document.createElement('div');
-      bubble.className = 'sms-bubble';
-      bubble.innerHTML = `<div class="sms-text">${escapeHtml(d.text)}</div>`;
-      row.appendChild(bubble);
-    } else {
-      const bubble = document.createElement('div');
-      bubble.className = 'sms-bubble';
-      bubble.innerHTML = `<div class="sms-text">${escapeHtml(d.text)}</div>`;
-      row.appendChild(bubble);
-    }
-
-    threadEl.appendChild(row);
-    lastSide = d.side;
-  });
-}
-
-
-
-function scrollThreadToBottom(threadEl) {
-  requestAnimationFrame(() => {
-    threadEl.scrollTop = threadEl.scrollHeight;
-  });
-}
-
-function getLastPreview(engine, contactId) {
-  try {
-    const msgs = engine.getMessages({ contactId, channel: 'phone' }) || [];
-    if (!msgs.length) return '';
-    const last = msgs[msgs.length - 1];
-    const t = (last.text ?? last.content ?? '').toString().trim();
-    return t.length > 28 ? t.slice(0, 28) + '…' : t;
-  } catch {
-    return '';
-  }
-}
-
-function escapeHtml(s) {
-  return s
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
-}
-
-// 暴露给 chat 调用
-window.MiniPhone = { open, close };
 function initSmsSimple(mount) {
-  // 每次进入短信页都可以调用，但只绑定一次事件
+  // already bound -> just ensure list
   if (mount.dataset.smsBound === '1') {
-    // 仍然确保默认显示 list
-    showSmsInnerView(mount, 'list');
+    showSmsView(mount, 'list');
     return;
   }
   mount.dataset.smsBound = '1';
 
-function showSmsInnerView(mount, view) {
-  const listView = mount.querySelector('[data-sms-view="list"]');
-  const threadView = mount.querySelector('[data-sms-view="thread"]');
-  if (!listView || !threadView) return;
-
-  // ✅ 切短信内部视图
-  listView.classList.toggle('active', view === 'list');
-  threadView.classList.toggle('active', view === 'thread');
-
-  // ✅ 关键：只要进入短信（list/thread），外壳就必须退出 home
-  const shell = mount.querySelector('.phone-shell');
-  const backBtn = mount.querySelector('[data-mp-back]');
-  const menuBtn = mount.querySelector('.phone-menu');
-  const topbar = mount.querySelector('.mp-topbar');
-
-  if (shell) shell.classList.remove('is-home');
-  if (backBtn) backBtn.classList.remove('hidden');
-  if (menuBtn) menuBtn.classList.remove('hidden');
-
-  // 保险：把 topbar 也压掉（避免 is-home 残留导致 09:09 盖住）
-  if (topbar) topbar.style.opacity = '0';
-}
-
-
-  // 暴露给上面复用
-  window.showSmsInnerView = showSmsInnerView;
-
-  // 默认进短信就是联系人列表
-  showSmsInnerView(mount, 'list');
+  // default: list
+  showSmsView(mount, 'list');
 
   const threadName = mount.querySelector('[data-sms-thread-name]');
 
-  // ✅ 委托绑定联系人卡片：点卡片任何位置都能进入 thread
+  // click contact card -> thread
   if (!mount.dataset.smsOpenDelegated) {
     mount.dataset.smsOpenDelegated = '1';
 
     mount.addEventListener('click', (e) => {
-      // 只在短信页生效
+      // only when sms page active
       const duanxinPage = mount.querySelector('.page.page-duanxin');
       if (!duanxinPage || !duanxinPage.classList.contains('active')) return;
 
-      // 命中联系人卡片：兼容多种结构
+      // avoid back/menu/switch
+      if ($closest(e.target, '[data-mp-back],.phone-menu,.mp-prev,.mp-next')) return;
+
       const card = $closest(e.target, '[data-sms-open-thread],[data-contact],.sms-item,.contact-card,.sms-card');
-
-      // 避免点到“返回/切换角色按钮”
-if ($closest(e.target, '[data-mp-back],.mp-prev,.mp-next')) return;
-
+      if (!card) return;
 
       e.preventDefault();
       e.stopImmediatePropagation();
@@ -635,35 +409,24 @@ if ($closest(e.target, '[data-mp-back],.mp-prev,.mp-next')) return;
         'c1';
 
       const title = (card.querySelector('.sms-name,.name,.title')?.textContent || '联系人').trim();
-
-      // 顶部标题
       if (threadName) threadName.textContent = title;
 
-      // 切到聊天页
-      showSmsInnerView(mount, 'thread');
-
-      // 塞预览（每联系人一次）
+      smsActiveContactId = contactId;
+      showSmsView(mount, 'thread');
       renderSmsPreview(mount, contactId, title);
     }, true);
   }
-} // ✅ 关掉 initSmsSimple
-
-
-// 让重复进入短信页时也能强制回到 list
-function showSmsInnerView(mount, view) {
-  const fn = window.showSmsInnerView;
-  if (typeof fn === 'function') fn(mount, view);
 }
+
+// ====== demo preview (你原来的预览逻辑保留) ======
 function renderSmsPreview(mount, contactId, title) {
   const thread = mount.querySelector('[data-sms-thread]');
   if (!thread) return;
 
-  // 每个联系人只初始化一次（避免你来回点重复刷）
   const key = `sms_seeded_${contactId}`;
   if (mount.dataset[key] === '1') return;
   mount.dataset[key] = '1';
 
-  // 头像映射：按你的资源名改
   const avatarMap = {
     c1: './assets/avatars/ybm.png',
     c2: './assets/avatars/caishu.png',
@@ -674,23 +437,16 @@ function renderSmsPreview(mount, contactId, title) {
 
   thread.innerHTML = '';
 
-  // 预览消息（你想怎么写都行）
   const msgs = [
     { who: 'them', text: '（预览）你在吗？' },
     { who: 'me', text: '在。怎么？' },
-    { who: 'them', text: '（预览）我刚看到你发的那个……有点意思。' },
-    { who: 'them', text: '（预览）我刚看到你发的那个……有点意思。' },
-    { who: 'them', text: '（预览）我刚看到你发的那个……有点意思。' },
     { who: 'them', text: '（预览）我刚看到你发的那个……有点意思。' },
     { who: 'me', text: '别卖关子，直说。' },
   ];
 
   msgs.forEach(m => appendSmsBubble(thread, m.who, m.text, ava));
-
-  // 滚到底
   thread.scrollTop = thread.scrollHeight;
 
-  // 绑定发送（只绑一次）
   bindSmsSendOnce(mount, ava);
 }
 
@@ -698,7 +454,6 @@ function appendSmsBubble(thread, who, text, avatarSrc) {
   const row = document.createElement('div');
   row.className = `sms-row ${who}`;
 
-  // 左侧头像（me 的头像占位隐藏，保持对齐）
   const ava = document.createElement('div');
   ava.className = 'sms-ava' + (who === 'me' ? ' hidden' : '');
   ava.innerHTML = `<img src="${avatarSrc}" alt="">`;
@@ -725,7 +480,6 @@ function bindSmsSendOnce(mount, avatarSrc) {
   const thread = mount.querySelector('[data-sms-thread]');
   const input = mount.querySelector('.sms-input');
   const sendBtn = mount.querySelector('.sms-send');
-
   if (!thread || !input || !sendBtn) return;
 
   const doSend = () => {
@@ -736,14 +490,12 @@ function bindSmsSendOnce(mount, avatarSrc) {
     thread.scrollTop = thread.scrollHeight;
   };
 
-  // 点击发送
   sendBtn.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     doSend();
   });
 
-  // 回车发送（Shift+Enter 换行）
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -751,4 +503,3 @@ function bindSmsSendOnce(mount, avatarSrc) {
     }
   });
 }
-

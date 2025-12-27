@@ -736,8 +736,6 @@ document.addEventListener('click', async (e) => {
 }, true);
 
 
-
-
 // 关闭 mini_phone：用委托（phoneMask 是动态创建的）
 if (!document.documentElement.dataset.phoneMaskBound) {
   document.documentElement.dataset.phoneMaskBound = '1';
@@ -748,22 +746,19 @@ if (!document.documentElement.dataset.phoneMaskBound) {
   }, true);
 }
 
-// 返回键：强制显示文字，避免字体丢失出现 ?
+// ✅ 返回键：不要放在 phoneMaskBound 里，否则第二次进来就不绑定了
 const back = qs('chatBack');
 if (back && !back.dataset.bound) {
   back.dataset.bound = '1';
   back.textContent = '返回';
   back.addEventListener('click', () => {
-    // 如果你有自己的导航方法，就优先用它
     if (window.PhoneEngine?.goHome) { window.PhoneEngine.goHome(); return; }
     if (window.PhoneEngine?.navigate) { window.PhoneEngine.navigate('home'); return; }
-
-    // 兜底：浏览器返回
     history.back();
   });
 }
 
-// 清空：用 capture，避免点击被上层逻辑吞掉
+// ✅ 清空：也不要放在 phoneMaskBound 里
 if (!document.documentElement.dataset.chatClearBound) {
   document.documentElement.dataset.chatClearBound = '1';
 
@@ -772,7 +767,11 @@ if (!document.documentElement.dataset.chatClearBound) {
       openClearModal();
       return;
     }
-    if ($closest(e.target, '#chatClearCancel') || $closest(e.target, '#chatClearMask')) {
+    if ($closest(e.target, '#chatClearCancel')) {
+      closeClearModal();
+      return;
+    }
+    if ($closest(e.target, '#chatClearMask')) {
       closeClearModal();
       return;
     }
@@ -791,8 +790,9 @@ if (!document.documentElement.dataset.chatClearBound) {
       renderHistory(engine);
       return;
     }
-  }, true); // capture=true
+  }, true);
 }
+
 
 
   }
