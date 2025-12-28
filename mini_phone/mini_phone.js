@@ -196,51 +196,55 @@ async function ensureMounted() {
 
   // initial home
   showPage('home', { push: false });
-
-  // home: switch bar prev/next
+  // home: switch bar prev/next（✅ 事件委托版：不依赖 mp-panel-body 是否存在）
   if (!mount.dataset.mpSwitchBound) {
     mount.dataset.mpSwitchBound = '1';
 
-    const prevBtn = mount.querySelector('.mp-prev');
-    const nextBtn = mount.querySelector('.mp-next');
-    const panelBody = mount.querySelector('.mp-panel-body');
-    const radios = Array.from(mount.querySelectorAll('input[name="mpTab"]'));
+    mount.addEventListener('click', (e) => {
+      const prev = $closest(e.target, '.mp-prev');
+      const next = $closest(e.target, '.mp-next');
+      if (!prev && !next) return;
 
-    if (prevBtn && nextBtn && panelBody && radios.length >= 2) {
-      const getIndex = () => {
-        const i = radios.findIndex(r => r.checked);
-        return i >= 0 ? i : 0;
-      };
+      e.preventDefault();
+      e.stopPropagation();
 
-      const setIndex = (nextIndex, dir) => {
-        const from = getIndex();
-        const to = (nextIndex + radios.length) % radios.length;
-        if (from === to) return;
+      // 只在 home 生效（避免在别的页误触）
+      const homePage = mount.querySelector('.page.page-home');
+      if (!homePage || !homePage.classList.contains('active')) return;
 
+      const radios = Array.from(mount.querySelectorAll('input[name="mpTab"]'));
+      if (radios.length < 2) return;
+
+      const cur = Math.max(0, radios.findIndex(r => r.checked));
+      const dir = prev ? -1 : +1;
+      const to = (cur + dir + radios.length) % radios.length;
+
+      // ✅ 找到承载动画的容器（兼容你旧类名）
+      const panelBody =
+        mount.querySelector('.mp-panel-body') ||
+        mount.querySelector('.mp-panel') ||
+        mount.querySelector('.mp-card') ||
+        mount.querySelector('[data-mp-panel]');
+
+      // ✅ 先清，再触发 reflow，再加方向 class
+      if (panelBody) {
         panelBody.classList.remove('slide-left', 'slide-right');
-        void panelBody.offsetWidth;
-        panelBody.classList.add(dir === 'left' ? 'slide-left' : 'slide-right');
+        void panelBody.offsetWidth; // force reflow
+        panelBody.classList.add(dir < 0 ? 'slide-left' : 'slide-right');
 
-        radios[to].checked = true;
-
-        setTimeout(() => {
+        // 动画结束后移除
+        clearTimeout(panelBody._mpSlideTimer);
+        panelBody._mpSlideTimer = setTimeout(() => {
           panelBody.classList.remove('slide-left', 'slide-right');
         }, 640);
-      };
+      }
 
-      prevBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIndex(getIndex() - 1, 'left');
-      });
+      radios[to].checked = true;
+      radios[to].dispatchEvent(new Event('change', { bubbles: true }));
 
-      nextBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIndex(getIndex() + 1, 'right');
-      });
-    }
+    }, true);
   }
+
 
   // helper: origin animation point
   function setAppOriginFrom(el) {

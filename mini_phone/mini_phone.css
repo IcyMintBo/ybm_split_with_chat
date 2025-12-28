@@ -212,8 +212,8 @@
   height: 100%;
   z-index: 1000;
 
-  /* ✅ 关键：内容层不吃点击，点击交给 stage 上的返回/菜单 */
-  pointer-events: none;
+  /* ✅ 必须可点：状态栏左右按钮、home 内部交互都在这里 */
+  pointer-events: auto;
 }
 .phone-shell.is-home .phone-left-icons,
 .phone-shell.is-home .phone-bottom-icons{
@@ -1175,5 +1175,7 @@
 .phone-shell:not(.is-home) .home-only {
   display: none !important;
 }
-.phone-content{ pointer-events: none !important; }
+/* ✅ 让内容层可点（否则 home 内按钮全部失效） */
+.phone-content{ pointer-events: auto !important; }
 .page{ pointer-events: auto !important; }
+
