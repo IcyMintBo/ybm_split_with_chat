@@ -1178,4 +1178,289 @@
 /* ✅ 让内容层可点（否则 home 内按钮全部失效） */
 .phone-content{ pointer-events: auto !important; }
 .page{ pointer-events: auto !important; }
+/* =========================
+   MiniPhone Preset Panel
+   ========================= */
+.mp-preset-panel{
+  position: absolute;
+  inset: 0;
+  z-index: 99998;
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0,0,0,.25);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+.mp-preset-panel[data-open="true"]{
+  display: flex;
+}
+
+.mp-preset-card{
+  width: min(86%, 360px);
+  border-radius: 18px;
+
+  background: rgba(255,255,255,.80);
+  border: 3px solid rgba(0,0,0,.75);
+  box-shadow:
+    0 10px 0 rgba(0,0,0,.18),
+    0 18px 36px rgba(0,0,0,.18);
+
+  padding: 14px 14px 12px;
+  color: rgba(0,0,0,.78);
+}
+
+.mp-preset-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.mp-preset-title{
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.mp-preset-close{
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: 3px solid rgba(0,0,0,.75);
+  background: rgba(255,255,255,.65);
+  box-shadow: 0 6px 0 rgba(0,0,0,.18);
+  cursor: pointer;
+  font-weight: 950;
+}
+.mp-preset-close:active{
+  transform: translateY(2px);
+  box-shadow: 0 4px 0 rgba(0,0,0,.18);
+}
+
+.mp-preset-toggle{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 900;
+  margin: 6px 0 10px;
+}
+
+.mp-preset-toggle input{
+  width: 18px;
+  height: 18px;
+}
+
+.mp-preset-text{
+  width: 100%;
+  height: 160px;
+  resize: none;
+
+  border-radius: 14px;
+  border: 3px solid rgba(0,0,0,.65);
+  background: rgba(255,255,255,.70);
+
+  padding: 10px 10px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgba(0,0,0,.80);
+  outline: none;
+}
+
+.mp-preset-actions{
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.mp-preset-btn{
+  min-width: 86px;
+  height: 40px;
+  border-radius: 14px;
+  border: 3px solid rgba(0,0,0,.75);
+  background: rgba(255,255,255,.65);
+  box-shadow: 0 6px 0 rgba(0,0,0,.18);
+  font-weight: 950;
+  cursor: pointer;
+}
+.mp-preset-btn:active{
+  transform: translateY(2px);
+  box-shadow: 0 4px 0 rgba(0,0,0,.18);
+}
+.mp-preset-btn.ghost{
+  opacity: .75;
+}
+
+.mp-preset-hint{
+  margin-top: 8px;
+  font-size: 11px;
+  color: rgba(0,0,0,.55);
+}
+/* =========================
+   SMS Preset Manager (overlay)
+   ========================= */
+.mp-menu-overlay{
+  position:absolute;
+  inset:0;
+  z-index: 99998;
+  display:none;
+  align-items:center;
+  justify-content:center;
+
+  background: rgba(0,0,0,.25);
+  backdrop-filter: blur(4px);
+  pointer-events:auto;
+}
+.mp-menu-overlay[data-open="true"]{ display:flex; }
+
+.mp-menu-card{
+  width: min(90%, 380px);
+  max-height: min(80%, 520px);
+  overflow: hidden;
+
+  border-radius: 18px;
+  background: rgba(255,255,255,.84);
+  border: 3px solid rgba(0,0,0,.75);
+  box-shadow: 0 10px 0 rgba(0,0,0,.18), 0 18px 36px rgba(0,0,0,.18);
+
+  display:flex;
+  flex-direction:column;
+  padding: 12px;
+}
+
+.mp-menu-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom: 10px;
+}
+.mp-menu-title{ font-size: 16px; font-weight: 950; }
+.mp-menu-close{
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: 3px solid rgba(0,0,0,.75);
+  background: rgba(255,255,255,.65);
+  box-shadow: 0 6px 0 rgba(0,0,0,.18);
+  cursor: pointer;
+  font-weight: 950;
+}
+.mp-menu-close:active{ transform: translateY(2px); box-shadow: 0 4px 0 rgba(0,0,0,.18); }
+
+.mp-menu-actions{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.mp-menu-btn{
+  height: 40px;
+  border-radius: 14px;
+  border: 3px solid rgba(0,0,0,.75);
+  background: rgba(255,255,255,.65);
+  box-shadow: 0 6px 0 rgba(0,0,0,.18);
+  font-weight: 950;
+  cursor: pointer;
+}
+.mp-menu-btn:active{ transform: translateY(2px); box-shadow: 0 4px 0 rgba(0,0,0,.18); }
+
+.mp-preset-list{
+  flex: 1;
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+  padding-right: 2px;
+}
+.mp-preset-empty{
+  opacity:.75;
+  font-size: 12px;
+  padding: 10px;
+  border: 2px dashed rgba(0,0,0,.25);
+  border-radius: 14px;
+  background: rgba(255,255,255,.45);
+}
+
+.mp-preset-row{
+  border-radius: 16px;
+  border: 2px solid rgba(0,0,0,.18);
+  background: rgba(255,255,255,.60);
+  padding: 10px;
+}
+.mp-preset-top{
+  display:grid;
+  grid-template-columns: 42px 1fr auto;
+  gap: 10px;
+  align-items:center;
+}
+
+.mp-toggle{
+  width: 38px; height: 20px;
+  border-radius: 999px;
+  border: 2px solid rgba(0,0,0,.35);
+  background: rgba(255,255,255,.6);
+  position: relative;
+  cursor:pointer;
+}
+.mp-toggle::after{
+  content:'';
+  position:absolute;
+  top:50%; left:2px;
+  width: 14px; height: 14px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,.55);
+  transition: all .15s ease;
+}
+.mp-toggle[data-on="true"]{ background: rgba(210,235,210,.85); }
+.mp-toggle[data-on="true"]::after{ left:20px; background: rgba(0,0,0,.7); }
+
+.mp-preset-title-input{
+  width:100%;
+  border-radius: 12px;
+  border: 2px solid rgba(0,0,0,.22);
+  background: rgba(255,255,255,.72);
+  padding: 8px 10px;
+  font-weight: 950;
+  outline: none;
+}
+
+.mp-row-btns{ display:flex; gap:8px; align-items:center; }
+.mp-chip{
+  border:2px solid rgba(0,0,0,.22);
+  background: rgba(255,255,255,.65);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 950;
+  cursor: pointer;
+  user-select:none;
+}
+.mp-chip.danger{ background: rgba(255,220,220,.9); }
+
+.mp-preset-editor{ margin-top: 10px; display:none; }
+.mp-preset-row[data-open="true"] .mp-preset-editor{ display:block; }
+
+.mp-preset-textarea{
+  width:100%;
+  min-height: 110px;
+  border-radius: 14px;
+  border: 2px solid rgba(0,0,0,.22);
+  background: rgba(255,255,255,.72);
+  padding: 10px;
+  resize: vertical;
+  outline:none;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.mp-menu-hint{
+  margin-top: 8px;
+  font-size: 11px;
+  color: rgba(0,0,0,.55);
+}
 

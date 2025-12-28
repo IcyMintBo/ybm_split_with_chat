@@ -4,15 +4,15 @@
     <img class="phone-bg" src="./assets/avatars/beijin.png" alt="phone bg" />
 
     <!-- stage：所有元素都相对它定位 -->
+    <!-- stage：所有元素都相对它定位 -->
     <div class="phone-stage">
-      <!-- ✅ 顶部状态栏：作者水印 + 固定时间 + 电量（贴纸风） -->
+      <!-- 顶部状态栏 -->
       <div class="mp-topbar" aria-label="top status bar">
         <div class="mp-top-left">
           <span class="mp-carrier-pill" title="author mark">MNT-ICE NET</span>
         </div>
 
         <div class="mp-top-center">
-          <!-- 时间固定 09:09 -->
           <span class="mp-clock">09:09</span>
         </div>
 
@@ -30,9 +30,33 @@
         </div>
       </div>
 
-      <!-- 返回按钮：只在非主界面显示 -->
+      <!-- 返回/菜单按钮 -->
       <button class="phone-back hidden" type="button" data-mp-back aria-label="back"></button>
       <button class="phone-menu hidden" type="button" aria-label="menu"></button>
+
+      <!-- SMS Preset Manager (overlay) -->
+      <div class="mp-menu-overlay" data-mp-sms-preset aria-hidden="true" data-open="false">
+        <div class="mp-menu-card" role="dialog" aria-label="sms presets">
+          <div class="mp-menu-head">
+            <div class="mp-menu-title">短信预设</div>
+            <button class="mp-menu-close" type="button" data-mp-sms-close>✕</button>
+          </div>
+
+          <div class="mp-menu-actions">
+            <button class="mp-menu-btn" type="button" data-mp-sms-load-default>载入默认</button>
+            <button class="mp-menu-btn" type="button" data-mp-sms-add>＋新增</button>
+            <button class="mp-menu-btn" type="button" data-mp-sms-import>导入</button>
+            <button class="mp-menu-btn" type="button" data-mp-sms-export>导出</button>
+            <input type="file" accept="application/json" data-mp-sms-file style="display:none;">
+          </div>
+
+          <div class="mp-preset-list" data-mp-sms-list></div>
+          <div class="mp-preset-empty" data-mp-sms-empty style="display:none;">还没有短信预设，点“＋新增”。</div>
+
+          <div class="mp-menu-hint">保存位置：YBM_PROMPT_CFG_V1 → presets.sms</div>
+        </div>
+      </div>
+
       <!-- 左下角小人：主界面显示 -->
       <img class="phone-ren home-only" src="./assets/avatars/ren.png" alt="" />
 
@@ -48,6 +72,9 @@
         <img src="./assets/avatars/shezhi.png" data-page="shezhi" />
         <img src="./assets/avatars/qunliao.png" data-page="qunliao" />
       </div>
+
+      <!-- 内容区 -->
+      <div class="phone-content" id="phone-content">
 
       <!-- 内容区 -->
       <div class="phone-content" id="phone-content">

@@ -251,7 +251,8 @@
 
     const api = readApiFromDOM();
 
-    const sys = buildSystemPromptFromCfg(contactId);
+    const sys = buildSystemPromptFromCfg(contactId, channel);
+
     const ctxAll = buildContext({
       contactId,
       systemPrompt: sys,
@@ -325,9 +326,10 @@
     try { return JSON.parse(localStorage.getItem(PROMPT_LS_KEY) || 'null'); } catch { return null; }
   }
 
-  function buildSystemPromptFromCfg(contactId) {
+  function buildSystemPromptFromCfg(contactId, opts = {}) {
     const cfg = loadPromptCfg();
     const parts = [];
+    const scope = (opts && opts.scope) ? String(opts.scope).trim() : 'chat';
 
     // 用户人设
     try {
@@ -362,15 +364,23 @@
       });
     }
 
-    // 预设：全局（开关即注入）
-    if (cfg?.presets && Array.isArray(cfg.presets.global)) {
-      cfg.presets.global.forEach(p => {
+    // 预设：按 scope 注入
+    // chat -> cfg.presets.global（你开始界面/Chat 目前就是这个）
+    // sms  -> cfg.presets.sms（miniPhone 短信专用）
+    let presetArr = null;
+    if (cfg?.presets) {
+      if (scope === 'sms') presetArr = cfg.presets.sms;
+      else presetArr = cfg.presets.global;
+    }
+    if (Array.isArray(presetArr)) {
+      presetArr.forEach(p => {
         if (p && p.enabled && p.content) parts.push(p.content);
       });
     }
 
     return parts.join('\n\n');
   }
+
 
   function buildAuthHeader(baseUrl, apiKey) {
     if (!apiKey) return {};
@@ -470,19 +480,50 @@
 
     throw new Error(`API 返回无法解析：${JSON.stringify(data).slice(0, 500)}`);
   }
+  function postProcessAssistantText(text, channel = 'main') {
+    let out = String(text || '').trim();
+    if (!out) return out;
+
+    const HARD_LIMIT = channel === 'phone' ? 600 : 1200;
+
+    if (out.length <= HARD_LIMIT) return out;
+
+    // 找安全切点
+    const cut = out.slice(0, HARD_LIMIT);
+    const safeIdx = Math.max(
+      cut.lastIndexOf('。'),
+      cut.lastIndexOf('！'),
+      cut.lastIndexOf('？'),
+      cut.lastIndexOf('\n')
+    );
+
+    const finalText = (safeIdx > 100 ? cut.slice(0, safeIdx + 1) : cut)
+      + '\n\n（内容较长，已截断。需要继续请回复“继续”。）';
+
+    return finalText;
+  }
+
 
   async function send({ text, channel, contactId, systemPrompt, maxChars } = {}) {
     if (!text || !text.trim()) return null;
     channel = channel === 'phone' ? 'phone' : 'main';
     contactId = ensureContact(contactId || getActiveContact());
 
-    const api = readApiFromDOM();
+// 目前：短信默认复用开始界面的 API（readApiFromDOM + localStorage YBM_API_CFG_V1）
+// 未来：这里预留一个“手机单独 API”的口子（比如 YBM_API_CFG_PHONE_V1）
+const api = (function resolveApiForChannel() {
+  // TODO(miniPhone): 如果未来做“手机专用 API 设置”，在这里读取并覆盖：
+  // const phoneApi = JSON.parse(localStorage.getItem('YBM_API_CFG_PHONE_V1')||'null');
+  // if (channel === 'phone' && phoneApi?.baseUrl && phoneApi?.model) return phoneApi;
+  return readApiFromDOM();
+})();
 
-    appendMessage({ contactId, channel, role: 'user', content: text.trim() });
+appendMessage({ contactId, channel, role: 'user', content: text.trim() });
 
-    const sys = (systemPrompt && systemPrompt.trim())
-      ? systemPrompt.trim()
-      : buildSystemPromptFromCfg(contactId);
+const sys = (systemPrompt && systemPrompt.trim())
+  ? systemPrompt.trim()
+  : buildSystemPromptFromCfg(contactId, { scope: (channel === 'phone') ? 'sms' : 'chat' });
+
 
     const ctx = buildContext({
       contactId,
@@ -501,7 +542,7 @@
         stream: false
       });
 
-      assistantMsg.content = reply || '';
+      assistantMsg.content = postProcessAssistantText(reply || '', channel);
       save();
       return assistantMsg;
     } catch (e) {

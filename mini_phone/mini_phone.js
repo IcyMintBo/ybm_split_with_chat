@@ -2,6 +2,7 @@
 
 const CSS_URL = new URL('./mini_phone.css?v=4', import.meta.url).href;
 const HTML_URL = new URL('./mini_phone.html?v=4', import.meta.url).href;
+const MINI_PRESETS_JSON_URL = new URL('./default_mini_presets.json?v=1', import.meta.url).href;
 
 function ensureCss() {
   if (document.querySelector('link[data-mini-phone-css="1"]')) return;
@@ -31,6 +32,31 @@ let mpCurrentPage = 'home';
 
 // ===== helpers =====
 function byId(id) { return document.getElementById(id); }
+async function ensureMiniPresetsSeeded() {
+  // 如果已经有新结构，就不动
+  try {
+    const raw = localStorage.getItem('YBM_MINI_PRESETS_V1');
+    if (raw) {
+      const obj = JSON.parse(raw);
+      if (obj && obj.scopes) return;
+    }
+  } catch {}
+
+  // 兼容：如果旧 key 有内容，也不覆盖（让迁移逻辑去处理）
+  try {
+    const oldRaw = localStorage.getItem('YBM_MINI_PRESET_V1');
+    if (oldRaw) return;
+  } catch {}
+
+  // 没有任何 preset -> 灌默认文件
+  try {
+    const res = await fetch(MINI_PRESETS_JSON_URL);
+    if (!res.ok) return;
+    const obj = await res.json();
+    if (!obj || !obj.scopes) return;
+    localStorage.setItem('YBM_MINI_PRESETS_V1', JSON.stringify(obj));
+  } catch {}
+}
 
 function $closest(target, selector) {
   const el = (target && target.nodeType === 3) ? target.parentElement : target;
@@ -157,6 +183,8 @@ async function ensureMounted() {
     mount.innerHTML = html;
     mount.dataset.mpMounted = '1';
   }
+    await ensureMiniPresetsSeeded();
+
 
   // stage sync (bg actual display rect)
   const syncStageToBg = () => {
@@ -196,6 +224,11 @@ async function ensureMounted() {
 
   // initial home
   showPage('home', { push: false });
+
+// bind sms preset manager (☰ menu)
+bindSmsPresetMenuOnce(mount);
+
+
   // home: switch bar prev/next（✅ 事件委托版：不依赖 mp-panel-body 是否存在）
   if (!mount.dataset.mpSwitchBound) {
     mount.dataset.mpSwitchBound = '1';
@@ -374,6 +407,234 @@ function showSmsView(mount, view /* 'list' | 'thread' */) {
 
   smsLastPage = view;
 }
+// =========================
+// SMS preset manager (list + import/export/default)
+// store into: YBM_PROMPT_CFG_V1 -> presets.sms
+// =========================
+const PROMPT_CFG_KEY = 'YBM_PROMPT_CFG_V1';
+const SMS_PRESET_DEFAULT_URL = new URL('./default_sms_presets.json?v=1', import.meta.url).href;
+
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#39;");
+}
+function uidShort() { return 'p_' + Math.random().toString(36).slice(2, 10); }
+
+function loadPromptCfg() {
+  try { return JSON.parse(localStorage.getItem(PROMPT_CFG_KEY) || 'null'); } catch { return null; }
+}
+function savePromptCfg(cfg) {
+  try { localStorage.setItem(PROMPT_CFG_KEY, JSON.stringify(cfg || { version: 1 })); } catch {}
+  try { window.PhoneEngine?.reloadFromStorage?.(); } catch {}
+}
+function ensureSmsPresetArray() {
+  let cfg = loadPromptCfg();
+  if (!cfg || typeof cfg !== 'object') cfg = { version: 1 };
+  if (!cfg.presets || typeof cfg.presets !== 'object') cfg.presets = {};
+  if (!Array.isArray(cfg.presets.sms)) cfg.presets.sms = [];
+  savePromptCfg(cfg);
+  return cfg;
+}
+
+function setSmsPresetOpen(mount, open) {
+  const overlay = mount.querySelector('[data-mp-sms-preset]');
+  if (!overlay) return;
+  overlay.dataset.open = open ? 'true' : 'false';
+  overlay.setAttribute('aria-hidden', open ? 'false' : 'true');
+}
+
+function renderSmsPresetList(mount) {
+  const cfg = ensureSmsPresetArray();
+  const list = mount.querySelector('[data-mp-sms-list]');
+  const empty = mount.querySelector('[data-mp-sms-empty]');
+  if (!list || !empty) return;
+
+  const arr = cfg.presets.sms || [];
+  list.innerHTML = '';
+
+  if (!arr.length) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  arr.forEach((p) => {
+    if (!p.id) p.id = uidShort();
+
+    const row = document.createElement('div');
+    row.className = 'mp-preset-row';
+    row.dataset.id = p.id;
+    row.dataset.open = 'false';
+
+    row.innerHTML = `
+      <div class="mp-preset-top">
+        <div class="mp-toggle" data-on="${p.enabled ? 'true' : 'false'}" title="启用/关闭"></div>
+        <input class="mp-preset-title-input" value="${escapeHtml(p.title || '')}" placeholder="标题" />
+        <div class="mp-row-btns">
+          <div class="mp-chip" data-act="edit">编辑</div>
+          <div class="mp-chip danger" data-act="del">删除</div>
+        </div>
+      </div>
+      <div class="mp-preset-editor">
+        <textarea class="mp-preset-textarea" placeholder="预设内容（会在短信发送时注入）">${escapeHtml(p.content || '')}</textarea>
+      </div>
+    `;
+
+    // toggle
+    row.querySelector('.mp-toggle')?.addEventListener('click', () => {
+      p.enabled = !p.enabled;
+      row.querySelector('.mp-toggle').dataset.on = p.enabled ? 'true' : 'false';
+      savePromptCfg(cfg);
+    });
+
+    // edit
+    row.querySelector('[data-act="edit"]')?.addEventListener('click', () => {
+      row.dataset.open = (row.dataset.open === 'true') ? 'false' : 'true';
+    });
+
+    // delete
+    row.querySelector('[data-act="del"]')?.addEventListener('click', () => {
+      cfg.presets.sms = cfg.presets.sms.filter(x => x && x.id !== p.id);
+      savePromptCfg(cfg);
+      renderSmsPresetList(mount);
+    });
+
+    // title/content update
+    row.querySelector('.mp-preset-title-input')?.addEventListener('input', (e) => {
+      p.title = e.target.value;
+      savePromptCfg(cfg);
+    });
+    row.querySelector('.mp-preset-textarea')?.addEventListener('input', (e) => {
+      p.content = e.target.value;
+      savePromptCfg(cfg);
+    });
+
+    list.appendChild(row);
+  });
+
+  savePromptCfg(cfg);
+}
+
+async function loadDefaultSmsPresetsIntoCfg() {
+  const cfg = ensureSmsPresetArray();
+  try {
+    const res = await fetch(SMS_PRESET_DEFAULT_URL);
+    if (!res.ok) return;
+    const json = await res.json();
+    if (json?.presets?.sms && Array.isArray(json.presets.sms)) {
+      cfg.presets.sms = json.presets.sms;
+      savePromptCfg(cfg);
+    }
+  } catch {}
+}
+
+function exportSmsPresets() {
+  const cfg = ensureSmsPresetArray();
+  const out = { version: 1, presets: { sms: cfg.presets.sms || [] } };
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `sms_presets_${Date.now()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+
+async function importSmsPresetsFromFile(file) {
+  if (!file) return;
+  const cfg = ensureSmsPresetArray();
+  try {
+    const text = await file.text();
+    const json = JSON.parse(text);
+
+    if (json?.presets?.sms && Array.isArray(json.presets.sms)) {
+      cfg.presets.sms = json.presets.sms;
+      savePromptCfg(cfg);
+      return;
+    }
+  } catch {}
+}
+
+function bindSmsPresetMenuOnce(mount) {
+  if (!mount || mount.dataset.mpSmsPresetBound === '1') return;
+  mount.dataset.mpSmsPresetBound = '1';
+
+  // 菜单按钮：只在“短信页”打开
+  mount.addEventListener('click', (e) => {
+    const hitMenu = $closest(e.target, '.phone-menu');
+    if (!hitMenu) return;
+
+    const duanxinPage = mount.querySelector('.page.page-duanxin');
+    const isSms = !!(duanxinPage && duanxinPage.classList.contains('active'));
+    if (!isSms) return; // 现在只有短信接了预设
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    renderSmsPresetList(mount);
+    setSmsPresetOpen(mount, true);
+  }, true);
+
+  // close
+  mount.addEventListener('click', (e) => {
+    if ($closest(e.target, '[data-mp-sms-close]')) {
+      e.preventDefault();
+      e.stopPropagation();
+      setSmsPresetOpen(mount, false);
+    }
+  }, true);
+
+  // actions
+  mount.addEventListener('click', async (e) => {
+    if ($closest(e.target, '[data-mp-sms-load-default]')) {
+      e.preventDefault(); e.stopPropagation();
+      await loadDefaultSmsPresetsIntoCfg();
+      renderSmsPresetList(mount);
+      return;
+    }
+    if ($closest(e.target, '[data-mp-sms-add]')) {
+      e.preventDefault(); e.stopPropagation();
+      const cfg = ensureSmsPresetArray();
+      cfg.presets.sms.unshift({ id: uidShort(), title: '短信预设', content: '', enabled: false });
+      savePromptCfg(cfg);
+      renderSmsPresetList(mount);
+      return;
+    }
+    if ($closest(e.target, '[data-mp-sms-export]')) {
+      e.preventDefault(); e.stopPropagation();
+      exportSmsPresets();
+      return;
+    }
+    if ($closest(e.target, '[data-mp-sms-import]')) {
+      e.preventDefault(); e.stopPropagation();
+      mount.querySelector('[data-mp-sms-file]')?.click();
+      return;
+    }
+  }, true);
+
+  // file input
+  const fileInput = mount.querySelector('[data-mp-sms-file]');
+  if (fileInput) {
+    fileInput.addEventListener('change', async () => {
+      const f = fileInput.files?.[0];
+      fileInput.value = '';
+      if (!f) return;
+      await importSmsPresetsFromFile(f);
+      renderSmsPresetList(mount);
+    });
+  }
+
+  // ESC close
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setSmsPresetOpen(mount, false);
+  });
+}
+
 
 function initSmsSimple(mount) {
   // already bound -> just ensure list
@@ -422,14 +683,10 @@ function initSmsSimple(mount) {
   }
 }
 
-// ====== demo preview (你原来的预览逻辑保留) ======
+// ====== real thread: render from PhoneEngine (shared memory) ======
 function renderSmsPreview(mount, contactId, title) {
   const thread = mount.querySelector('[data-sms-thread]');
   if (!thread) return;
-
-  const key = `sms_seeded_${contactId}`;
-  if (mount.dataset[key] === '1') return;
-  mount.dataset[key] = '1';
 
   const avatarMap = {
     c1: './assets/avatars/ybm.png',
@@ -441,18 +698,37 @@ function renderSmsPreview(mount, contactId, title) {
 
   thread.innerHTML = '';
 
-  const msgs = [
-    { who: 'them', text: '（预览）你在吗？' },
-    { who: 'me', text: '在。怎么？' },
-    { who: 'them', text: '（预览）我刚看到你发的那个……有点意思。' },
-    { who: 'me', text: '别卖关子，直说。' },
-  ];
+  // 确保引擎里有这个联系人（名字用你点开的 title）
+  try {
+    window.PhoneEngine?.addContact?.({ id: contactId, name: title || contactId, avatar: ava });
+  } catch {}
 
-  msgs.forEach(m => appendSmsBubble(thread, m.who, m.text, ava));
+  // 从引擎拿 phone channel 的消息（共享记忆在引擎里，UI 只渲染 phone）
+  let msgs = [];
+  try {
+    msgs = window.PhoneEngine?.getMessages?.({ contactId, channel: 'phone' }) || [];
+  } catch {}
+
+  // 没有消息：就先空白（不再塞预览）
+  if (!msgs.length) {
+    thread.scrollTop = thread.scrollHeight;
+    bindSmsSendOnce(mount, ava, contactId);
+    return;
+  }
+
+  // 渲染
+  msgs.forEach(m => {
+    if (!m || !m.content) return;
+    const who = (m.role === 'user') ? 'me' : 'them';
+    appendSmsBubble(thread, who, m.content, ava);
+  });
+
   thread.scrollTop = thread.scrollHeight;
 
-  bindSmsSendOnce(mount, ava);
+  // 绑定发送（带 contactId）
+  bindSmsSendOnce(mount, ava, contactId);
 }
+
 
 function appendSmsBubble(thread, who, text, avatarSrc) {
   const row = document.createElement('div');
@@ -477,7 +753,7 @@ function appendSmsBubble(thread, who, text, avatarSrc) {
   thread.appendChild(row);
 }
 
-function bindSmsSendOnce(mount, avatarSrc) {
+function bindSmsSendOnce(mount, avatarSrc, contactId) {
   if (mount.dataset.smsSendBound === '1') return;
   mount.dataset.smsSendBound = '1';
 
@@ -486,13 +762,57 @@ function bindSmsSendOnce(mount, avatarSrc) {
   const sendBtn = mount.querySelector('.sms-send');
   if (!thread || !input || !sendBtn) return;
 
-  const doSend = () => {
-    const val = (input.value || '').trim();
-    if (!val) return;
-    appendSmsBubble(thread, 'me', val, avatarSrc);
-    input.value = '';
-    thread.scrollTop = thread.scrollHeight;
-  };
+let sending = false;
+
+const doSend = async () => {
+  if (sending) return;
+  const val = (input.value || '').trim();
+  if (!val) return;
+
+  // UI：先把用户消息立刻显示出来
+  appendSmsBubble(thread, 'me', val, avatarSrc);
+  input.value = '';
+  thread.scrollTop = thread.scrollHeight;
+
+  // UI：加一个“对方正在输入…”占位
+  const typingRow = document.createElement('div');
+  typingRow.className = 'sms-row them';
+  typingRow.innerHTML = `
+    <div class="sms-ava"><img src="${avatarSrc}" alt=""></div>
+    <div class="sms-bubble">…</div>
+  `;
+  thread.appendChild(typingRow);
+  thread.scrollTop = thread.scrollHeight;
+
+  sending = true;
+  sendBtn.disabled = true;
+
+  try {
+    if (!window.PhoneEngine?.send) {
+      throw new Error('PhoneEngine 未加载（phone/phoneEngine.js 没挂上或路径不对）');
+    }
+
+    // ✅ 这里就是接入模型：走开始界面同一份 API（引擎里 readApiFromDOM）
+    await window.PhoneEngine.send({
+      text: val,
+      channel: 'phone',
+      contactId: contactId || 'c1',
+      // 未来短信专用 API：这里预留 systemPrompt/apiOverride 口子（暂不启用）
+      // systemPrompt: '...'
+    });
+
+    // 刷新渲染（用引擎里的 phone 消息重画，保证共享记忆一致）
+    renderSmsPreview(mount, contactId || 'c1', mount.querySelector('[data-sms-thread-name]')?.textContent || '');
+  } catch (e) {
+    // 把占位换成错误提示
+    const bubble = typingRow.querySelector('.sms-bubble');
+    if (bubble) bubble.textContent = `（错误）${e?.message || e}`;
+  } finally {
+    sending = false;
+    sendBtn.disabled = false;
+  }
+};
+
 
   sendBtn.addEventListener('click', (e) => {
     e.preventDefault();
