@@ -325,7 +325,52 @@
     try { return JSON.parse(localStorage.getItem(PROMPT_LS_KEY) || 'null'); } catch { return null; }
   }
 
+  function buildSystemPromptFromCfg(contactId) {
+    const cfg = loadPromptCfg();
+    const parts = [];
 
+    // 用户人设
+    try {
+      const personaRaw = localStorage.getItem('YBM_PERSONA_V1');
+      const persona = personaRaw ? JSON.parse(personaRaw) : null;
+      if (persona && persona.enabled) {
+        const n = (persona.name || '').trim();
+        const b = (persona.bio || '').trim();
+        if (n || b) {
+          parts.push(
+            [
+              '【用户人设】',
+              n ? `名字：${n}` : '',
+              b ? `基础信息：\n${b}` : ''
+            ].filter(Boolean).join('\n')
+          );
+        }
+      }
+    } catch { }
+
+    // 世界书：全局
+    if (cfg?.worldbook && Array.isArray(cfg.worldbook.global)) {
+      cfg.worldbook.global.forEach(wb => {
+        if (wb && wb.enabled && wb.content) parts.push(wb.content);
+      });
+    }
+
+    // 世界书：联系人
+    if (contactId && cfg?.worldbook?.contact && Array.isArray(cfg.worldbook.contact[contactId])) {
+      cfg.worldbook.contact[contactId].forEach(wb => {
+        if (wb && wb.enabled && wb.content) parts.push(wb.content);
+      });
+    }
+
+    // 预设：全局（开关即注入）
+    if (cfg?.presets && Array.isArray(cfg.presets.global)) {
+      cfg.presets.global.forEach(p => {
+        if (p && p.enabled && p.content) parts.push(p.content);
+      });
+    }
+
+    return parts.join('\n\n');
+  }
 
   function buildAuthHeader(baseUrl, apiKey) {
     if (!apiKey) return {};
