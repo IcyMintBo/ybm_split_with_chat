@@ -56,6 +56,20 @@
           <div class="mp-menu-hint">保存位置：YBM_PROMPT_CFG_V1 → presets.sms</div>
         </div>
       </div>
+      <!-- SMS Context Menu (right click / long press) -->
+      <div class="mp-ctx-overlay" data-mp-ctx aria-hidden="true" data-open="false">
+        <div class="mp-ctx-card" role="menu" aria-label="sms context menu">
+          <button class="mp-ctx-btn" type="button" data-ctx-act="pending-withdraw">撤回</button>
+          <button class="mp-ctx-btn danger" type="button" data-ctx-act="pending-delete">删除</button>
+
+          <div class="mp-ctx-sep"></div>
+
+          <button class="mp-ctx-btn" type="button" data-ctx-act="turn-reroll">重roll</button>
+          <button class="mp-ctx-btn danger" type="button" data-ctx-act="turn-delete">删除本轮</button>
+
+          <div class="mp-ctx-hint" data-ctx-hint>仅对“最后一轮”生效</div>
+        </div>
+      </div>
 
       <!-- 左下角小人：主界面显示 -->
       <img class="phone-ren home-only" src="./assets/avatars/ren.png" alt="" />
@@ -72,9 +86,6 @@
         <img src="./assets/avatars/shezhi.png" data-page="shezhi" />
         <img src="./assets/avatars/qunliao.png" data-page="qunliao" />
       </div>
-
-      <!-- 内容区 -->
-      <div class="phone-content" id="phone-content">
 
       <!-- 内容区 -->
       <div class="phone-content" id="phone-content">

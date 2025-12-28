@@ -1463,4 +1463,101 @@
   font-size: 11px;
   color: rgba(0,0,0,.55);
 }
+/* 暂存中的“待发送”气泡：半透明 + 轻微虚线边 */
+.page-duanxin .sms-row.me.pending .sms-bubble{
+  opacity: .55;
+  border-style: dashed;
+}
+/* ===== SMS 间距压紧：更像短信 ===== */
+.page-duanxin .sms-thread.sms-thread-paper{
+  gap: 0 !important;               /* 干掉容器 gap（你原来是 10px） */
+}
+
+.page-duanxin .sms-row{
+  margin: 4px 0 !important;        /* 你原来是 10px */
+  gap: 8px !important;             /* 行内头像-气泡间距略紧一点 */
+}
+
+/* 连续我方消息再紧一点（可选，手感更像连发） */
+.page-duanxin .sms-row.me + .sms-row.me{
+  margin-top: 2px !important;
+}
+.page-duanxin .sms-row.them + .sms-row.them{
+  margin-top: 2px !important;
+}
+/* =========================
+   SMS Context Menu (cute)
+   ========================= */
+.mp-ctx-overlay{
+  position:absolute;
+  inset:0;
+  z-index: 99999;
+  display:none;
+  pointer-events:auto;
+
+  background: rgba(0,0,0,.08);
+  backdrop-filter: blur(2px);
+}
+.mp-ctx-overlay[data-open="true"]{ display:block; }
+
+.mp-ctx-card{
+  position:absolute;
+  min-width: 150px;
+  max-width: 220px;
+
+  border-radius: 16px;
+  background: rgba(255,255,255,.88);
+  border: 3px solid rgba(0,0,0,.78);
+
+  box-shadow:
+    0 10px 0 rgba(0,0,0,.18),
+    0 18px 34px rgba(0,0,0,.18);
+
+  padding: 10px;
+}
+
+.mp-ctx-btn{
+  width: 100%;
+  height: 40px;
+  border-radius: 14px;
+
+  border: 2px solid rgba(0,0,0,.22);
+  background: rgba(255,255,255,.68);
+
+  font-weight: 950;
+  cursor: pointer;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  box-shadow: 0 6px 0 rgba(0,0,0,.16);
+  margin: 6px 0;
+}
+.mp-ctx-btn:active{
+  transform: translateY(2px);
+  box-shadow: 0 4px 0 rgba(0,0,0,.16);
+}
+.mp-ctx-btn.danger{
+  background: rgba(255,220,220,.92);
+}
+.mp-ctx-btn[disabled]{
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.mp-ctx-sep{
+  height: 1px;
+  margin: 8px 2px;
+  background: rgba(0,0,0,.18);
+}
+
+.mp-ctx-hint{
+  margin-top: 6px;
+  font-size: 11px;
+  color: rgba(0,0,0,.55);
+  text-align: center;
+}
 
