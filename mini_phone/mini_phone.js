@@ -14,16 +14,34 @@ function ensureCss() {
 }
 function stripThinkingForUi(text) {
   let out = String(text || '');
+
+  // 标准：成对 think 标签
   out = out.replace(/<think>[\s\S]*?<\/think>/gi, '');
+
+  // 非标准：只有 <think> 没有 </think> ——不要删到结尾，只去掉标记本身/所在行
+  out = out.replace(/<\/think>/gi, '');
+  out = out.replace(/<think>/gi, '');
+
+  // 有些模型会把 think 放在一行开头：只删这一行
+  out = out.replace(/^<think>.*$/gim, '');
+
+  // ```think ...``` 这种
   out = out.replace(/```(?:think|thinking)[\s\S]*?```/gi, '');
+
   return out.trim();
 }
+
+
 function cleanForSms(text) {
   let s = String(text || '');
 
-  // 去 think（双保险）
-  s = s.replace(/<think>[\s\S]*?<\/think>/gi, '');
-  s = s.replace(/```(?:think|thinking)[\s\S]*?```/gi, '');
+// 去 think（双保险：含“无闭合”）
+// 去 think（双保险：但不杀到末尾）
+s = s.replace(/<think>[\s\S]*?<\/think>/gi, '');
+s = s.replace(/<\/think>/gi, '');
+s = s.replace(/<think>/gi, '');
+s = s.replace(/^<think>.*$/gim, '');
+s = s.replace(/```(?:think|thinking)[\s\S]*?```/gi, '');
 
   // 统一换行
   s = s.replace(/\r\n/g, '\n');
@@ -531,6 +549,32 @@ function ensureSmsPresetArray() {
   savePromptCfg(cfg);
   return cfg;
 }
+// ===== SMS injection helpers =====
+function getSmsInjectedPresetText() {
+  // 读取：YBM_PROMPT_CFG_V1 -> presets.sms -> enabled==true 的 content 合并
+  let cfg = null;
+  try { cfg = JSON.parse(localStorage.getItem(PROMPT_CFG_KEY) || 'null'); } catch {}
+  const arr = cfg?.presets?.sms;
+  if (!Array.isArray(arr) || !arr.length) return '';
+
+  const enabled = arr.filter(p => p && p.enabled && String(p.content || '').trim());
+  if (!enabled.length) return '';
+
+  // 按顺序合并（你可以后面加“排序”逻辑）
+  const merged = enabled.map(p => String(p.content || '').trim()).join('\n\n---\n\n');
+
+  // 额外再加一道“think 永不出现”的硬约束（即使用户预设没写也强加）
+  return [
+    merged,
+    '【硬性规则】绝对禁止输出 <think> / </think> / reasoning / analysis / 思考过程。只输出短信正文。'
+  ].join('\n\n');
+}
+
+function getSmsMaxTokens() {
+  // 短信默认短输出：你可以后面做成 UI 滑块
+  // 120~200 通常够 1~4 行短信
+  return 180;
+}
 
 function setSmsPresetOpen(mount, open) {
   const overlay = mount.querySelector('[data-mp-sms-preset]');
@@ -779,6 +823,7 @@ function initSmsSimple(mount) {
 }
 
 // ====== real thread: render from PhoneEngine (shared memory) ======
+// ====== real thread: render from PhoneEngine (shared memory) ======
 function renderSmsPreview(mount, contactId, title) {
   const thread = mount.querySelector('[data-sms-thread]');
   if (!thread) return;
@@ -804,31 +849,58 @@ function renderSmsPreview(mount, contactId, title) {
     msgs = window.PhoneEngine?.getMessages?.({ contactId, channel: 'phone' }) || [];
   } catch {}
 
-  // 没有消息：就先空白（不再塞预览）
+  // 没有消息：就先空白
   if (!msgs.length) {
     thread.scrollTop = thread.scrollHeight;
     bindSmsSendOnce(mount, ava, contactId);
     return;
   }
 
-msgs.forEach(m => {
-  if (!m || !m.content) return;
+  // Debug 开关：默认关（需要时你可以在控制台 window.__SMS_DEBUG__=true）
+  window.__SMS_DEBUG__ = window.__SMS_DEBUG__ ?? true;
 
-  const tid = m.turnId || m.meta?.turnId || '';
-  const mid = m.id || '';
+  // 渲染所有消息
+  msgs.forEach((m) => {
+    if (!m || !m.content) return;
 
-  if (m.role === 'user') {
-    appendSmsBubble(thread, 'me', stripThinkingForUi(m.content), ava, { msgId: mid, turnId: tid });
-    return;
-  }
+    const tid = m.turnId || m.turn_id || m.meta?.turnId || m.meta?.turn_id || '';
+    const mid = m.id || '';
 
-  const lines = splitSmsLines(m.content);
-  if (!lines.length) return;
+    if (m.role === 'user') {
+      const txt = stripThinkingForUi(m.content);
+      if (txt) appendSmsBubble(thread, 'me', txt, ava, { msgId: mid, turnId: tid });
+      return;
+    }
 
-  lines.forEach(line => {
-    appendSmsBubble(thread, 'them', line, ava, { msgId: mid, turnId: tid });
+    // assistant
+    const raw = String(m.content || '');
+    const clean = cleanForSms(raw);
+    const lines = splitSmsLines(raw);
+
+    if (window.__SMS_DEBUG__) {
+      console.groupCollapsed('[SMS] assistant render');
+      console.log('raw:', raw);
+      console.log('clean:', clean);
+      console.log('lines:', lines);
+      console.groupEnd();
+    }
+
+    // 过滤后为空：给提示，避免“看起来像消失”
+    if (!clean.trim()) {
+      appendSmsBubble(thread, 'them', '（内容被过滤或为空）', ava, { msgId: mid, turnId: tid, kind: 'sys' });
+      return;
+    }
+
+    // split 失败：fallback 用 clean
+    if (!lines.length) {
+      appendSmsBubble(thread, 'them', clean.trim(), ava, { msgId: mid, turnId: tid });
+      return;
+    }
+
+    lines.forEach((line) => {
+      appendSmsBubble(thread, 'them', line, ava, { msgId: mid, turnId: tid });
+    });
   });
-});
 
   thread.scrollTop = thread.scrollHeight;
 
@@ -837,13 +909,14 @@ msgs.forEach(m => {
 }
 
 
+
 function appendSmsBubble(thread, who, text, avatarSrc, opts = {}) {
 const row = document.createElement('div');
 row.className = `sms-row ${who}`;
 
 if (opts && opts.msgId) row.dataset.msgId = String(opts.msgId);
 if (opts && opts.turnId) row.dataset.turnId = String(opts.turnId);
-
+if (opts && opts.kind) row.dataset.kind = String(opts.kind);
 
   if (who === 'me' && opts.pending) row.classList.add('pending');
   if (opts && opts.pendingId) row.dataset.pendingId = String(opts.pendingId);
@@ -872,6 +945,9 @@ if (opts && opts.turnId) row.dataset.turnId = String(opts.turnId);
 // 暂存队列：仅保存在内存里（刷新就没）
 // key = contactId
 window.__YBM_SMS_QUEUE__ = window.__YBM_SMS_QUEUE__ || {};
+// 每个联系人一个“当前编辑轮”的 turnId（pending/withdraw 都归到这一轮）
+window.__YBM_SMS_DRAFT_TURN__ = window.__YBM_SMS_DRAFT_TURN__ || {};
+
 
 function bindSmsSendOnce(mount, avatarSrc, contactId) {
   // 进入不同联系人时要重新绑（否则你切联系人会用旧的 contactId）
@@ -889,18 +965,29 @@ function bindSmsSendOnce(mount, avatarSrc, contactId) {
   const getQueue = () => (window.__YBM_SMS_QUEUE__[cid] ||= []);
   const clearQueue = () => { window.__YBM_SMS_QUEUE__[cid] = []; };
 
-  // ⇢ 暂存：上屏，但不发送
-  const doStash = () => {
-    const val = (input.value || '').trim();
-    if (!val) return;
+// ⇢ 暂存：上屏，但不发送
+const doStash = () => {
+  const val = (input.value || '').trim();
+  if (!val) return;
 
-    const id = 'q_' + Math.random().toString(36).slice(2, 10);
-    getQueue().push({ id, text: val });
+  // 本轮 draftTurnId：一旦开始暂存，就固定下来（pending/withdraw 都归这一轮）
+  const draftTurnId = (window.__YBM_SMS_DRAFT_TURN__[cid] ||= (
+    window.PhoneEngine?.newTurnId?.() || ('t_' + Date.now().toString(36))
+  ));
 
-    appendSmsBubble(thread, 'me', val, avatarSrc, { pending: true, pendingId: id });
-    input.value = '';
-    thread.scrollTop = thread.scrollHeight;
-  };
+  const id = 'q_' + Math.random().toString(36).slice(2, 10);
+  getQueue().push({ id, text: val, kind: 'pending' });
+
+  appendSmsBubble(thread, 'me', val, avatarSrc, {
+    pending: true,
+    pendingId: id,
+    turnId: draftTurnId
+  });
+
+  input.value = '';
+  thread.scrollTop = thread.scrollHeight;
+};
+
 
   // ➤ 发送：把“暂存队列 + 当前输入”一次性发出去
   let sending = false;
@@ -952,8 +1039,8 @@ function bindSmsSendOnce(mount, avatarSrc, contactId) {
 
       const lastText = all.pop();
 
-// ✅ 本轮 turnId：让“删/重roll”能按轮工作
-const turnId = (window.PhoneEngine?.newTurnId?.() || ('t_' + Date.now().toString(36)));
+// ✅ 本轮 turnId：优先用 draftTurnId（让撤回/暂存/本轮回复都归一轮）
+const turnId = (window.__YBM_SMS_DRAFT_TURN__[cid] ||= (window.PhoneEngine?.newTurnId?.() || ('t_' + Date.now().toString(36))));
 
 // 写入前面的（如果有）：同一轮
 for (const t of all) {
@@ -966,18 +1053,34 @@ for (const t of all) {
   });
 }
 
-// 最后一条触发模型回复（同一轮）
+// ===== SMS preset injection + short output control =====
+const smsPreset = getSmsInjectedPresetText(); // 把启用的短信预设拼起来（强约束短信格式）
+const smsMaxTokens = getSmsMaxTokens();       // 短信专用 tokens（未来可做成 UI 开关）
+
 await window.PhoneEngine.send({
   text: lastText,
   channel: 'phone',
   contactId: cid,
-  turnId
-  // TODO(miniPhone): 未来“手机专用 API/专用 systemPrompt”从这里加 override
+  turnId,
+
+  // ✅ 注入短信预设（关键：让模型“先天像短信”）
+  // PhoneEngine 需要支持 systemPrompt / extraSystem 之类字段；
+  // 如果你现在的 PhoneEngine 还没吃这个字段，我下一步给你补到 phoneEngine.js。
+  systemPrompt: smsPreset,
+
+  // ✅ 短信专用短输出（若 PhoneEngine 支持）
+  max_tokens: smsMaxTokens,
+
+  // TODO(miniPhone): 未来这里加“手机专用 API Key / BaseURL / model override”
+  // apiOverride: { baseUrl, apiKey, model }
 });
 
 
-      // 清空暂存队列
-      clearQueue();
+
+// 清空暂存队列 & 本轮 draftTurnId
+clearQueue();
+delete window.__YBM_SMS_DRAFT_TURN__[cid];
+
 
       // 重新渲染线程（如果你现在是“从引擎读消息渲染”，这里会刷新到最新）
       // 没有这个函数也没关系，不会报错
@@ -1030,6 +1133,7 @@ function bindSmsContextMenuOnce(mount) {
   const btnPendingDelete = overlay.querySelector('[data-ctx-act="pending-delete"]');
   const btnTurnReroll = overlay.querySelector('[data-ctx-act="turn-reroll"]');
   const btnTurnDelete = overlay.querySelector('[data-ctx-act="turn-delete"]');
+  const sep = overlay.querySelector('.mp-ctx-sep');
 
   let ctx = null; // { kind, contactId, pendingId, pendingText, turnId, msgId }
 
@@ -1054,133 +1158,225 @@ function bindSmsContextMenuOnce(mount) {
     ctx = null;
   }
 
-  // 点击遮罩关闭
   overlay.addEventListener('mousedown', (e) => {
     if (e.target === overlay) close();
   });
-  // ESC 关闭
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') close();
   });
 
-  // 右键打开（只在短信 thread）
-  mount.addEventListener('contextmenu', (e) => {
-    const duanxinPage = mount.querySelector('.page.page-duanxin');
-    if (!duanxinPage || !duanxinPage.classList.contains('active')) return;
+function openCtxFromEvent(e) {
+  const duanxinPage = mount.querySelector('.page.page-duanxin');
+  if (!duanxinPage || !duanxinPage.classList.contains('active')) return false;
 
-    const threadView = duanxinPage.querySelector('[data-sms-view="thread"]');
-    if (!threadView || !threadView.classList.contains('active')) return;
+  const threadView = duanxinPage.querySelector('[data-sms-view="thread"]');
+  if (!threadView || !threadView.classList.contains('active')) return false;
 
-    const row = $closest(e.target, '.sms-row');
-    if (!row) return;
+  const row = $closest(e.target, '.sms-row');
+  if (!row) return false;
 
-    e.preventDefault();
-    e.stopPropagation();
+  e.preventDefault();
+  e.stopPropagation();
 
-    const contactId = smsActiveContactId || 'c1';
+  const contactId = smsActiveContactId || 'c1';
 
-    // pending（暂存）
-    const pendingId = row.dataset.pendingId || '';
-    if (pendingId) {
-      const q = (window.__YBM_SMS_QUEUE__?.[contactId] || []);
-      const hit = q.find(x => x && x.id === pendingId);
-      const pendingText = hit?.text || '';
+  // ===== A) pending（暂存队列里的气泡）=====
+  const pendingId = row.dataset.pendingId || '';
+  if (pendingId) {
+    const q = (window.__YBM_SMS_QUEUE__?.[contactId] || []);
+    const hit = q.find(x => x && x.id === pendingId);
+    const pendingText = hit?.text || '';
 
-      ctx = { kind: 'pending', contactId, pendingId, pendingText };
+    ctx = { kind: 'pending', contactId, pendingId, pendingText };
 
-      // 显示 pending 的两个按钮，隐藏 turn 的两个按钮
-      btnPendingWithdraw.style.display = '';
-      btnPendingDelete.style.display = '';
-      overlay.querySelector('.mp-ctx-sep').style.display = 'none';
-      btnTurnReroll.style.display = 'none';
-      btnTurnDelete.style.display = 'none';
-      if (hint) hint.textContent = '暂存消息：撤回可被模型看到';
+    const isWithdrawPending = !!hit && hit.kind === 'withdraw';
+    btnPendingWithdraw.style.display = isWithdrawPending ? 'none' : '';
+    btnPendingDelete.style.display = '';
 
-      openAt(e.clientX, e.clientY);
-      return;
+    if (sep) sep.style.display = 'none';
+    btnTurnReroll.style.display = 'none';
+    btnTurnDelete.style.display = 'none';
+
+    btnPendingDelete.disabled = false;
+    if (hint) hint.textContent = isWithdrawPending ? '撤回事件：可删除/可发送' : '暂存消息：撤回可被模型看到';
+
+    openAt(e.clientX, e.clientY);
+    return true;
+  }
+
+  // ===== B) withdraw（旧逻辑：撤回写进引擎的 user 消息）=====
+  // 你现在撤回已经是 pending 了，基本用不到，但留着不影响
+  if (row.classList.contains('me') && (row.dataset.kind === 'withdraw') && row.dataset.msgId) {
+    const msgId = row.dataset.msgId || '';
+    const turnId = row.dataset.turnId || '';
+
+    ctx = { kind: 'withdraw', contactId, msgId, turnId };
+
+    btnPendingWithdraw.style.display = 'none';
+    btnPendingDelete.style.display = '';
+    if (sep) sep.style.display = 'none';
+    btnTurnReroll.style.display = 'none';
+    btnTurnDelete.style.display = 'none';
+
+    btnPendingDelete.disabled = false;
+    if (hint) hint.textContent = '撤回消息：删除会彻底移除（模型将不再看到）';
+
+    openAt(e.clientX, e.clientY);
+    return true;
+  }
+
+  // ===== C) assistant（对方消息：只允许最后一轮重roll/删除本轮）=====
+  if (row.classList.contains('them')) {
+    const turnId = row.dataset.turnId || '';
+    const msgId = row.dataset.msgId || '';
+
+    ctx = { kind: 'assistant', contactId, turnId, msgId };
+
+    btnPendingWithdraw.style.display = 'none';
+    btnPendingDelete.style.display = 'none';
+    if (sep) sep.style.display = '';
+    btnTurnReroll.style.display = '';
+    btnTurnDelete.style.display = '';
+
+    const lastTid =
+      window.PhoneEngine?.getLastAssistantTurnId?.({ contactId, channel: 'phone' }) || '';
+
+    const ok = !!turnId && !!lastTid && (turnId === lastTid);
+
+    btnTurnReroll.disabled = !ok;
+    btnTurnDelete.disabled = !ok;
+
+    if (hint) hint.textContent = ok ? '操作最后一轮：重roll / 删除本轮' : '只能操作“最后一轮”';
+
+    openAt(e.clientX, e.clientY);
+    return true;
+  }
+
+  return false;
+}
+
+// 右键（PC）
+mount.addEventListener('contextmenu', (e) => {
+  openCtxFromEvent(e);
+}, true);
+
+// 点击（手机/触屏）：点气泡弹菜单
+mount.addEventListener('click', (e) => {
+  // 避免点到输入框/按钮时误弹
+  if ($closest(e.target, '.sms-input,.sms-send,.sms-stash,.phone-menu,[data-mp-back]')) return;
+  openCtxFromEvent(e);
+}, true);
+
+// 长按（手机）：更像原生
+let pressTimer = null;
+mount.addEventListener('touchstart', (e) => {
+  const row = $closest(e.target, '.sms-row');
+  if (!row) return;
+  pressTimer = setTimeout(() => {
+    // touch 没有 clientX/clientY 时，用触点坐标
+    const t = e.touches && e.touches[0];
+    if (t) {
+      e.clientX = t.clientX;
+      e.clientY = t.clientY;
     }
+    openCtxFromEvent(e);
+  }, 420);
+}, { passive: false, capture: true });
 
-    // assistant（对方气泡）
-    if (row.classList.contains('them')) {
-      const turnId = row.dataset.turnId || '';
-      const msgId = row.dataset.msgId || '';
+mount.addEventListener('touchend', () => {
+  clearTimeout(pressTimer);
+  pressTimer = null;
+}, true);
 
-      ctx = { kind: 'assistant', contactId, turnId, msgId };
+mount.addEventListener('touchmove', () => {
+  clearTimeout(pressTimer);
+  pressTimer = null;
+}, true);
 
-      // 显示 turn 的两个按钮，隐藏 pending 的两个按钮
-      btnPendingWithdraw.style.display = 'none';
-      btnPendingDelete.style.display = 'none';
-      overlay.querySelector('.mp-ctx-sep').style.display = '';
-      btnTurnReroll.style.display = '';
-      btnTurnDelete.style.display = '';
 
-      // 仅最后一轮生效
-      const lastTid = window.PhoneEngine?.getLastAssistantTurnId?.({ contactId, channel: 'phone' }) || '';
-      const ok = !!turnId && (turnId === lastTid);
-
-      btnTurnReroll.disabled = !ok;
-      btnTurnDelete.disabled = !ok;
-      if (hint) hint.textContent = ok ? '操作最后一轮：重roll / 删除本轮' : '只能操作“最后一轮”';
-
-      openAt(e.clientX, e.clientY);
-      return;
-    }
-
-    // 其它（已发送的 user）暂不提供菜单
-  }, true);
-
-  // pending-delete
+  // ===== pending-delete / withdraw-delete =====
   btnPendingDelete?.addEventListener('click', () => {
-    if (!ctx || ctx.kind !== 'pending') return;
-    const { contactId, pendingId } = ctx;
+    if (!ctx) return;
 
-    // 1) 删队列
-    const q = (window.__YBM_SMS_QUEUE__?.[contactId] || []);
-    window.__YBM_SMS_QUEUE__[contactId] = q.filter(x => x && x.id !== pendingId);
-
-    // 2) 删 UI 行
     const thread = mount.querySelector('[data-sms-thread]');
-    const row = thread?.querySelector(`.sms-row.me.pending[data-pending-id="${pendingId}"]`);
-    try { row?.remove(); } catch {}
 
-    close();
+    // 1) 删暂存 pending
+    if (ctx.kind === 'pending') {
+      const { contactId, pendingId } = ctx;
+
+      const q = (window.__YBM_SMS_QUEUE__?.[contactId] || []);
+      window.__YBM_SMS_QUEUE__[contactId] = q.filter(x => x && x.id !== pendingId);
+
+      const row = thread?.querySelector(`.sms-row.me.pending[data-pending-id="${pendingId}"]`);
+      try { row?.remove(); } catch {}
+      close();
+      return;
+    }
+
+    // 2) 删 withdraw（硬删除：从引擎里移除）
+    if (ctx.kind === 'withdraw') {
+      const { contactId, msgId } = ctx;
+      if (!msgId) return;
+
+      window.PhoneEngine?.deleteMessage?.({ contactId, msgId });
+
+      try {
+        const title = mount.querySelector('[data-sms-thread-name]')?.textContent || '';
+        renderSmsPreview(mount, contactId, title);
+      } catch {}
+
+      close();
+      return;
+    }
   });
 
-  // pending-withdraw（撤回可见：写入引擎一条事件）
-  btnPendingWithdraw?.addEventListener('click', () => {
-    if (!ctx || ctx.kind !== 'pending') return;
-    const { contactId, pendingId, pendingText } = ctx;
+// ===== pending-withdraw（撤回：转成一条 withdraw pending，可发送/可删除）=====
+btnPendingWithdraw?.addEventListener('click', () => {
+  if (!ctx || ctx.kind !== 'pending') return;
 
-    // 1) 删队列
-    const q = (window.__YBM_SMS_QUEUE__?.[contactId] || []);
-    window.__YBM_SMS_QUEUE__[contactId] = q.filter(x => x && x.id !== pendingId);
+  const { contactId, pendingId, pendingText } = ctx;
+  const thread = mount.querySelector('[data-sms-thread]');
+  if (!thread) { close(); return; }
 
-    // 2) 删 UI 行
-    const thread = mount.querySelector('[data-sms-thread]');
-    const row = thread?.querySelector(`.sms-row.me.pending[data-pending-id="${pendingId}"]`);
-    try { row?.remove(); } catch {}
+  // ✅ 取当前线程头像（不要用未定义的 avatarSrc）
+  const avatarSrc =
+    thread.querySelector('.sms-row.them .sms-ava img')?.getAttribute('src') ||
+    './assets/avatars/ybm.png';
 
-    // 3) 写入引擎：让模型可见“撤回”及原文
-    try {
-      const t = (window.PhoneEngine?.newTurnId?.() || ('t_' + Date.now().toString(36)));
-      window.PhoneEngine?.appendMessage?.({
-        contactId,
-        channel: 'phone',
-        role: 'user',
-        content: `（已撤回）${pendingText || ''}`.trim(),
-        turnId: t,
-        meta: { kind: 'withdraw' }
-      });
+  // 当前草稿轮 turnId（撤回要跟本轮绑定）
+  const draftTurnId = (window.__YBM_SMS_DRAFT_TURN__[contactId] ||= (
+    window.PhoneEngine?.newTurnId?.() || ('t_' + Date.now().toString(36))
+  ));
 
-      // UI 显示撤回提示（不显示原文）
-      appendSmsBubble(thread, 'me', '（你撤回了一条消息）', './assets/avatars/ybm.png', { turnId: t });
-      thread.scrollTop = thread.scrollHeight;
-    } catch {}
+  // 1) 从队列删掉原 pending
+  const q = (window.__YBM_SMS_QUEUE__?.[contactId] || []);
+  window.__YBM_SMS_QUEUE__[contactId] = q.filter(x => x && x.id !== pendingId);
 
-    close();
+  // 2) 删 UI 行（原 pending 气泡）
+  const pendingRow = thread.querySelector(`.sms-row.me.pending[data-pending-id="${pendingId}"]`);
+  try { pendingRow?.remove(); } catch {}
+
+  // 3) 新增一个“撤回事件 pending”（仍可发送、仍可删除）
+  const wid = 'w_' + Math.random().toString(36).slice(2, 10);
+  const wText = `（已撤回）${pendingText || ''}`.trim();
+
+  (window.__YBM_SMS_QUEUE__[contactId] ||= []).push({ id: wid, text: wText, kind: 'withdraw' });
+
+  // 4) UI：显示撤回 pending 气泡
+  appendSmsBubble(thread, 'me', wText, avatarSrc, {
+    pending: true,
+    pendingId: wid,
+    turnId: draftTurnId,
+    kind: 'withdraw'
   });
 
-  // turn-delete（删除本轮：user+assistant 一起删）
+  thread.scrollTop = thread.scrollHeight;
+  close();
+});
+
+
+
+  // ===== turn-delete =====
   btnTurnDelete?.addEventListener('click', () => {
     if (!ctx || ctx.kind !== 'assistant') return;
     const { contactId, turnId } = ctx;
@@ -1188,7 +1384,6 @@ function bindSmsContextMenuOnce(mount) {
 
     window.PhoneEngine?.deleteTurn?.({ contactId, channel: 'phone', turnId });
 
-    // 重新渲染
     try {
       const title = mount.querySelector('[data-sms-thread-name]')?.textContent || '';
       renderSmsPreview(mount, contactId, title);
@@ -1197,19 +1392,57 @@ function bindSmsContextMenuOnce(mount) {
     close();
   });
 
-  // turn-reroll（重roll本轮：删 assistant -> 重新生成）
+  // ===== turn-reroll =====
+  // ===== turn-reroll =====
   btnTurnReroll?.addEventListener('click', async () => {
     if (!ctx || ctx.kind !== 'assistant') return;
     const { contactId, turnId } = ctx;
     if (!turnId) return;
 
-    // 只允许最后一轮：前面已 disabled，这里再保险
-    const lastTid = window.PhoneEngine?.getLastAssistantTurnId?.({ contactId, channel: 'phone' }) || '';
+    const lastTid =
+      window.PhoneEngine?.getLastAssistantTurnId?.({ contactId, channel: 'phone' }) || '';
     if (turnId !== lastTid) return;
 
-    await window.PhoneEngine?.rerollLastTurn?.({ contactId, channel: 'phone' });
+    const thread = mount.querySelector('[data-sms-thread]');
+    const avatarSrc =
+      thread?.querySelector('.sms-row.them .sms-ava img')?.getAttribute('src') ||
+      './assets/avatars/ybm.png';
 
-    // 重新渲染
+    // A) 先在 UI 上把“这一轮的对方气泡”删掉（带淡出）
+    if (thread) {
+      const rows = Array.from(thread.querySelectorAll(`.sms-row.them[data-turn-id="${turnId}"], .sms-row.them[data-turnid="${turnId}"]`));
+      rows.forEach(r => {
+        r.classList.add('mp-fadeout');
+        setTimeout(() => { try { r.remove(); } catch {} }, 180);
+      });
+
+      // B) 放一个“对方正在输入…”占位
+      const typingRow = document.createElement('div');
+      typingRow.className = 'sms-row them';
+      typingRow.dataset._typing = '1';
+      typingRow.innerHTML = `
+        <div class="sms-ava"><img src="${avatarSrc}" alt=""></div>
+        <div class="sms-bubble">…</div>
+      `;
+      thread.appendChild(typingRow);
+      thread.scrollTop = thread.scrollHeight;
+    }
+
+    // C) 触发引擎重roll
+    try {
+      if (window.PhoneEngine?.rerollLastTurn) {
+        await window.PhoneEngine.rerollLastTurn({ contactId, channel: 'phone', turnId });
+      } else if (window.PhoneEngine?.rerollLastAssistant) {
+        await window.PhoneEngine.rerollLastAssistant({ contactId, channel: 'phone' });
+      }
+    } finally {
+      // D) 不管成功失败，都去掉 typing 占位（随后整体重渲染）
+      try {
+        thread?.querySelector('.sms-row.them[data-_typing="1"]')?.remove();
+      } catch {}
+    }
+
+    // E) 新回复回来后：重渲染
     try {
       const title = mount.querySelector('[data-sms-thread-name]')?.textContent || '';
       renderSmsPreview(mount, contactId, title);
@@ -1217,5 +1450,7 @@ function bindSmsContextMenuOnce(mount) {
 
     close();
   });
+
 }
+
 
