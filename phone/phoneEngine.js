@@ -779,7 +779,6 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
 
     return out.trim();
   }
-  // ===== SMS hard-enforcer (phone only) =====
   function needSmsRewrite(text) {
     const t = String(text || '').trim();
     if (!t) return true;
@@ -787,8 +786,25 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     // think / reasoning / analysis 统统不允许
     if (/<think>|<\/think>|reasoning|analysis|思考过程/i.test(t)) return true;
 
-    // 必须以“对方：”开头（至少有一行）
-    if (!/^\s*对方：/m.test(t)) return true;
+    // ✅ 至少要有一行“短信行”
+    // 允许两类：
+    // 1) 普通短信：对方：xxxx  或 对方:xxxx
+    // 2) 撤回动作： [撤回]原消息内容 / 【撤回】原消息内容
+    //    也允许带“对方：”前缀：对方：[撤回]... / 对方：【撤回】...
+const hasReplyLine =
+  /^\s*对方[:：]/m.test(t) ||
+
+  // 撤回动作
+  /^\s*\[撤回\]/m.test(t) ||
+  /^\s*【撤回】/m.test(t) ||
+  /^\s*对方[:：]\s*\[撤回\]/m.test(t) ||
+  /^\s*对方[:：]\s*【撤回】/m.test(t) ||
+
+  // 转账动作
+  /^\s*【转账\|/m.test(t) ||
+  /^\s*对方[:：]\s*【转账\|/m.test(t);
+
+    if (!hasReplyLine) return true;
 
     // 禁止 markdown 标题/列表
     if (/^\s*[*#]{1,3}\s+/m.test(t)) return true;
@@ -802,14 +818,16 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     return false;
   }
 
+
   async function rewriteToSms({ api, userText, badAssistantText }) {
     const sys = [
       '你是“短信改写器”，只负责把输入内容改写成中文短信。',
       '严格遵守：',
-      '1) 只输出 1~4 行；每行必须以“对方：”开头。',
+      '1) 只输出 1~4 行；每行以“对方：”开头。',
       '2) 每行 10~40 字，最长不超过 60 字；不够就分行。',
       '3) 禁止任何 <think>/reasoning/analysis/解释/标题/Markdown。',
-      '4) 只输出短信正文，不要任何前后缀。'
+      '4) 只输出短信正文，不要任何前后缀。',
+      '5) 如果要表达“撤回”，用这一行格式：对方：[撤回]原消息内容（只写这一行即可）。'
     ].join('\n');
 
     const u = [

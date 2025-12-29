@@ -1177,8 +1177,11 @@
 .page-duanxin .sms-row {
   display: flex;
   gap: 10px;
-  align-items: flex-end;
+  align-items: flex-start; /* ✅ 头像跟气泡顶部对齐 */
   margin: 10px 0;
+}
+.page-duanxin .sms-thread-paper .sms-ava {
+  margin-top: 2px; /* 你觉得还低就改成 0 或 -1 */
 }
 
 .page-duanxin .sms-row.them {
@@ -1828,4 +1831,124 @@
   opacity: 0;
   transform: translateY(-6px);
   transition: opacity .18s ease, transform .18s ease;
+}
+/* 可点击的系统条：稍微像“可展开” */
+.page-duanxin .sms-row.sys.clickable .sms-bubble {
+  cursor: pointer;
+}
+
+.page-duanxin .sms-row.sys.peek .sms-bubble {
+  opacity: .92;
+  border-style: solid;
+}
+/* =========================
+   转账卡片（仿真实 App）
+   ========================= */
+
+.page-duanxin .sms-row.transfer .sms-bubble {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background:  #dea5a5 ;
+  border: 2.5px solid rgb(0, 0, 0);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.04),
+    0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* 顶部标题行 */
+.page-duanxin .sms-row.transfer .tx-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  font-weight: 800;
+  font-size: 13px;
+  color: #312e3f;
+  margin-bottom: 6px;
+}
+
+/* 给“转账”加一个点状 icon（不用图片） */
+.page-duanxin .sms-row.transfer .tx-title::before {
+  content: '对方向你';
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* 金额：主视觉 */
+.page-duanxin .sms-row.transfer .tx-money {
+  font-weight: 900;
+  font-size: 20px;
+  line-height: 1.2;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+/* 备注 / 提示 */
+.page-duanxin .sms-row.transfer .tx-sub {
+  font-size: 12px;
+  color: #ffffff;
+  opacity: 0.9;
+}
+
+/* 可点击反馈 */
+.page-duanxin .sms-row.transfer.clickable .sms-bubble {
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.page-duanxin .sms-row.transfer.clickable .sms-bubble:active {
+  transform: translateY(1px);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* 展开详情态 */
+.page-duanxin .sms-row.transfer.peek .sms-bubble {
+  background: linear-gradient(180deg, #fff 0%, #f3f0ff 100%);
+}
+
+.page-duanxin .sms-row.transfer.peek .tx-sub {
+  color: #333;
+  opacity: 1;
+}
+/* =========================
+   微信式：撤回提示（居中透明）
+   ========================= */
+
+/* sys 行居中，不要头像 */
+.page-duanxin .sms-row.sys.sys-tip{
+  justify-content: center !important;
+  gap: 0 !important;
+  margin: 10px 0 !important;
+}
+
+.page-duanxin .sms-row.sys.sys-tip .sms-ava{
+  display: none !important;
+}
+
+/* 提示文本：无气泡、透明、居中小字 */
+.page-duanxin .sms-row.sys.sys-tip .sms-bubble{
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+
+  font-size: 12px;
+  color: rgba(0,0,0,0.45);
+  text-align: center;
+}
+
+/* 可点击反馈：轻微高亮（不影响“透明”感） */
+.page-duanxin .sms-row.sys.sys-tip.clickable .sms-bubble{
+  cursor: pointer;
+}
+
+.page-duanxin .sms-row.sys.sys-tip.clickable .sms-bubble:active{
+  color: rgba(0,0,0,0.65);
+}
+
+/* 展开偷看态：仍保持“系统提示”风格，但更清晰一点 */
+.page-duanxin .sms-row.sys.sys-tip.peek .sms-bubble{
+  color: rgba(0,0,0,0.75);
 }

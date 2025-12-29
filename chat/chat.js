@@ -216,7 +216,7 @@ if ($closest(e.target, 'img,button,input,textarea,select,a')) return;
 
       const s = document.createElement('script');
       s.type = 'module';
-      s.src = new URL('./mini_phone/mini_phone.js?v=1', document.baseURI).href;
+      s.src = new URL('./mini_phone/mini_phone.js?v=2', document.baseURI).href;
       s.dataset.miniPhone = '1';
       s.onload = () => resolve(true);
       s.onerror = () => resolve(false);
