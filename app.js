@@ -277,9 +277,9 @@
     const base = (cfg && typeof cfg === 'object') ? cfg : { version: 1 };
     if (!base.contacts) base.contacts = [
       { id: 'ybm', name: '岩白眉' },
+      { id: 'caishu', name: '猜叔' },
       { id: 'dantuo', name: '但拓' },
-      { id: 'c3', name: '联系人三' },
-      { id: 'c4', name: '联系人四' }
+      { id: 'zhoubin', name: '州槟' }
     ];
     if (!base.activeContactId) base.activeContactId = base.contacts[0].id;
 
@@ -328,9 +328,9 @@
     if (!Array.isArray(cfg.contacts) || cfg.contacts.length === 0) {
       cfg.contacts = [
         { id: 'ybm', name: '岩白眉' },
+        { id: 'caishu', name: '猜叔' },
         { id: 'dantuo', name: '但拓' },
-        { id: 'c3', name: '联系人三' },
-        { id: 'c4', name: '联系人四' }
+        { id: 'zhoubin', name: '州槟' }
       ];
     }
     if (!cfg.activeContactId) cfg.activeContactId = cfg.contacts[0].id;
@@ -644,7 +644,7 @@
 
 
   function bindWorldbookPanel(root) {
-    const cfg = ensurePromptCfg();
+    let cfg = ensurePromptCfg();
     const cid = cfg.activeContactId;
 
     // ① 删除重复的“导入/导出 textarea 区域”（你红框叉掉的那块）
@@ -659,8 +659,31 @@
     root.querySelector('#wb-import')?.remove();
 
     // ② 当前联系人显示
+    // ② 联系人切换：下拉框 + “显示：xxx”
     const sub = root.querySelector('.wbSectionSubContact');
-    if (sub) sub.textContent = `（当前：${getActiveContactName(cfg)}）`;
+    const picker = root.querySelector('#wb-contact-picker');
+
+    const syncContactUI = () => {
+      if (sub) sub.textContent = `（显示：${getActiveContactName(cfg)}）`;
+      if (picker) picker.value = cfg.activeContactId;
+    };
+
+    if (picker) {
+      // 填充联系人选项
+      picker.innerHTML = (cfg.contacts || [])
+        .map(c => `<option value="${c.id}">${c.name || c.id}</option>`)
+        .join('');
+
+      picker.onchange = () => {
+        cfg.activeContactId = picker.value;
+        savePromptCfg(cfg);
+        syncContactUI();
+        renderWorldbookList(root, cfg, 'contact'); // 只重渲染联系人区
+      };
+    }
+
+    syncContactUI();
+
 
     // ③ 列表滚动（防挤出去）
     const gList = root.querySelector('#wb-global-list');
@@ -695,9 +718,9 @@
     });
 
     btnAddContact?.addEventListener('click', () => {
-      // 确保联系人数组存在
-      if (!Array.isArray(cfg.worldbook.contact[cid])) cfg.worldbook.contact[cid] = [];
-      cfg.worldbook.contact[cid].push(makeWbItem());
+      const cidNow = cfg.activeContactId;          // ✅ 用当前选择的联系人
+      if (!Array.isArray(cfg.worldbook.contact[cidNow])) cfg.worldbook.contact[cidNow] = [];
+      cfg.worldbook.contact[cidNow].push(makeWbItem());
       savePromptCfg(cfg);
       renderWorldbookList(root, cfg, 'contact');
     });
@@ -719,6 +742,7 @@
         });
 
         savePromptCfg(cfg2);
+        cfg = cfg2;
 
         if (sub) sub.textContent = `（当前：${getActiveContactName(cfg2)}）`;
         renderWorldbookList(root, cfg2, 'global');
@@ -784,12 +808,12 @@
     });
   }
 
-function renderPresetList(root, cfg) {
-  // 注入一次性样式（如果世界书已经注入过同名 style，这里不会重复）
-  if (!document.getElementById('ybm-wb-style')) {
-    const st = document.createElement('style');
-    st.id = 'ybm-wb-style';
-    st.textContent = `
+  function renderPresetList(root, cfg) {
+    // 注入一次性样式（如果世界书已经注入过同名 style，这里不会重复）
+    if (!document.getElementById('ybm-wb-style')) {
+      const st = document.createElement('style');
+      st.id = 'ybm-wb-style';
+      st.textContent = `
       .ybmWbList { max-height: 56vh; overflow:auto; padding-right:6px; box-sizing:border-box; }
       .ybmWbRow {
         display:block;
@@ -859,38 +883,38 @@ function renderPresetList(root, cfg) {
         .ybmWbTitlePill { width: 100%; }
       }
     `;
-    document.head.appendChild(st);
-  }
+      document.head.appendChild(st);
+    }
 
-  const listEl =
-    root.querySelector('#preset-global-list') ||
-    root.querySelector('#presetList');
+    const listEl =
+      root.querySelector('#preset-global-list') ||
+      root.querySelector('#presetList');
 
-  if (!listEl) return;
+    if (!listEl) return;
 
-  listEl.classList.add('ybmWbList');
+    listEl.classList.add('ybmWbList');
 
-  const arr = cfg.presets?.global || [];
-  listEl.innerHTML = '';
+    const arr = cfg.presets?.global || [];
+    listEl.innerHTML = '';
 
-  if (!arr.length) {
-    const empty = document.createElement('div');
-    empty.className = 'wbEmpty';
-    empty.textContent = '暂无预设，点“＋新增”创建。';
-    listEl.appendChild(empty);
-    return;
-  }
+    if (!arr.length) {
+      const empty = document.createElement('div');
+      empty.className = 'wbEmpty';
+      empty.textContent = '暂无预设，点“＋新增”创建。';
+      listEl.appendChild(empty);
+      return;
+    }
 
-  arr.forEach((it, idx) => {
-    if (typeof it.enabled !== 'boolean') it.enabled = true;
-    if (typeof it.title !== 'string') it.title = it.title ? String(it.title) : '新预设';
-    if (typeof it.content !== 'string') it.content = it.content ? String(it.content) : '';
+    arr.forEach((it, idx) => {
+      if (typeof it.enabled !== 'boolean') it.enabled = true;
+      if (typeof it.title !== 'string') it.title = it.title ? String(it.title) : '新预设';
+      if (typeof it.content !== 'string') it.content = it.content ? String(it.content) : '';
 
-    const row = document.createElement('div');
-    row.className = 'ybmWbRow';
+      const row = document.createElement('div');
+      row.className = 'ybmWbRow';
 
-    // ✅ 预设：只有一个开关（开=注入，关=不注入），不提供“总是/随提示词”
-    row.innerHTML = `
+      // ✅ 预设：只有一个开关（开=注入，关=不注入），不提供“总是/随提示词”
+      row.innerHTML = `
       <div class="ybmWbTop">
         <div class="ybmWbTopLeft">
           <label class="wbToggle" style="margin-left:2px;">
@@ -924,64 +948,65 @@ function renderPresetList(root, cfg) {
       </div>
     `;
 
-    const chk = row.querySelector('input[type="checkbox"]');
-    const titleInput = row.querySelector('.ybmWbTitleInput');
-    const editor = row.querySelector('.ybmWbEditor');
-    const ta = row.querySelector('textarea');
+      const chk = row.querySelector('input[type="checkbox"]');
+      const titleInput = row.querySelector('.ybmWbTitleInput');
+      const editor = row.querySelector('.ybmWbEditor');
+      const ta = row.querySelector('textarea');
 
-    chk.onchange = () => {
-      it.enabled = chk.checked;
-      savePromptCfg(cfg);
-    };
+      chk.onchange = () => {
+        it.enabled = chk.checked;
+        savePromptCfg(cfg);
+      };
 
-    titleInput.onchange = () => {
-      it.title = titleInput.value || '';
-      savePromptCfg(cfg);
-    };
+      titleInput.onchange = () => {
+        it.title = titleInput.value || '';
+        savePromptCfg(cfg);
+      };
 
-    const toggleEditor = (open) => {
-      const hidden = editor.classList.contains('ybmHidden');
-      const shouldOpen = (open === undefined) ? hidden : open;
-      editor.classList.toggle('ybmHidden', !shouldOpen);
-    };
+      const toggleEditor = (open) => {
+        const hidden = editor.classList.contains('ybmHidden');
+        const shouldOpen = (open === undefined) ? hidden : open;
+        editor.classList.toggle('ybmHidden', !shouldOpen);
+      };
 
-    row.querySelector('[data-act="toggle"]').onclick = () => toggleEditor();
-    row.querySelector('[data-act="close"]').onclick = () => toggleEditor(false);
+      row.querySelector('[data-act="toggle"]').onclick = () => toggleEditor();
+      row.querySelector('[data-act="close"]').onclick = () => toggleEditor(false);
 
-    row.querySelector('[data-act="save"]').onclick = () => {
-      it.content = ta.value || '';
-      savePromptCfg(cfg);
-      renderPresetList(root, cfg);
-    };
+      row.querySelector('[data-act="save"]').onclick = () => {
+        it.content = ta.value || '';
+        savePromptCfg(cfg);
+        renderPresetList(root, cfg);
+      };
 
-    row.querySelector('[data-act="up"]').onclick = () => {
-      if (idx <= 0) return;
-      [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
-      savePromptCfg(cfg);
-      renderPresetList(root, cfg);
-    };
+      row.querySelector('[data-act="up"]').onclick = () => {
+        if (idx <= 0) return;
+        [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+        savePromptCfg(cfg);
+        renderPresetList(root, cfg);
+      };
 
-    row.querySelector('[data-act="down"]').onclick = () => {
-      if (idx >= arr.length - 1) return;
-      [arr[idx + 1], arr[idx]] = [arr[idx], arr[idx + 1]];
-      savePromptCfg(cfg);
-      renderPresetList(root, cfg);
-    };
+      row.querySelector('[data-act="down"]').onclick = () => {
+        if (idx >= arr.length - 1) return;
+        [arr[idx + 1], arr[idx]] = [arr[idx], arr[idx + 1]];
+        savePromptCfg(cfg);
+        renderPresetList(root, cfg);
+      };
 
-    row.querySelector('[data-act="del"]').onclick = () => {
-      arr.splice(idx, 1);
-      savePromptCfg(cfg);
-      renderPresetList(root, cfg);
-    };
+      row.querySelector('[data-act="del"]').onclick = () => {
+        arr.splice(idx, 1);
+        savePromptCfg(cfg);
+        renderPresetList(root, cfg);
+      };
 
-    listEl.appendChild(row);
-  });
-}
+      listEl.appendChild(row);
+    });
+  }
 
 
 
   function bindPresetsPanel(root) {
-    const cfg = ensurePromptCfg();
+let cfg = ensurePromptCfg();
+
 
     // ① 删除重复的“导入/导出 textarea 区域”（你红框叉掉的那块）
     const io = root.querySelector('#preset-io');
@@ -1254,76 +1279,76 @@ function renderPresetList(root, cfg) {
   // Start center buttons (placeholders)
   document.getElementById('btnWorldbook')?.addEventListener('click', () => openStartPanel('worldbook'));
   document.getElementById('btnPresetList')?.addEventListener('click', () => openStartPanel('presets'));
-// ===== Start center buttons (real panels) =====
-const PERSONA_LS_KEY = 'YBM_PERSONA_V1';
-const REGEX_LS_KEY = 'YBM_REGEX_CFG_V1';
-const ENGINE_LS_KEY = 'YBM_ENGINE_V1';
+  // ===== Start center buttons (real panels) =====
+  const PERSONA_LS_KEY = 'YBM_PERSONA_V1';
+  const REGEX_LS_KEY = 'YBM_REGEX_CFG_V1';
+  const ENGINE_LS_KEY = 'YBM_ENGINE_V1';
 
-function downloadJsonFile(filename, obj) {
-  try {
-    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json;charset=utf-8' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 800);
-  } catch (e) {
-    console.error(e);
-    alert('导出失败：' + (e?.message || e));
-  }
-}
-
-function pickJsonFile(onLoad) {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'application/json';
-  input.style.display = 'none';
-  document.body.appendChild(input);
-
-  input.onchange = async () => {
-    const file = input.files?.[0];
-    input.remove();
-    if (!file) return;
+  function downloadJsonFile(filename, obj) {
     try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-      onLoad?.(data);
+      const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 800);
     } catch (e) {
       console.error(e);
-      alert('导入失败：文件不是合法 JSON。');
+      alert('导出失败：' + (e?.message || e));
     }
-  };
+  }
 
-  input.click();
-}
+  function pickJsonFile(onLoad) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.style.display = 'none';
+    document.body.appendChild(input);
 
-/** 用 Start 页现成的 side/overlay 机制，打开一个“自定义内容面板” */
-function openStartCustomPanel(title, buildBodyFn) {
-  // 只在 start 页生效
-  if (!viewStart?.classList.contains('on')) return;
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      input.remove();
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        onLoad?.(data);
+      } catch (e) {
+        console.error(e);
+        alert('导入失败：文件不是合法 JSON。');
+      }
+    };
 
-  const bodyNode = buildBodyFn?.();
-  if (!bodyNode) return;
+    input.click();
+  }
 
-  if (isMobileStart()) {
-    // mobile overlay
-    if (!startOverlay || !startOverlayBody || !startOverlayTitle) return;
-    startOverlayTitle.textContent = title || 'PANEL';
-    startOverlayBody.innerHTML = '';
-    startOverlayBody.appendChild(bodyNode);
-    startOverlay.dataset.open = 'true';
-    startOverlay.setAttribute('aria-hidden', 'false');
-  } else {
-    // desktop side
-    if (!startSide) return;
-    const panel = document.createElement('div');
-    panel.className = 'startPanel';
+  /** 用 Start 页现成的 side/overlay 机制，打开一个“自定义内容面板” */
+  function openStartCustomPanel(title, buildBodyFn) {
+    // 只在 start 页生效
+    if (!viewStart?.classList.contains('on')) return;
 
-    const chrome = document.createElement('div');
-    chrome.className = 'startChrome';
-    chrome.innerHTML = `
+    const bodyNode = buildBodyFn?.();
+    if (!bodyNode) return;
+
+    if (isMobileStart()) {
+      // mobile overlay
+      if (!startOverlay || !startOverlayBody || !startOverlayTitle) return;
+      startOverlayTitle.textContent = title || 'PANEL';
+      startOverlayBody.innerHTML = '';
+      startOverlayBody.appendChild(bodyNode);
+      startOverlay.dataset.open = 'true';
+      startOverlay.setAttribute('aria-hidden', 'false');
+    } else {
+      // desktop side
+      if (!startSide) return;
+      const panel = document.createElement('div');
+      panel.className = 'startPanel';
+
+      const chrome = document.createElement('div');
+      chrome.className = 'startChrome';
+      chrome.innerHTML = `
       <div class="startLights" aria-hidden="true">
         <span class="startLight"></span><span class="startLight y"></span><span class="startLight g"></span>
       </div>
@@ -1331,32 +1356,32 @@ function openStartCustomPanel(title, buildBodyFn) {
       <button class="startOverlayCloseBtn" type="button" data-start-close="1">关闭</button>
     `;
 
-    const body = document.createElement('div');
-    body.className = 'startPanelBody';
-    body.appendChild(bodyNode);
+      const body = document.createElement('div');
+      body.className = 'startPanelBody';
+      body.appendChild(bodyNode);
 
-    panel.appendChild(chrome);
-    panel.appendChild(body);
-    startSide.innerHTML = '';
-    startSide.appendChild(panel);
-    startSide.dataset.show = 'true';
+      panel.appendChild(chrome);
+      panel.appendChild(body);
+      startSide.innerHTML = '';
+      startSide.appendChild(panel);
+      startSide.dataset.show = 'true';
+    }
   }
-}
 
-/** 人设面板：用户填“名字 + 基础信息”，保存到 localStorage，并会随提示词发出（后面我会在 phoneEngine.js 接入） */
-function buildPersonaPanel() {
-  const wrap = document.createElement('div');
-  wrap.className = 'startList';
+  /** 人设面板：用户填“名字 + 基础信息”，保存到 localStorage，并会随提示词发出（后面我会在 phoneEngine.js 接入） */
+  function buildPersonaPanel() {
+    const wrap = document.createElement('div');
+    wrap.className = 'startList';
 
-  const cur = (() => {
-    try { return JSON.parse(localStorage.getItem(PERSONA_LS_KEY) || 'null') || {}; } catch { return {}; }
-  })();
+    const cur = (() => {
+      try { return JSON.parse(localStorage.getItem(PERSONA_LS_KEY) || 'null') || {}; } catch { return {}; }
+    })();
 
-  const enabled = !!cur.enabled;
-  const name = cur.name || '';
-  const bio = cur.bio || '';
+    const enabled = !!cur.enabled;
+    const name = cur.name || '';
+    const bio = cur.bio || '';
 
-  wrap.innerHTML = `
+    wrap.innerHTML = `
     <div class="startItem" style="opacity:.9">
       <b>说明</b><br/>
       这里是“你的自定义人设”。保存后会作为系统提示的一部分发给模型。
@@ -1389,45 +1414,45 @@ function buildPersonaPanel() {
     </div>
   `;
 
-  wrap.querySelector('#personaSave')?.addEventListener('click', () => {
-    const data = {
-      enabled: !!wrap.querySelector('#personaEnabled')?.checked,
-      name: (wrap.querySelector('#personaName')?.value || '').trim(),
-      bio: (wrap.querySelector('#personaBio')?.value || '').trim(),
-      updatedAt: Date.now()
-    };
-    localStorage.setItem(PERSONA_LS_KEY, JSON.stringify(data));
-    alert('已保存。');
-  });
-
-  wrap.querySelector('#personaClear')?.addEventListener('click', () => {
-    if (!confirm('确定清空人设吗？')) return;
-    localStorage.removeItem(PERSONA_LS_KEY);
-    alert('已清空。');
-  });
-
-  wrap.querySelector('#personaExport')?.addEventListener('click', () => {
-    const raw = localStorage.getItem(PERSONA_LS_KEY);
-    const obj = raw ? JSON.parse(raw) : { enabled:false, name:'', bio:'' };
-    downloadJsonFile('ybm_persona.json', obj);
-  });
-
-  wrap.querySelector('#personaImport')?.addEventListener('click', () => {
-    pickJsonFile((data) => {
-      localStorage.setItem(PERSONA_LS_KEY, JSON.stringify(data || {}));
-      alert('已导入。建议刷新页面确保生效。');
+    wrap.querySelector('#personaSave')?.addEventListener('click', () => {
+      const data = {
+        enabled: !!wrap.querySelector('#personaEnabled')?.checked,
+        name: (wrap.querySelector('#personaName')?.value || '').trim(),
+        bio: (wrap.querySelector('#personaBio')?.value || '').trim(),
+        updatedAt: Date.now()
+      };
+      localStorage.setItem(PERSONA_LS_KEY, JSON.stringify(data));
+      alert('已保存。');
     });
-  });
 
-  return wrap;
-}
+    wrap.querySelector('#personaClear')?.addEventListener('click', () => {
+      if (!confirm('确定清空人设吗？')) return;
+      localStorage.removeItem(PERSONA_LS_KEY);
+      alert('已清空。');
+    });
 
-/** 聊天记录：导出/导入整个引擎状态（最稳，不拆字段，防丢） */
-function buildChatlogPanel() {
-  const wrap = document.createElement('div');
-  wrap.className = 'startList';
+    wrap.querySelector('#personaExport')?.addEventListener('click', () => {
+      const raw = localStorage.getItem(PERSONA_LS_KEY);
+      const obj = raw ? JSON.parse(raw) : { enabled: false, name: '', bio: '' };
+      downloadJsonFile('ybm_persona.json', obj);
+    });
 
-  wrap.innerHTML = `
+    wrap.querySelector('#personaImport')?.addEventListener('click', () => {
+      pickJsonFile((data) => {
+        localStorage.setItem(PERSONA_LS_KEY, JSON.stringify(data || {}));
+        alert('已导入。建议刷新页面确保生效。');
+      });
+    });
+
+    return wrap;
+  }
+
+  /** 聊天记录：导出/导入整个引擎状态（最稳，不拆字段，防丢） */
+  function buildChatlogPanel() {
+    const wrap = document.createElement('div');
+    wrap.className = 'startList';
+
+    wrap.innerHTML = `
     <div class="startItem" style="opacity:.9">
       <b>说明</b><br/>
       这里导入导出的是“聊天引擎的完整存档”（包含联系人与消息）。用来防丢最稳。
@@ -1443,62 +1468,62 @@ function buildChatlogPanel() {
     </div>
   `;
 
-  wrap.querySelector('#chatlogExport')?.addEventListener('click', () => {
-    const raw = localStorage.getItem(ENGINE_LS_KEY);
-    if (!raw) {
-      alert('本地还没有聊天记录。');
-      return;
-    }
-    const obj = JSON.parse(raw);
-    downloadJsonFile('ybm_chatlog_backup.json', obj);
-  });
-
-  wrap.querySelector('#chatlogImport')?.addEventListener('click', () => {
-    if (!confirm('导入会覆盖本地聊天存档，确定继续？')) return;
-    pickJsonFile((data) => {
-      localStorage.setItem(ENGINE_LS_KEY, JSON.stringify(data || {}));
-      alert('已导入。即将刷新页面。');
-      location.reload();
+    wrap.querySelector('#chatlogExport')?.addEventListener('click', () => {
+      const raw = localStorage.getItem(ENGINE_LS_KEY);
+      if (!raw) {
+        alert('本地还没有聊天记录。');
+        return;
+      }
+      const obj = JSON.parse(raw);
+      downloadJsonFile('ybm_chatlog_backup.json', obj);
     });
-  });
 
-  return wrap;
-}
+    wrap.querySelector('#chatlogImport')?.addEventListener('click', () => {
+      if (!confirm('导入会覆盖本地聊天存档，确定继续？')) return;
+      pickJsonFile((data) => {
+        localStorage.setItem(ENGINE_LS_KEY, JSON.stringify(data || {}));
+        alert('已导入。即将刷新页面。');
+        location.reload();
+      });
+    });
 
-/** 正则渲染规则：用于“前端显示层”改写文本（不影响发给模型的内容） */
-function buildRegexPanel() {
-  const wrap = document.createElement('div');
-  wrap.className = 'startList';
-
-  const cfg = (() => {
-    try { return JSON.parse(localStorage.getItem(REGEX_LS_KEY) || 'null') || {}; } catch { return {}; }
-  })();
-
-  if (!Array.isArray(cfg.rules)) cfg.rules = [];
-  if (typeof cfg.enabled !== 'boolean') cfg.enabled = true;
-
-  function save() {
-    localStorage.setItem(REGEX_LS_KEY, JSON.stringify(cfg));
+    return wrap;
   }
 
-  function renderList() {
-    list.innerHTML = '';
-    cfg.rules.forEach((r, idx) => {
-      if (typeof r.enabled !== 'boolean') r.enabled = true;
-      if (!r.name) r.name = '规则';
-      if (r.pattern == null) r.pattern = '';
-      if (r.flags == null) r.flags = 'g';
-      if (r.replace == null) r.replace = '';
+  /** 正则渲染规则：用于“前端显示层”改写文本（不影响发给模型的内容） */
+  function buildRegexPanel() {
+    const wrap = document.createElement('div');
+    wrap.className = 'startList';
 
-      const row = document.createElement('div');
-      row.className = 'wbPad';
-      row.style.borderRadius = '18px';
-      row.style.border = '2px solid rgba(0,0,0,.16)';
-      row.style.background = 'rgba(255,255,255,.30)';
-      row.style.padding = '10px 12px';
-      row.style.margin = '10px 0';
+    const cfg = (() => {
+      try { return JSON.parse(localStorage.getItem(REGEX_LS_KEY) || 'null') || {}; } catch { return {}; }
+    })();
 
-      row.innerHTML = `
+    if (!Array.isArray(cfg.rules)) cfg.rules = [];
+    if (typeof cfg.enabled !== 'boolean') cfg.enabled = true;
+
+    function save() {
+      localStorage.setItem(REGEX_LS_KEY, JSON.stringify(cfg));
+    }
+
+    function renderList() {
+      list.innerHTML = '';
+      cfg.rules.forEach((r, idx) => {
+        if (typeof r.enabled !== 'boolean') r.enabled = true;
+        if (!r.name) r.name = '规则';
+        if (r.pattern == null) r.pattern = '';
+        if (r.flags == null) r.flags = 'g';
+        if (r.replace == null) r.replace = '';
+
+        const row = document.createElement('div');
+        row.className = 'wbPad';
+        row.style.borderRadius = '18px';
+        row.style.border = '2px solid rgba(0,0,0,.16)';
+        row.style.background = 'rgba(255,255,255,.30)';
+        row.style.padding = '10px 12px';
+        row.style.margin = '10px 0';
+
+        row.innerHTML = `
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
           <label class="wbToggle">
             <input type="checkbox" ${r.enabled ? 'checked' : ''}>
@@ -1536,48 +1561,48 @@ function buildRegexPanel() {
                   style="margin-top:10px; min-height:80px;"></textarea>
       `;
 
-      const chk = row.querySelector('input[type="checkbox"]');
-      const [nameI, patI, flagsI, repI] = row.querySelectorAll('input');
+        const chk = row.querySelector('input[type="checkbox"]');
+        const [nameI, patI, flagsI, repI] = row.querySelectorAll('input');
 
-      chk.onchange = () => { r.enabled = chk.checked; save(); };
-      nameI.onchange = () => { r.name = nameI.value.trim(); save(); };
-      patI.onchange = () => { r.pattern = patI.value; save(); };
-      flagsI.onchange = () => { r.flags = flagsI.value || 'g'; save(); };
-      repI.onchange = () => { r.replace = repI.value; save(); };
+        chk.onchange = () => { r.enabled = chk.checked; save(); };
+        nameI.onchange = () => { r.name = nameI.value.trim(); save(); };
+        patI.onchange = () => { r.pattern = patI.value; save(); };
+        flagsI.onchange = () => { r.flags = flagsI.value || 'g'; save(); };
+        repI.onchange = () => { r.replace = repI.value; save(); };
 
-      row.querySelector('[data-act="up"]').onclick = () => {
-        if (idx <= 0) return;
-        [cfg.rules[idx - 1], cfg.rules[idx]] = [cfg.rules[idx], cfg.rules[idx - 1]];
-        save(); renderList();
-      };
-      row.querySelector('[data-act="down"]').onclick = () => {
-        if (idx >= cfg.rules.length - 1) return;
-        [cfg.rules[idx + 1], cfg.rules[idx]] = [cfg.rules[idx], cfg.rules[idx + 1]];
-        save(); renderList();
-      };
-      row.querySelector('[data-act="del"]').onclick = () => {
-        cfg.rules.splice(idx, 1);
-        save(); renderList();
-      };
+        row.querySelector('[data-act="up"]').onclick = () => {
+          if (idx <= 0) return;
+          [cfg.rules[idx - 1], cfg.rules[idx]] = [cfg.rules[idx], cfg.rules[idx - 1]];
+          save(); renderList();
+        };
+        row.querySelector('[data-act="down"]').onclick = () => {
+          if (idx >= cfg.rules.length - 1) return;
+          [cfg.rules[idx + 1], cfg.rules[idx]] = [cfg.rules[idx], cfg.rules[idx + 1]];
+          save(); renderList();
+        };
+        row.querySelector('[data-act="del"]').onclick = () => {
+          cfg.rules.splice(idx, 1);
+          save(); renderList();
+        };
 
-      row.querySelector('[data-act="test"]').onclick = () => {
-        const sample = row.querySelector('textarea[data-act="sample"]').value || '';
-        let out = sample;
-        try {
-          const re = new RegExp(r.pattern || '', r.flags || 'g');
-          out = sample.replace(re, r.replace ?? '');
-        } catch (e) {
-          alert('正则不合法：' + (e?.message || e));
-          return;
-        }
-        row.querySelector('textarea[data-act="sample"]').value = out;
-      };
+        row.querySelector('[data-act="test"]').onclick = () => {
+          const sample = row.querySelector('textarea[data-act="sample"]').value || '';
+          let out = sample;
+          try {
+            const re = new RegExp(r.pattern || '', r.flags || 'g');
+            out = sample.replace(re, r.replace ?? '');
+          } catch (e) {
+            alert('正则不合法：' + (e?.message || e));
+            return;
+          }
+          row.querySelector('textarea[data-act="sample"]').value = out;
+        };
 
-      list.appendChild(row);
-    });
-  }
+        list.appendChild(row);
+      });
+    }
 
-  wrap.innerHTML = `
+    wrap.innerHTML = `
     <div class="startItem" style="opacity:.9">
       <b>说明</b><br/>
       这里是“渲染正则”。用于把显示出来的文字做替换/标记（不影响发给模型）。
@@ -1599,44 +1624,44 @@ function buildRegexPanel() {
     <div id="regexList"></div>
   `;
 
-  const list = wrap.querySelector('#regexList');
+    const list = wrap.querySelector('#regexList');
 
-  wrap.querySelector('#regexEnabled')?.addEventListener('change', (e) => {
-    cfg.enabled = !!e.target.checked;
-    save();
-  });
-
-  wrap.querySelector('#regexAdd')?.addEventListener('click', () => {
-    cfg.rules.push({ enabled: true, name: '规则', pattern: '', flags: 'g', replace: '' });
-    save();
-    renderList();
-  });
-
-  wrap.querySelector('#regexExport')?.addEventListener('click', () => {
-    downloadJsonFile('ybm_render_regex.json', cfg);
-  });
-
-  wrap.querySelector('#regexImport')?.addEventListener('click', () => {
-    pickJsonFile((data) => {
-      localStorage.setItem(REGEX_LS_KEY, JSON.stringify(data || {}));
-      alert('已导入。建议刷新页面确保生效。');
+    wrap.querySelector('#regexEnabled')?.addEventListener('change', (e) => {
+      cfg.enabled = !!e.target.checked;
+      save();
     });
+
+    wrap.querySelector('#regexAdd')?.addEventListener('click', () => {
+      cfg.rules.push({ enabled: true, name: '规则', pattern: '', flags: 'g', replace: '' });
+      save();
+      renderList();
+    });
+
+    wrap.querySelector('#regexExport')?.addEventListener('click', () => {
+      downloadJsonFile('ybm_render_regex.json', cfg);
+    });
+
+    wrap.querySelector('#regexImport')?.addEventListener('click', () => {
+      pickJsonFile((data) => {
+        localStorage.setItem(REGEX_LS_KEY, JSON.stringify(data || {}));
+        alert('已导入。建议刷新页面确保生效。');
+      });
+    });
+
+    renderList();
+    return wrap;
+  }
+
+  // 绑定按钮：打开自定义面板
+  document.getElementById('btnRole')?.addEventListener('click', () => {
+    openStartCustomPanel('人设', buildPersonaPanel);
   });
-
-  renderList();
-  return wrap;
-}
-
-// 绑定按钮：打开自定义面板
-document.getElementById('btnRole')?.addEventListener('click', () => {
-  openStartCustomPanel('人设', buildPersonaPanel);
-});
-document.getElementById('btnChatlog')?.addEventListener('click', () => {
-  openStartCustomPanel('聊天记录', buildChatlogPanel);
-});
-document.getElementById('btnPresetQuick')?.addEventListener('click', () => {
-  openStartCustomPanel('正则', buildRegexPanel);
-});
+  document.getElementById('btnChatlog')?.addEventListener('click', () => {
+    openStartCustomPanel('聊天记录', buildChatlogPanel);
+  });
+  document.getElementById('btnPresetQuick')?.addEventListener('click', () => {
+    openStartCustomPanel('正则', buildRegexPanel);
+  });
 
   document.getElementById('btnSaveCfg')?.addEventListener('click', () => alert('保存设置（占位）'));
   document.getElementById('btnResetCfg')?.addEventListener('click', () => alert('恢复默认（占位）'));

@@ -2,7 +2,8 @@
  * 共享记忆、分离显示：main/phone 两个 channel 都参与上下文，但各自只在自己的 UI 渲染
  * 多联系人：每个 contactId 一套历史
  */
-window.__SMS_DEBUG__ = window.__SMS_DEBUG__ ?? true; // 想关就改 false
+// ===== Debug switches =====
+window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
 
 (function () {
   const LS_KEY = 'YBM_ENGINE_V1';
@@ -26,6 +27,53 @@ window.__SMS_DEBUG__ = window.__SMS_DEBUG__ ?? true; // 想关就改 false
       model: '',
     }
   };
+
+  // ===== data migration: ensure assistant messages have turnId (for "last turn" ops) =====
+  // 旧版本 send() 给 user 写了 turnId，但 assistant 没写 turnId，导致：
+  // - mini_phone: “最后一轮”重roll/删除总是灰
+  // - deleteTurn/rerollLastTurn 无法按轮工作
+  function migrateMissingTurnIds() {
+    try {
+      let changed = false;
+      const byContact = state.messages || {};
+
+      for (const cid of Object.keys(byContact)) {
+        const arr = (byContact[cid] || []).slice().sort((a, b) => (a?.ts || 0) - (b?.ts || 0));
+
+        // 每个 channel 记住“最近一次 user 的 turnId”
+        const lastUserTid = { main: '', phone: '' };
+
+        for (const m of arr) {
+          if (!m || !m.channel) continue;
+          const ch = (m.channel === 'phone') ? 'phone' : 'main';
+
+          if (m.role === 'user') {
+            if (m.turnId) lastUserTid[ch] = String(m.turnId);
+            continue;
+          }
+
+          if (m.role === 'assistant') {
+            // ✅ 补齐缺失的 turnId：优先用 meta 里的，再用最近 user 的
+            const tid = m.turnId || m.meta?.turnId || lastUserTid[ch];
+            if (tid && !m.turnId) {
+              m.turnId = String(tid);
+              m.meta = m.meta || {};
+              m.meta.turnId = String(tid);
+              changed = true;
+            }
+          }
+        }
+      }
+
+      // 只在真的修复过时落盘
+      if (changed) {
+        try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch { }
+        notifyChange('save', { source: 'migration' });
+      }
+    } catch {
+      // ignore migration errors
+    }
+  }
 
   const listeners = new Set();
   function notifyChange(type, payload) {
@@ -80,6 +128,7 @@ window.__SMS_DEBUG__ = window.__SMS_DEBUG__ ?? true; // 想关就改 false
     };
 
     ensureContact(state.activeContactId || 'ybm');
+    migrateMissingTurnIds();
     notifyChange('reload', { source: 'storage' });
     return true;
   }
@@ -92,6 +141,10 @@ window.__SMS_DEBUG__ = window.__SMS_DEBUG__ ?? true; // 想关就改 false
     if (!state.messages[contactId]) state.messages[contactId] = [];
     return contactId;
   }
+
+  // 初次加载后：保证 activeContact 存在，再修复 turnId
+  ensureContact(state.activeContactId || 'ybm');
+  migrateMissingTurnIds();
 
   function listContacts() {
     return Object.values(state.contacts);
@@ -133,30 +186,30 @@ window.__SMS_DEBUG__ = window.__SMS_DEBUG__ ?? true; // 想关就改 false
     return ensureContact(state.activeContactId);
   }
 
-function newTurnId() {
-  return 't_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
-}
+  function newTurnId() {
+    return 't_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  }
 
-function newTurnId() {
-  return 't_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
-}
+  function newTurnId() {
+    return 't_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  }
 
-function appendMessage({ contactId, channel, role, content, meta, turnId } = {}) {
-  contactId = ensureContact(contactId);
-  const msg = {
-    id: uid(),
-    ts: nowTs(),
-    contactId,
-    channel,            // 'main' | 'phone'
-    role,               // 'user' | 'assistant' | 'system'
-    content: content || '',
-    meta: meta || {},
-    turnId: turnId || '', // ✅ 关键：存 turnId
-  };
-  state.messages[contactId].push(msg);
-  save();
-  return msg;
-}
+  function appendMessage({ contactId, channel, role, content, meta, turnId } = {}) {
+    contactId = ensureContact(contactId);
+    const msg = {
+      id: uid(),
+      ts: nowTs(),
+      contactId,
+      channel,            // 'main' | 'phone'
+      role,               // 'user' | 'assistant' | 'system'
+      content: content || '',
+      meta: meta || {},
+      turnId: turnId || '', // ✅ 关键：存 turnId
+    };
+    state.messages[contactId].push(msg);
+    save();
+    return msg;
+  }
 
 
 
@@ -300,198 +353,198 @@ function appendMessage({ contactId, channel, role, content, meta, turnId } = {})
       return lastA;
     }
   }
-function getLastAssistantTurnId({ contactId, channel } = {}) {
-  channel = channel === 'phone' ? 'phone' : 'main';
-  contactId = ensureContact(contactId || getActiveContact());
+  function getLastAssistantTurnId({ contactId, channel } = {}) {
+    channel = channel === 'phone' ? 'phone' : 'main';
+    contactId = ensureContact(contactId || getActiveContact());
 
-  const all = (state.messages[contactId] || []).slice().sort((a, b) => a.ts - b.ts);
-  for (let i = all.length - 1; i >= 0; i--) {
-    const m = all[i];
-    if (m && m.channel === channel && m.role === 'assistant') {
-      return m.turnId || m.meta?.turnId || null;
+    const all = (state.messages[contactId] || []).slice().sort((a, b) => a.ts - b.ts);
+    for (let i = all.length - 1; i >= 0; i--) {
+      const m = all[i];
+      if (m && m.channel === channel && m.role === 'assistant') {
+        return m.turnId || m.meta?.turnId || null;
+      }
     }
+    return null;
   }
-  return null;
-}
-function getLastAssistantTurnId({ contactId, channel } = {}) {
-  channel = channel === 'phone' ? 'phone' : 'main';
-  contactId = ensureContact(contactId || getActiveContact());
-  const arr = (state.messages[contactId] || []).slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const m = arr[i];
-    if (m && m.channel === channel && m.role === 'assistant') return m.turnId || '';
-  }
-  return '';
-}
-
-function deleteTurn({ contactId, channel, turnId } = {}) {
-  if (!turnId) return false;
-  channel = channel === 'phone' ? 'phone' : 'main';
-  contactId = ensureContact(contactId || getActiveContact());
-  const arr = state.messages[contactId] || [];
-  state.messages[contactId] = arr.filter(m => !(m && m.channel === channel && (m.turnId || '') === turnId));
-  save();
-  return true;
-}
-
-// ✅ 只重roll“最后一轮”的 assistant（符合你规则）
-// 逻辑：找到 turnId 对应的最后一条 user 作为触发，清空该轮 assistant 内容 -> 重新请求 -> 写回同一条 assistant
-async function rerollLastTurn({ contactId, channel, turnId, maxChars } = {}) {
-  channel = channel === 'phone' ? 'phone' : 'main';
-  contactId = ensureContact(contactId || getActiveContact());
-  if (!turnId) return null;
-
-  const all = (state.messages[contactId] || []).slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
-  const inTurn = all.filter(m => m && m.channel === channel && (m.turnId || '') === turnId && (m.role === 'user' || m.role === 'assistant'));
-  if (!inTurn.length) return null;
-
-  // 找这轮的最后 user（触发点）
-  let lastU = null;
-  for (let i = inTurn.length - 1; i >= 0; i--) {
-    if (inTurn[i].role === 'user') { lastU = inTurn[i]; break; }
-  }
-  if (!lastU || !lastU.content || !lastU.content.trim()) return null;
-
-  // 找这轮的 assistant（通常一条）
-  let aMsg = null;
-  for (let i = inTurn.length - 1; i >= 0; i--) {
-    if (inTurn[i].role === 'assistant') { aMsg = inTurn[i]; break; }
-  }
-  if (!aMsg) return null;
-
-  const api = readApiFromDOM();
-  const sys = buildSystemPromptFromCfg(contactId, channel);
-  const ctxAll = buildContext({
-    contactId,
-    systemPrompt: sys,
-    maxChars: maxChars || 16000
-  });
-
-  // 截断到 lastU（避免把旧 assistant 喂回去）
-  const ctx = [];
-  for (const item of ctxAll) {
-    ctx.push(item);
-    if (item.role === 'user' && (item.content || '') === (lastU.content || '')) break;
+  function getLastAssistantTurnId({ contactId, channel } = {}) {
+    channel = channel === 'phone' ? 'phone' : 'main';
+    contactId = ensureContact(contactId || getActiveContact());
+    const arr = (state.messages[contactId] || []).slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    for (let i = arr.length - 1; i >= 0; i--) {
+      const m = arr[i];
+      if (m && m.channel === channel && m.role === 'assistant') return m.turnId || '';
+    }
+    return '';
   }
 
-  aMsg.content = '';
-  aMsg.ts = nowTs();
-  save();
-
-  try {
-    const reply = await callChatCompletions({
-      baseUrl: api.baseUrl,
-      apiKey: api.apiKey,
-      model: api.model,
-      messages: ctx,
-      stream: false
-    });
-    aMsg.content = postProcessAssistantText(reply || '', channel);
-    aMsg.ts = nowTs();
-    save();
-    return aMsg;
-  } catch (e) {
-    aMsg.content = `（错误）${e?.message || e}`;
-    aMsg.meta = { error: true };
-    aMsg.ts = nowTs();
-    save();
-    return aMsg;
-  }
-}
-
-function deleteTurn({ contactId, channel, turnId } = {}) {
-  channel = channel === 'phone' ? 'phone' : 'main';
-  contactId = ensureContact(contactId || getActiveContact());
-  if (!turnId) return false;
-
-  const arr = state.messages[contactId] || [];
-  const before = arr.length;
-
-  state.messages[contactId] = arr.filter(m => {
-    if (!m) return false;
-    const tid = m.turnId || m.meta?.turnId || null;
-    if (m.channel !== channel) return true;
-    if (m.role !== 'user' && m.role !== 'assistant') return true;
-    return tid !== turnId;
-  });
-
-  if (state.messages[contactId].length !== before) {
+  function deleteTurn({ contactId, channel, turnId } = {}) {
+    if (!turnId) return false;
+    channel = channel === 'phone' ? 'phone' : 'main';
+    contactId = ensureContact(contactId || getActiveContact());
+    const arr = state.messages[contactId] || [];
+    state.messages[contactId] = arr.filter(m => !(m && m.channel === channel && (m.turnId || '') === turnId));
     save();
     return true;
   }
-  return false;
-}
 
-async function rerollLastTurn({ contactId, channel, maxChars } = {}) {
-  channel = channel === 'phone' ? 'phone' : 'main';
-  contactId = ensureContact(contactId || getActiveContact());
+  // ✅ 只重roll“最后一轮”的 assistant（符合你规则）
+  // 逻辑：找到 turnId 对应的最后一条 user 作为触发，清空该轮 assistant 内容 -> 重新请求 -> 写回同一条 assistant
+  async function rerollLastTurn({ contactId, channel, turnId, maxChars } = {}) {
+    channel = channel === 'phone' ? 'phone' : 'main';
+    contactId = ensureContact(contactId || getActiveContact());
+    if (!turnId) return null;
 
-  const tid = getLastAssistantTurnId({ contactId, channel });
-  if (!tid) return null;
+    const all = (state.messages[contactId] || []).slice().sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    const inTurn = all.filter(m => m && m.channel === channel && (m.turnId || '') === turnId && (m.role === 'user' || m.role === 'assistant'));
+    if (!inTurn.length) return null;
 
-  // 找该 turn 的最后一条 user（用它作为 reroll 的触发点）
-  const sorted = (state.messages[contactId] || []).slice().sort((a, b) => a.ts - b.ts);
-  const inTurn = sorted.filter(m => {
-    const mt = m?.turnId || m?.meta?.turnId || null;
-    return m && m.channel === channel && mt === tid && (m.role === 'user' || m.role === 'assistant');
-  });
-
-  if (!inTurn.length) return null;
-
-  let lastUser = null;
-  for (let i = inTurn.length - 1; i >= 0; i--) {
-    if (inTurn[i].role === 'user' && (inTurn[i].content || '').trim()) {
-      lastUser = inTurn[i];
-      break;
+    // 找这轮的最后 user（触发点）
+    let lastU = null;
+    for (let i = inTurn.length - 1; i >= 0; i--) {
+      if (inTurn[i].role === 'user') { lastU = inTurn[i]; break; }
     }
-  }
-  if (!lastUser) return null;
+    if (!lastU || !lastU.content || !lastU.content.trim()) return null;
 
-  // 删除该 turn 下所有 assistant（保留 user）
-  state.messages[contactId] = (state.messages[contactId] || []).filter(m => {
-    const mt = m?.turnId || m?.meta?.turnId || null;
-    if (!m) return false;
-    if (m.channel !== channel) return true;
-    if (mt !== tid) return true;
-    return m.role !== 'assistant';
-  });
-  save();
+    // 找这轮的 assistant（通常一条）
+    let aMsg = null;
+    for (let i = inTurn.length - 1; i >= 0; i--) {
+      if (inTurn[i].role === 'assistant') { aMsg = inTurn[i]; break; }
+    }
+    if (!aMsg) return null;
 
-  // 重新构建上下文：从 buildContext 取，但截断到 lastUser（按 id 截断更稳）
-  const api = readApiFromDOM();
-  const sys = buildSystemPromptFromCfg(contactId, channel);
-
-  const ctx = [];
-  if (sys && sys.trim()) ctx.push({ role: 'system', content: sys.trim() });
-
-  for (const m of sorted) {
-    if (!m) continue;
-    if (m.role !== 'user' && m.role !== 'assistant' && m.role !== 'system') continue;
-    ctx.push({ role: m.role, content: m.content || '' });
-    if (m.id === lastUser.id) break;
-  }
-
-  const assistantMsg = appendMessage({ contactId, channel, role: 'assistant', content: '', turnId: tid });
-
-  try {
-    const reply = await callChatCompletions({
-      baseUrl: api.baseUrl,
-      apiKey: api.apiKey,
-      model: api.model,
-      messages: ctx,
-      stream: false
+    const api = readApiFromDOM();
+    const sys = buildSystemPromptFromCfg(contactId, channel);
+    const ctxAll = buildContext({
+      contactId,
+      systemPrompt: sys,
+      maxChars: maxChars || 16000
     });
 
-    assistantMsg.content = postProcessAssistantText(reply || '', channel);
+    // 截断到 lastU（避免把旧 assistant 喂回去）
+    const ctx = [];
+    for (const item of ctxAll) {
+      ctx.push(item);
+      if (item.role === 'user' && (item.content || '') === (lastU.content || '')) break;
+    }
+
+    aMsg.content = '';
+    aMsg.ts = nowTs();
     save();
-    return assistantMsg;
-  } catch (e) {
-    assistantMsg.content = `（错误）${e?.message || e}`;
-    assistantMsg.meta = { error: true, turnId: tid };
-    save();
-    return assistantMsg;
+
+    try {
+      const reply = await callChatCompletions({
+        baseUrl: api.baseUrl,
+        apiKey: api.apiKey,
+        model: api.model,
+        messages: ctx,
+        stream: false
+      });
+      aMsg.content = postProcessAssistantText(reply || '', channel);
+      aMsg.ts = nowTs();
+      save();
+      return aMsg;
+    } catch (e) {
+      aMsg.content = `（错误）${e?.message || e}`;
+      aMsg.meta = { error: true };
+      aMsg.ts = nowTs();
+      save();
+      return aMsg;
+    }
   }
-}
+
+  function deleteTurn({ contactId, channel, turnId } = {}) {
+    channel = channel === 'phone' ? 'phone' : 'main';
+    contactId = ensureContact(contactId || getActiveContact());
+    if (!turnId) return false;
+
+    const arr = state.messages[contactId] || [];
+    const before = arr.length;
+
+    state.messages[contactId] = arr.filter(m => {
+      if (!m) return false;
+      const tid = m.turnId || m.meta?.turnId || null;
+      if (m.channel !== channel) return true;
+      if (m.role !== 'user' && m.role !== 'assistant') return true;
+      return tid !== turnId;
+    });
+
+    if (state.messages[contactId].length !== before) {
+      save();
+      return true;
+    }
+    return false;
+  }
+
+  async function rerollLastTurn({ contactId, channel, maxChars } = {}) {
+    channel = channel === 'phone' ? 'phone' : 'main';
+    contactId = ensureContact(contactId || getActiveContact());
+
+    const tid = getLastAssistantTurnId({ contactId, channel });
+    if (!tid) return null;
+
+    // 找该 turn 的最后一条 user（用它作为 reroll 的触发点）
+    const sorted = (state.messages[contactId] || []).slice().sort((a, b) => a.ts - b.ts);
+    const inTurn = sorted.filter(m => {
+      const mt = m?.turnId || m?.meta?.turnId || null;
+      return m && m.channel === channel && mt === tid && (m.role === 'user' || m.role === 'assistant');
+    });
+
+    if (!inTurn.length) return null;
+
+    let lastUser = null;
+    for (let i = inTurn.length - 1; i >= 0; i--) {
+      if (inTurn[i].role === 'user' && (inTurn[i].content || '').trim()) {
+        lastUser = inTurn[i];
+        break;
+      }
+    }
+    if (!lastUser) return null;
+
+    // 删除该 turn 下所有 assistant（保留 user）
+    state.messages[contactId] = (state.messages[contactId] || []).filter(m => {
+      const mt = m?.turnId || m?.meta?.turnId || null;
+      if (!m) return false;
+      if (m.channel !== channel) return true;
+      if (mt !== tid) return true;
+      return m.role !== 'assistant';
+    });
+    save();
+
+    // 重新构建上下文：从 buildContext 取，但截断到 lastUser（按 id 截断更稳）
+    const api = readApiFromDOM();
+    const sys = buildSystemPromptFromCfg(contactId, channel);
+
+    const ctx = [];
+    if (sys && sys.trim()) ctx.push({ role: 'system', content: sys.trim() });
+
+    for (const m of sorted) {
+      if (!m) continue;
+      if (m.role !== 'user' && m.role !== 'assistant' && m.role !== 'system') continue;
+      ctx.push({ role: m.role, content: m.content || '' });
+      if (m.id === lastUser.id) break;
+    }
+
+    const assistantMsg = appendMessage({ contactId, channel, role: 'assistant', content: '', turnId: tid });
+
+    try {
+      const reply = await callChatCompletions({
+        baseUrl: api.baseUrl,
+        apiKey: api.apiKey,
+        model: api.model,
+        messages: ctx,
+        stream: false
+      });
+
+      assistantMsg.content = postProcessAssistantText(reply || '', channel);
+      save();
+      return assistantMsg;
+    } catch (e) {
+      assistantMsg.content = `（错误）${e?.message || e}`;
+      assistantMsg.meta = { error: true, turnId: tid };
+      save();
+      return assistantMsg;
+    }
+  }
 
   // 把 main + phone 合并成给模型看的上下文（但 UI 不串）
   function buildContext({ contactId, systemPrompt, maxChars } = {}) {
@@ -705,48 +758,74 @@ async function rerollLastTurn({ contactId, channel, maxChars } = {}) {
 
     return finalText;
   }
-function stripThinking(text) {
-  let out = String(text || '');
+  function stripThinking(text) {
+    let out = String(text || '');
 
-  // 1) <think>...</think>
-  out = out.replace(/<think>[\s\S]*?<\/think>/gi, '');
+    // 1) 成对 <think>...</think>
+    out = out.replace(/<think>[\s\S]*?<\/think>/gi, '');
 
-  // 2) ```think ... ``` 或 ```thinking ... ```
-  out = out.replace(/```(?:think|thinking)[\s\S]*?```/gi, '');
+    // 2) 无闭合 <think>：只删掉从 <think> 起到第一个空行（双换行）为止
+    //    （常见格式：<think>...思考...\n\n最终回答...）
+    out = out.replace(/<think>[\s\S]*?(?:\n\s*\n)/gi, '');
 
-  // 3) 某些模型会用特殊标记
-  out = out.replace(/^\s*(?:\[\s*thinking\s*\]|\(\s*thinking\s*\))[\s\S]*?(?:\n{2,}|$)/gi, '');
+    // 3) 去掉残留标记
+    out = out.replace(/<\/?think>/gi, '');
 
-  return out.trim();
-}
+    // 4) ```think ...``` / ```thinking ...```
+    out = out.replace(/```(?:think|thinking)[\s\S]*?```/gi, '');
 
+    // 5) [thinking] / (thinking) 这类段落
+    out = out.replace(/^\s*(?:\[\s*thinking\s*\]|\(\s*thinking\s*\))[\s\S]*?(?:\n{2,}|$)/gim, '');
 
-async function send({ text, channel, contactId, systemPrompt, maxChars, turnId } = {}) {
-  if (!text || !text.trim()) return null;
-  channel = channel === 'phone' ? 'phone' : 'main';
-  contactId = ensureContact(contactId || getActiveContact());
+    return out.trim();
+  }
+  // ===== SMS hard-enforcer (phone only) =====
+  function needSmsRewrite(text) {
+    const t = String(text || '').trim();
+    if (!t) return true;
 
-  const api = readApiFromDOM();
+    // think / reasoning / analysis 统统不允许
+    if (/<think>|<\/think>|reasoning|analysis|思考过程/i.test(t)) return true;
 
-  // ✅ 如果外部没传，就自动生成一轮
-  const tid = turnId || newTurnId();
+    // 必须以“对方：”开头（至少有一行）
+    if (!/^\s*对方：/m.test(t)) return true;
 
-  appendMessage({ contactId, channel, role: 'user', content: text.trim(), turnId: tid });
+    // 禁止 markdown 标题/列表
+    if (/^\s*[*#]{1,3}\s+/m.test(t)) return true;
+    if (/^\s*[-*]\s+/m.test(t)) return true;
 
-  const sys = (systemPrompt && systemPrompt.trim())
-    ? systemPrompt.trim()
-    : buildSystemPromptFromCfg(contactId, channel);
+    // 英文占比过高也判为不合规（短信语境不能是英文）
+    const latin = (t.match(/[A-Za-z]/g) || []).length;
+    const cjk = (t.match(/[\u4e00-\u9fff]/g) || []).length;
+    if (latin >= 20 && cjk < 5) return true;
 
-  const ctx = buildContext({
-    contactId,
-    systemPrompt: sys,
-    maxChars: maxChars || 16000,
-  });
+    return false;
+  }
 
-  const assistantMsg = appendMessage({ contactId, channel, role: 'assistant', content: '', turnId: tid });
+  async function rewriteToSms({ api, userText, badAssistantText }) {
+    const sys = [
+      '你是“短信改写器”，只负责把输入内容改写成中文短信。',
+      '严格遵守：',
+      '1) 只输出 1~4 行；每行必须以“对方：”开头。',
+      '2) 每行 10~40 字，最长不超过 60 字；不够就分行。',
+      '3) 禁止任何 <think>/reasoning/analysis/解释/标题/Markdown。',
+      '4) 只输出短信正文，不要任何前后缀。'
+    ].join('\n');
 
-  try {
-    const reply = await callChatCompletions({
+    const u = [
+      `用户短信：${String(userText || '').trim()}`,
+      '',
+      '需要改写的模型输出（可能含英文/think/长段）：',
+      String(badAssistantText || '').trim()
+    ].join('\n');
+
+    const ctx = [
+      { role: 'system', content: sys },
+      { role: 'user', content: u }
+    ];
+
+    // 注意：复用同一个模型/同一个 API
+    const repaired = await callChatCompletions({
       baseUrl: api.baseUrl,
       apiKey: api.apiKey,
       model: api.model,
@@ -754,16 +833,112 @@ async function send({ text, channel, contactId, systemPrompt, maxChars, turnId }
       stream: false
     });
 
-    assistantMsg.content = postProcessAssistantText(reply || '', channel);
-    save();
-    return assistantMsg;
-  } catch (e) {
-    assistantMsg.content = `（错误）${e?.message || e}`;
-    assistantMsg.meta = { error: true };
-    save();
-    return assistantMsg;
+    return String(repaired || '').trim();
   }
-}
+
+  // ===== debug: dump prompt/messages to console (F12) =====
+  function debugDumpLLMRequest({ tag, api, messages }) {
+    try {
+      const enabled =
+        (localStorage.getItem('YBM_DEBUG_LLM') === '1') ||
+        (location.search.includes('debugllm=1'));
+      if (!enabled) return;
+
+      const safeApi = {
+        baseUrl: api?.baseUrl || '',
+        model: api?.model || '',
+        apiKey: api?.apiKey ? (String(api.apiKey).slice(0, 6) + '…' + String(api.apiKey).slice(-4)) : ''
+      };
+
+      console.groupCollapsed(`%c[LLM:${tag}] model=${safeApi.model}`, 'color:#8a2be2;font-weight:700;');
+      console.log('api:', safeApi);
+      console.log('messages(full):', messages);
+
+      // 额外给一个“便于看”的纯文本串（system+最后几条）
+      const lines = (messages || []).map((m, i) => {
+        const role = m?.role || 'unknown';
+        const c = String(m?.content || '');
+        return `#${i} [${role}]\n${c}`;
+      });
+      console.log('messages(text):\n' + lines.join('\n\n---\n\n'));
+      console.groupEnd();
+    } catch (e) {
+      console.warn('[LLM] debugDump failed:', e);
+    }
+  }
+
+
+  async function send({ text, channel, contactId, systemPrompt, maxChars, turnId } = {}) {
+    if (!text || !text.trim()) return null;
+    channel = channel === 'phone' ? 'phone' : 'main';
+    contactId = ensureContact(contactId || getActiveContact());
+
+    const api = readApiFromDOM();
+
+    // ✅ 如果外部没传，就自动生成一轮
+    const tid = turnId || newTurnId();
+
+    appendMessage({ contactId, channel, role: 'user', content: text.trim(), turnId: tid });
+
+    const sys = (systemPrompt && systemPrompt.trim())
+      ? systemPrompt.trim()
+      : buildSystemPromptFromCfg(contactId, channel);
+
+    const ctx = buildContext({
+      contactId,
+      systemPrompt: sys,
+      maxChars: maxChars || 16000,
+    });
+
+    // ✅ assistant 也必须写 turnId，否则“最后一轮”删除/重roll 没法判定
+    const assistantMsg = appendMessage({ contactId, channel, role: 'assistant', content: '', turnId: tid });
+
+    try {
+      // ✅ F12 查看本次真实发送给模型的 messages（含 system/worldbook/preset/历史）
+      debugDumpLLMRequest({ tag: `send:${channel}`, api, messages: ctx });
+
+      const reply = await callChatCompletions({
+        baseUrl: api.baseUrl,
+        apiKey: api.apiKey,
+        model: api.model,
+        messages: ctx,
+        stream: false
+      });
+
+
+      let out = postProcessAssistantText(reply || '', channel);
+
+      if (channel === 'phone') {
+        // 先剃 think（保证 UI/历史不污染）
+        out = stripThinking(out);
+
+        // 不合规就走改写器：保证“永远像短信、永远中文、永远对方：”
+        if (needSmsRewrite(out)) {
+          try {
+            const repaired = await rewriteToSms({
+              api,
+              userText: text,
+              badAssistantText: reply || out
+            });
+            if (repaired) out = repaired;
+          } catch (e) {
+            // 改写失败也至少保证不出 think
+            out = stripThinking(out);
+          }
+        }
+      }
+
+      assistantMsg.content = out;
+      save();
+      return assistantMsg;
+
+    } catch (e) {
+      assistantMsg.content = `（错误）${e?.message || e}`;
+      assistantMsg.meta = { error: true };
+      save();
+      return assistantMsg;
+    }
+  }
 
   // ✅ 导出：这里现在不会再引用未定义的 getMessages 了
   window.PhoneEngine = {
@@ -772,18 +947,18 @@ async function send({ text, channel, contactId, systemPrompt, maxChars, turnId }
     addContact,
     setActiveContact,
     getActiveContact,
-newTurnId,
-getLastAssistantTurnId,
-deleteTurn,
-rerollLastTurn,
+    newTurnId,
+    getLastAssistantTurnId,
+    deleteTurn,
+    rerollLastTurn,
 
     appendMessage,
     getMessages,       // ✅ 已定义
     buildContext,
-deleteTurn,
-rerollLastTurn,
-getLastAssistantTurnId,
-newTurnId,
+    deleteTurn,
+    rerollLastTurn,
+    getLastAssistantTurnId,
+    newTurnId,
 
     updateMessage,
     deleteMessage,

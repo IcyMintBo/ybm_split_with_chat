@@ -388,6 +388,9 @@ head.appendChild(ops);
     btnDel.className = 'msgActBtn';
     btnDel.title = '删除';
     btnDel.innerHTML = iconTrash();
+    // ✅ 用委托处理删除：避免有时 DOM 重新渲染导致按钮“点不动”
+    btnDel.dataset.act = 'del';
+    btnDel.dataset.msgId = msg.id;
 
     // 重roll：只允许最后一条 assistant
     let btnReroll = null;
@@ -427,11 +430,7 @@ item.appendChild(wrap);
     box.appendChild(item);
 
     // ===== handlers =====
-    btnDel.addEventListener('click', () => {
-      if (!confirm('删除这条消息？')) return;
-      engine.deleteMessage?.({ contactId, msgId: msg.id });
-      renderHistory(engine);
-    });
+    // 删除按钮 click 由 initChat 里的委托统一处理
 
     btnEdit.addEventListener('click', () => {
       const oldText = msg.content || '';
@@ -670,6 +669,22 @@ if (!mount.querySelector('.chatWindow')) {
     ensureDefaultContacts(engine);
     mountContactBar(engine);
     renderHistory(engine);
+
+    // ✅ 删除按钮委托（chatMessages 会频繁 innerHTML 重建，用委托更稳）
+    const msgBox = qs('chatMessages');
+    if (msgBox && !msgBox.dataset.delBound) {
+      msgBox.dataset.delBound = '1';
+      msgBox.addEventListener('click', (e) => {
+        const btn = $closest(e.target, 'button.msgActBtn[data-act="del"]');
+        if (!btn) return;
+        const msgId = btn.dataset.msgId || $closest(btn, '.chatItem')?.dataset.msgId || '';
+        if (!msgId) return;
+        const contactId = engine.getActiveContact?.() || 'default';
+        if (!confirm('删除这条消息？')) return;
+        engine.deleteMessage?.({ contactId, msgId });
+        renderHistory(engine);
+      });
+    }
 
     if (!document.documentElement.dataset.chatChangeBound) {
       document.documentElement.dataset.chatChangeBound = '1';

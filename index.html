@@ -36,6 +36,9 @@
               <div class="spacer"></div>
 
               <button class="claimBtn" id="btnClaim">领取手机</button>
+              <div class="entryNotice">
+                本项目仅供成年人使用 · 所有内容均为虚构角色互动
+              </div>
             </div>
           </div>
         </div>
@@ -245,7 +248,12 @@
 
           <div class="wbSection">
             <div class="wbSectionHead">
-              <div class="wbSectionTitle">联系人世界书 <span class="wbSectionSub wbSectionSubContact">（当前：—）</span></div>
+              <div class="wbSectionTitle">
+                联系人世界书
+                <span class="wbSectionSub wbSectionSubContact">（显示：—）</span>
+                <select id="wb-contact-picker" class="wbContactPicker" aria-label="选择联系人"></select>
+              </div>
+
               <button class="wbBtn wbBtnPrimary" id="wb-add-contact" type="button">＋ 新增</button>
             </div>
             <div id="wb-contact-list" class="wbList"></div>
@@ -266,11 +274,11 @@
 
       <template id="startTplPresets">
         <div class="wbRowBtns">
-  <button class="wbBtn wbBtnPrimary" id="preset-load-default" type="button">载入默认</button>
-  <button class="wbBtn" id="preset-import-file" type="button">导入文件</button>
-  <button class="wbBtn wbBtnPrimary" id="preset-export-file" type="button">导出下载</button>
-</div>
-<input id="preset-file" type="file" accept="application/json" style="display:none;">
+          <button class="wbBtn wbBtnPrimary" id="preset-load-default" type="button">载入默认</button>
+          <button class="wbBtn" id="preset-import-file" type="button">导入文件</button>
+          <button class="wbBtn wbBtnPrimary" id="preset-export-file" type="button">导出下载</button>
+        </div>
+        <input id="preset-file" type="file" accept="application/json" style="display:none;">
 
         <div class="wbPad">
           <div class="wbHeaderRow">
@@ -451,16 +459,16 @@
           </div>
         </div>
       </div>
-<div id="mountChat"></div>
+      <div id="mountChat"></div>
 
 
 
     </div>
   </div>
 
-<script src="./phone/phoneEngine.js"></script>
-<script src="./app.js"></script>
-<script src="./chat/chat.js"></script>
+  <script src="./phone/phoneEngine.js"></script>
+  <script src="./app.js"></script>
+  <script src="./chat/chat.js"></script>
 </body>
 
 </html>

@@ -2,7 +2,7 @@
    Mini Phone (clean + cute topbar)
    ========================================================= */
 
-#mini-phone-root{
+#mini-phone-root {
   position: relative;
   width: 100%;
   height: 100%;
@@ -16,9 +16,12 @@
   padding: 0;
 
   --mp-scale: 1;
---topbar-top: 10px;   /* 整条东西离顶部 */
-  --time-top: 50px;     /* 时间单独往下 */
-  --time-size: 70px;    /* 时间大小 */
+  --topbar-top: 10px;
+  /* 整条东西离顶部 */
+  --time-top: 50px;
+  /* 时间单独往下 */
+  --time-size: 70px;
+  /* 时间大小 */
   /* Topbar tuning */
   --topbar-top: 22px;
   --topbar-w: min(86%, 320px);
@@ -46,14 +49,16 @@
   --bottom-icons-w: 150px;
   --bottom-icons-scale: 1.0;
   --bottom-icon-size: 60px;
-  --panel-w: 230px;   /* 状态栏宽 */
-  --panel-h: 390px;   /* 状态栏高 */
+  --panel-w: 230px;
+  /* 状态栏宽 */
+  --panel-h: 390px;
+  /* 状态栏高 */
 
 }
 
 
 /* Shell */
-.phone-shell{
+.phone-shell {
   position: relative;
   width: 100%;
   height: 100%;
@@ -68,7 +73,7 @@
 }
 
 /* Background */
-.phone-bg{
+.phone-bg {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -79,7 +84,7 @@
   pointer-events: none;
 }
 
-.phone-stage{
+.phone-stage {
   position: absolute;
   left: var(--stage-x, 0px);
   top: var(--stage-y, 0px);
@@ -94,25 +99,25 @@
 .phone-stage .phone-bottom-icons,
 .phone-stage .phone-back,
 .phone-stage .page,
-.phone-stage .mp-topbar{
+.phone-stage .mp-topbar {
   pointer-events: auto;
 }
 
 /* Back */
 /* Back (icon button) */
-.phone-back{
+.phone-back {
   position: absolute;
   left: 40px;
-  top: 25px;            
+  top: 25px;
   z-index: 999;
 
   width: 44px;
   height: 44px;
   border-radius: 12px;
 
-  background: rgba(255,255,255,.75);
-  border: 3px solid rgba(0,0,0,.75);
-  box-shadow: 0 6px 0 rgba(0,0,0,.18);
+  background: rgba(255, 255, 255, .75);
+  border: 3px solid rgba(0, 0, 0, .75);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .18);
 
   display: grid;
   place-items: center;
@@ -120,20 +125,21 @@
   cursor: pointer;
   padding: 0;
 }
+
 /* Menu button (same skin as back) */
-.phone-menu{
+.phone-menu {
   position: absolute;
   right: 35px;
-  top: 25px;              
+  top: 25px;
   z-index: 999;
 
   width: 44px;
   height: 44px;
   border-radius: 12px;
 
-  background: rgba(255,255,255,.75);
-  border: 3px solid rgba(0,0,0,.75);
-  box-shadow: 0 6px 0 rgba(0,0,0,.18);
+  background: rgba(255, 255, 255, .75);
+  border: 3px solid rgba(0, 0, 0, .75);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .18);
 
   display: grid;
   place-items: center;
@@ -142,44 +148,50 @@
   padding: 0;
 }
 
-.phone-menu::before{
+.phone-menu::before {
   content: "☰";
   font-size: 22px;
   font-weight: 900;
   line-height: 1;
-  color: rgba(0,0,0,.85);
+  color: rgba(0, 0, 0, .85);
   transform: translateY(-1px);
-  
+
 }
 
-.phone-menu:active{
+.phone-menu:active {
   transform: translateY(2px);
-  box-shadow: 0 4px 0 rgba(0,0,0,.18);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .18);
 }
 
-.phone-menu.hidden{ display:none; }
+.phone-menu.hidden {
+  display: none;
+}
 
 
-.phone-back::before{
+.phone-back::before {
   content: "‹";
   font-size: 28px;
   font-weight: 900;
   line-height: 1;
-  color: rgba(0,0,0,.85);
+  color: rgba(0, 0, 0, .85);
   transform: translateY(-2px);
 }
 
-.phone-back:active{
+.phone-back:active {
   transform: translateY(2px);
-  box-shadow: 0 4px 0 rgba(0,0,0,.18);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .18);
 }
 
-.phone-back.hidden{ display:none; }
+.phone-back.hidden {
+  display: none;
+}
 
-.phone-back.hidden{ display:none; }
+.phone-back.hidden {
+  display: none;
+}
 
 /* Sticker character */
-.phone-ren{
+.phone-ren {
   position: absolute;
   z-index: 2;
   pointer-events: none;
@@ -190,22 +202,27 @@
   transform: scale(var(--ren-scale, 2.5));
   transform-origin: left bottom;
 }
+
 /* ✅ 进入任何非主界面：只隐藏状态栏内容，不要把容器干掉（避免影响App页布局层级） */
-.phone-shell:not(.is-home) .mp-topbar{
-  display: block;         /* 保留容器 */
-  opacity: 0;             /* 视觉隐藏 */
-  pointer-events: none;   /* 不可点 */
+.phone-shell:not(.is-home) .mp-topbar {
+  display: block;
+  /* 保留容器 */
+  opacity: 0;
+  /* 视觉隐藏 */
+  pointer-events: none;
+  /* 不可点 */
 }
 
 /* ✅ 让侧边/底部图标始终可点：压过 page-home */
 .phone-left-icons,
-.phone-bottom-icons{
+.phone-bottom-icons {
   z-index: 3000;
-  position: absolute; /* 保险：明确创建定位层 */
+  position: absolute;
+  /* 保险：明确创建定位层 */
 }
 
-.phone-content{
-  position:absolute;
+.phone-content {
+  position: absolute;
   left: 0;
   top: 0;
   width: 100%;
@@ -215,18 +232,19 @@
   /* ✅ 必须可点：状态栏左右按钮、home 内部交互都在这里 */
   pointer-events: auto;
 }
+
 .phone-shell.is-home .phone-left-icons,
-.phone-shell.is-home .phone-bottom-icons{
+.phone-shell.is-home .phone-bottom-icons {
   z-index: 3000;
 }
 
 .phone-shell:not(.is-home) .phone-left-icons,
-.phone-shell:not(.is-home) .phone-bottom-icons{
+.phone-shell:not(.is-home) .phone-bottom-icons {
   z-index: 0;
 }
 
 /* Left icons：改这个父容器的位置 = 贴图 + 点击区域一起走 */
-.phone-left-icons{
+.phone-left-icons {
   position: absolute;
   left: var(--left-icons-x, 10%);
   top: var(--left-icons-y, 25%);
@@ -244,14 +262,15 @@
 
   gap: 0;
 }
-.phone-left-icons img{
+
+.phone-left-icons img {
   width: var(--left-icon-size, 38px);
   height: auto;
   cursor: pointer;
 }
 
 /* Bottom icons：同理，调父容器 */
-.phone-bottom-icons{
+.phone-bottom-icons {
   position: absolute;
   left: var(--bottom-icons-x, 60%);
   bottom: var(--bottom-icons-y, 6%);
@@ -268,31 +287,42 @@
 
   gap: 0;
 }
-.phone-bottom-icons img{
+
+.phone-bottom-icons img {
   width: var(--bottom-icon-size, 54px);
   height: auto;
   cursor: pointer;
-  transform: none;          /* ✅ 禁止二次缩放 */
+  transform: none;
+  /* ✅ 禁止二次缩放 */
 }
 
 /* Hide nav when not home */
 .phone-shell:not(.is-home) .phone-left-icons,
-.phone-shell:not(.is-home) .phone-bottom-icons{
+.phone-shell:not(.is-home) .phone-bottom-icons {
   opacity: 0;
   pointer-events: none;
 }
+
 .phone-left-icons,
-.phone-bottom-icons{
+.phone-bottom-icons {
   transition: opacity .18s ease;
 }
 
 /* Screen area */
-.phone-content{ overflow: hidden; }
-.page.page-duanxin{ overflow: visible; }
-.page.page-duanxin *{ overflow: visible; }
+.phone-content {
+  overflow: hidden;
+}
+
+.page.page-duanxin {
+  overflow: visible;
+}
+
+.page.page-duanxin * {
+  overflow: visible;
+}
 
 /* Pages */
-.page{
+.page {
   position: absolute;
   inset: 0;
   display: block;
@@ -308,20 +338,30 @@
   font-size: 18px;
   color: #666;
 }
-.page.active{
+
+.page.active {
   opacity: 1;
   pointer-events: auto;
-  transform: translate(0px,0px) scale(1);
+  transform: translate(0px, 0px) scale(1);
 }
-.page.active{ z-index: 50; }
-.phone-ren{ z-index: 1; }  /* 贴纸永远比页面低 */
 
-.page.page-home{
+.page.active {
+  z-index: 50;
+}
+
+.phone-ren {
+  z-index: 1;
+}
+
+/* 贴纸永远比页面低 */
+
+.page.page-home {
   opacity: 1;
   pointer-events: auto;
   transform: none;
 }
-.phone-shell:not(.is-home) .page.page-home{
+
+.phone-shell:not(.is-home) .page.page-home {
   opacity: 0;
   pointer-events: none;
 }
@@ -329,7 +369,7 @@
 /* =========================================================
    Cute theme tokens
    ========================================================= */
-:root{
+:root {
   --mp-ink: rgba(48, 34, 28, .92);
   --mp-paper: rgba(255, 250, 245, .92);
   --mp-cream: rgba(250, 242, 232, .95);
@@ -341,7 +381,7 @@
 /* =========================================================
    Topbar (cute sticker style)
    ========================================================= */
-.mp-topbar{
+.mp-topbar {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -361,7 +401,8 @@
   /* ✅ 关键：让内部能用 absolute 钉左右 */
   position: absolute;
 }
-.mp-top-left{
+
+.mp-top-left {
   position: absolute;
   left: var(--side-pad, 6px);
   top: var(--side-top, 10px);
@@ -373,7 +414,7 @@
   pointer-events: none;
 }
 
-.mp-top-right{
+.mp-top-right {
   position: absolute;
   right: var(--side-pad, 10px);
   top: var(--side-top, 10px);
@@ -388,23 +429,24 @@
 
 
 .mp-top-left,
-.mp-top-right{
+.mp-top-right {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.mp-top-center{
+.mp-top-center {
   position: absolute;
   left: 50%;
-  top: var(--time-top, 18px);    /* ✅ 时间往下：调这个 */
+  top: var(--time-top, 18px);
+  /* ✅ 时间往下：调这个 */
   transform: translateX(-50%);
   display: flex;
   align-items: center;
 }
 
 /* watermark pill */
-.mp-carrier-pill{
+.mp-carrier-pill {
   display: inline-flex;
   align-items: center;
 
@@ -420,68 +462,87 @@
   border-radius: 0;
 
   color: rgba(48, 34, 28, .78);
-  text-shadow: 0 2px 0 rgba(255,255,255,.65);
+  text-shadow: 0 2px 0 rgba(255, 255, 255, .65);
 }
 
 
-.mp-net{
+.mp-net {
   font-size: 11px;
   font-weight: 950;
   color: rgba(48, 34, 28, .72);
   opacity: .9;
 }
 
-.mp-clock{
-  font-size: var(--time-size, 34px); /* ✅ 放大 */
+.mp-clock {
+  font-size: var(--time-size, 34px);
+  /* ✅ 放大 */
   font-weight: 950;
   letter-spacing: 1px;
   line-height: 1;
-  color: rgba(0,0,0,.70);
+  color: rgba(0, 0, 0, .70);
   font-variant-numeric: tabular-nums;
 
   /* 可选：更“贴纸一点”的柔和阴影，不是框 */
-  text-shadow: 0 2px 0 rgba(255,255,255,.65);
+  text-shadow: 0 2px 0 rgba(255, 255, 255, .65);
 }
 
 
 /* signal */
-.mp-signal{
+.mp-signal {
   display: inline-flex;
   align-items: flex-end;
   gap: 2px;
   height: 12px;
   opacity: .9;
 }
-.mp-signal i{
+
+.mp-signal i {
   display: block;
   width: 3px;
   border-radius: 2px;
-  background: rgba(0,0,0,.65);
+  background: rgba(0, 0, 0, .65);
 }
-.mp-signal i:nth-child(1){ height: 4px; opacity:.55; }
-.mp-signal i:nth-child(2){ height: 6px; opacity:.7; }
-.mp-signal i:nth-child(3){ height: 9px; opacity:.85; }
-.mp-signal i:nth-child(4){ height: 12px; }
+
+.mp-signal i:nth-child(1) {
+  height: 4px;
+  opacity: .55;
+}
+
+.mp-signal i:nth-child(2) {
+  height: 6px;
+  opacity: .7;
+}
+
+.mp-signal i:nth-child(3) {
+  height: 9px;
+  opacity: .85;
+}
+
+.mp-signal i:nth-child(4) {
+  height: 12px;
+}
 
 /* battery */
-.mp-battery{
+.mp-battery {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 11px;
   font-weight: 950;
-  color: rgba(0,0,0,.70);
+  color: rgba(0, 0, 0, .70);
 }
-.mp-batt-box{
+
+.mp-batt-box {
   width: 26px;
   height: 12px;
   border-radius: 4px;
-  border: 1.6px solid rgba(0,0,0,.55);
-  background: rgba(255,255,255,.45);
+  border: 1.6px solid rgba(0, 0, 0, .55);
+  background: rgba(255, 255, 255, .45);
   position: relative;
   overflow: hidden;
 }
-.mp-batt-fill{
+
+.mp-batt-fill {
   position: absolute;
   left: 0;
   top: 0;
@@ -489,23 +550,25 @@
   background: rgba(120, 205, 196, .95);
   border-radius: 4px;
 }
-.mp-batt-cap{
+
+.mp-batt-cap {
   width: 3px;
   height: 7px;
   border-radius: 2px;
-  background: rgba(0,0,0,.55);
+  background: rgba(0, 0, 0, .55);
   margin-left: -4px;
 }
-.mp-batt-text{
+
+.mp-batt-text {
   opacity: .85;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 2px 0 rgba(255,255,255,.65);
+  text-shadow: 0 2px 0 rgba(255, 255, 255, .65);
 }
 
 /* =========================================================
    Home panel
    ========================================================= */
-.page-home{
+.page-home {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -515,8 +578,9 @@
   box-sizing: border-box;
 }
 
-.mp-panel{
-    flex: 0 0 auto; /* 不再被父容器强行拉伸 */
+.mp-panel {
+  flex: 0 0 auto;
+  /* 不再被父容器强行拉伸 */
   width: var(--panel-w);
   height: var(--panel-h);
   border-radius: 22px;
@@ -534,13 +598,13 @@
   transform-origin: left top;
 }
 
-.mp-tab-radio{
+.mp-tab-radio {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
 
-.mp-switchbar{
+.mp-switchbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -548,20 +612,20 @@
 
   padding: 6px 8px;
   border-radius: 16px;
-  background: rgba(255,255,255,.75);
-  border: 1.6px solid rgba(48,34,28,.25);
-  box-shadow: 0 6px 12px rgba(0,0,0,.10);
+  background: rgba(255, 255, 255, .75);
+  border: 1.6px solid rgba(48, 34, 28, .25);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, .10);
 
   margin-bottom: 10px;
 }
 
-.mp-nav{
+.mp-nav {
   width: 38px;
   height: 32px;
   border-radius: 14px;
-  border: 1.6px solid rgba(48,34,28,.25);
-  background: rgba(250,242,232,.95);
-  box-shadow: 0 6px 10px rgba(0,0,0,.10);
+  border: 1.6px solid rgba(48, 34, 28, .25);
+  background: rgba(250, 242, 232, .95);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, .10);
 
   cursor: pointer;
   user-select: none;
@@ -570,23 +634,32 @@
   font-size: 0;
   transform: translateY(-2px);
 }
-.mp-nav:active{ transform: translateY(2px); }
+
+.mp-nav:active {
+  transform: translateY(2px);
+}
 
 .mp-prev::before,
-.mp-next::before{
+.mp-next::before {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -60%);
   font-size: 22px;
   font-weight: 950;
-  color: rgba(48,34,28,.85);
+  color: rgba(48, 34, 28, .85);
   line-height: 1;
 }
-.mp-prev::before{ content:"‹"; }
-.mp-next::before{ content:"›"; }
 
-.mp-switch-title{
+.mp-prev::before {
+  content: "‹";
+}
+
+.mp-next::before {
+  content: "›";
+}
+
+.mp-switch-title {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -594,235 +667,303 @@
   flex: 1;
   min-width: 0;
 }
-.mp-switch-label{
+
+.mp-switch-label {
   font-weight: 950;
-  color: rgba(48,34,28,.88);
+  color: rgba(48, 34, 28, .88);
   font-size: 13px;
   letter-spacing: .2px;
 }
-.mp-switch-hint{
+
+.mp-switch-hint {
   font-size: 11px;
-  color: rgba(48,34,28,.55);
+  color: rgba(48, 34, 28, .55);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.mp-panel-body{
+.mp-panel-body {
   flex: 1;
   border-radius: 18px;
-  background: rgba(255,255,255,.92);
-  border: 1.6px solid rgba(48,34,28,.22);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+  background: rgba(255, 255, 255, .92);
+  border: 1.6px solid rgba(48, 34, 28, .22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .35);
   padding: 12px;
   overflow: hidden;
   position: relative;
 }
 
-.mp-card{ display:none; height:100%; }
-#mpTab1:checked ~ .mp-panel-body .mp-card-1{ display:block; }
-#mpTab2:checked ~ .mp-panel-body .mp-card-2{ display:block; }
-#mpTab3:checked ~ .mp-panel-body .mp-card-3{ display:block; }
-#mpTab4:checked ~ .mp-panel-body .mp-card-4{ display:block; }
-
-.mp-card-head{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-bottom:12px;
+.mp-card {
+  display: none;
+  height: 100%;
 }
 
-.mp-avatar{
-  width:46px;
-  height:46px;
-  border-radius:16px;
-  border: 1.8px solid rgba(48,34,28,.35);
-  box-shadow: 0 8px 14px rgba(0,0,0,.10);
+#mpTab1:checked~.mp-panel-body .mp-card-1 {
+  display: block;
+}
 
-  background: rgba(0,0,0,.06);
+#mpTab2:checked~.mp-panel-body .mp-card-2 {
+  display: block;
+}
+
+#mpTab3:checked~.mp-panel-body .mp-card-3 {
+  display: block;
+}
+
+#mpTab4:checked~.mp-panel-body .mp-card-4 {
+  display: block;
+}
+
+.mp-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.mp-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  border: 1.8px solid rgba(48, 34, 28, .35);
+  box-shadow: 0 8px 14px rgba(0, 0, 0, .10);
+
+  background: rgba(0, 0, 0, .06);
   background-size: cover;
   background-position: center 20%;
   background-repeat: no-repeat;
 }
 
-.mp-name{
-  font-size:16px;
-  font-weight:950;
-  color: rgba(0,0,0,.78);
-}
-.mp-sub{
-  font-size:12px;
-  color: rgba(0,0,0,.52);
-  margin-top:2px;
+.mp-name {
+  font-size: 16px;
+  font-weight: 950;
+  color: rgba(0, 0, 0, .78);
 }
 
-.mp-stats{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
+.mp-sub {
+  font-size: 12px;
+  color: rgba(0, 0, 0, .52);
+  margin-top: 2px;
 }
 
-.mp-stat{
-  padding:10px;
-  border-radius:16px;
-  border: 1.4px solid rgba(48,34,28,.18);
-  background: rgba(250,242,232,.72);
-  box-shadow: 0 6px 12px rgba(0,0,0,.08);
+.mp-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.mp-stat-row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  font-weight:900;
-  color: rgba(0,0,0,.70);
-  font-size:13px;
-  margin-bottom:8px;
+.mp-stat {
+  padding: 10px;
+  border-radius: 16px;
+  border: 1.4px solid rgba(48, 34, 28, .18);
+  background: rgba(250, 242, 232, .72);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, .08);
 }
 
-.mp-num{ font-variant-numeric: tabular-nums; }
-
-.mp-bar{
-  height:10px;
-  border-radius:999px;
-  background: rgba(0,0,0,.10);
-  overflow:hidden;
-  border: 1px solid rgba(48,34,28,.18);
-}
-.mp-bar i{
-  display:block;
-  height:100%;
-  border-radius:999px;
-  background: linear-gradient(90deg, rgba(240,120,156,.95), rgba(162,118,212,.95));
+.mp-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 900;
+  color: rgba(0, 0, 0, .70);
+  font-size: 13px;
+  margin-bottom: 8px;
 }
 
-.mp-task{
-  font-size:12px;
-  color: rgba(0,0,0,.58);
-  line-height:1.25;
+.mp-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .10);
+  overflow: hidden;
+  border: 1px solid rgba(48, 34, 28, .18);
+}
+
+.mp-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(240, 120, 156, .95), rgba(162, 118, 212, .95));
+}
+
+.mp-task {
+  font-size: 12px;
+  color: rgba(0, 0, 0, .58);
+  line-height: 1.25;
 }
 
 /* Avatar mapping */
-#mpTab1:checked ~ .mp-panel-body .mp-avatar{ background-image:url("../assets/avatars/ybm.png"); }
-#mpTab2:checked ~ .mp-panel-body .mp-avatar{ background-image:url("../assets/avatars/caishu.png"); }
-#mpTab3:checked ~ .mp-panel-body .mp-avatar{ background-image:url("../assets/avatars/dantuo.png"); }
-#mpTab4:checked ~ .mp-panel-body .mp-avatar{ background-image:url("../assets/avatars/zhoubin.png"); }
+#mpTab1:checked~.mp-panel-body .mp-avatar {
+  background-image: url("../assets/avatars/ybm.png");
+}
+
+#mpTab2:checked~.mp-panel-body .mp-avatar {
+  background-image: url("../assets/avatars/caishu.png");
+}
+
+#mpTab3:checked~.mp-panel-body .mp-avatar {
+  background-image: url("../assets/avatars/dantuo.png");
+}
+
+#mpTab4:checked~.mp-panel-body .mp-avatar {
+  background-image: url("../assets/avatars/zhoubin.png");
+}
 
 /* Slide anim */
-.mp-panel-body.slide-left{ animation: mpSlideLeft var(--slide-dur) ease; }
-.mp-panel-body.slide-right{ animation: mpSlideRight var(--slide-dur) ease; }
+.mp-panel-body.slide-left {
+  animation: mpSlideLeft var(--slide-dur) ease;
+}
 
-@keyframes mpSlideLeft{
-  from { transform: translateX(-10px); opacity:.92; }
-  to   { transform: translateX(0); opacity:1; }
+.mp-panel-body.slide-right {
+  animation: mpSlideRight var(--slide-dur) ease;
 }
-@keyframes mpSlideRight{
-  from { transform: translateX(10px); opacity:.92; }
-  to   { transform: translateX(0); opacity:1; }
+
+@keyframes mpSlideLeft {
+  from {
+    transform: translateX(-10px);
+    opacity: .92;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
+
+@keyframes mpSlideRight {
+  from {
+    transform: translateX(10px);
+    opacity: .92;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 /* 短信页隐藏左下角小人（真实元素是 .phone-ren） */
-.phone-shell.is-sms .phone-ren{
+.phone-shell.is-sms .phone-ren {
   display: none;
 }
 
-.sms-view{ display:none; height:100%; }
-.sms-view.active{ display:flex; flex-direction:column; }
+.sms-view {
+  display: none;
+  height: 100%;
+}
+
+.sms-view.active {
+  display: flex;
+  flex-direction: column;
+}
 
 
-.sms-topbar-thread{
+.sms-topbar-thread {
   justify-content: space-between;
   padding: 0 14px;
 }
 
-.sms-title, .sms-thread-title{
+.sms-title,
+.sms-thread-title {
   font-size: 20px;
   font-weight: 900;
-  color: rgba(0,0,0,0.78);
+  color: rgba(0, 0, 0, 0.78);
 }
 
-.sms-topbar-spacer{ width: 48px; } /* 占位让标题居中 */
+.sms-topbar-spacer {
+  width: 48px;
+}
 
-.sms-back{
+/* 占位让标题居中 */
+
+.sms-back {
   width: 48px;
   height: 36px;
   border-radius: 12px;
   border: 0;
-  background: rgba(0,0,0,0.12);
+  background: rgba(0, 0, 0, 0.12);
   font-weight: 900;
   cursor: pointer;
 }
 
-.sms-list{
+.sms-list {
   flex: 1;
   padding: 14px 30px 14px 0px;
-  display:flex;
-  flex-direction:column;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
-.sms-card{
-  text-align:left;
+.sms-card {
+  text-align: left;
   padding: 16px;
   border-radius: 16px;
-  border: 2px solid rgba(0,0,0,0.18);
+  border: 2px solid rgba(0, 0, 0, 0.18);
   background: rgba(240, 240, 255, 0.9);
   font-weight: 900;
-  color: rgba(0,0,0,0.70);
-  cursor:pointer;
+  color: rgba(0, 0, 0, 0.70);
+  cursor: pointer;
 }
 
-.sms-thread{
+.sms-thread {
   flex: 1;
   padding: 14px;
-  overflow:auto;
-  display:flex;
-  flex-direction:column;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
-.sms-bubble{
+.sms-bubble {
   max-width: 78%;
   padding: 12px 14px;
   border-radius: 16px;
-  border: 2px solid rgba(0,0,0,0.12);
+  border: 2px solid rgba(0, 0, 0, 0.12);
   font-weight: 800;
-  color: rgba(0,0,0,0.76);
-  background: rgba(255,255,255,0.88);
+  color: rgba(0, 0, 0, 0.76);
+  background: rgba(255, 255, 255, 0.88);
 }
 
-.sms-bubble.me{
-  align-self:flex-end;
-  background: rgba(0,0,0,0.08);
+.sms-bubble.me {
+  align-self: flex-end;
+  background: rgba(0, 0, 0, 0.08);
 }
-.sms-bubble.other{
-  align-self:flex-start;
+
+.sms-bubble.other {
+  align-self: flex-start;
 }
+
 /* 联系人卡片：更立体一点 */
-.sms-item{
+.sms-item {
   border: 2px solid rgba(30, 25, 60, 0.22);
-  box-shadow: 0 10px 22px rgba(0,0,0,0.14);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
   transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
 }
 
-.sms-item:active{
+.sms-item:active {
   transform: translateY(1px) scale(0.995);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
 /* 头像更像“贴纸” */
-.sms-item .sms-ava{
+.sms-item .sms-ava {
   border: 2px solid rgba(30, 25, 60, 0.18);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.10);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.10);
 }
 
 /* 右侧加个小箭头，层次感更强 */
-.sms-item::after{
+.sms-item::after {
   content: "›";
   margin-left: 6px;
   font-size: 22px;
   font-weight: 900;
-  color: rgba(0,0,0,0.35);
+  color: rgba(0, 0, 0, 0.35);
 }
+
 /* =========================
    SMS 联系人卡片 · 插画软风
    ========================= */
@@ -830,7 +971,7 @@
 
 
 
-.sms-item{
+.sms-item {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -847,8 +988,8 @@
 
   /* 轻微鼓起感 */
   box-shadow:
-    0 8px 0 rgba(0,0,0,0.18),
-    0 14px 28px rgba(0,0,0,0.18);
+    0 8px 0 rgba(0, 0, 0, 0.18),
+    0 14px 28px rgba(0, 0, 0, 0.18);
 
   transition:
     transform .12s ease,
@@ -856,24 +997,26 @@
 }
 
 /* 按压时像被按下去 */
-.sms-item:active{
+.sms-item:active {
   transform: translateY(2px);
   box-shadow:
-    0 4px 0 rgba(0,0,0,0.18),
-    0 10px 18px rgba(0,0,0,0.18);
+    0 4px 0 rgba(0, 0, 0, 0.18),
+    0 10px 18px rgba(0, 0, 0, 0.18);
 }
+
 /* 联系人头像容器：明确尺寸 */
-.sms-list .sms-ava{
+.sms-list .sms-ava {
   flex: 0 0 auto;
   width: 44px;
   height: 44px;
   border-radius: 14px;
   overflow: hidden;
 
-  background: rgba(255,255,255,0.6);
+  background: rgba(255, 255, 255, 0.6);
 }
+
 /* 联系人头像图片：强制裁切 */
-.sms-list .sms-ava img{
+.sms-list .sms-ava img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -881,7 +1024,7 @@
 }
 
 /* 中间文字区域 */
-.sms-meta{
+.sms-meta {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -890,23 +1033,23 @@
 }
 
 /* 名字 */
-.sms-name{
+.sms-name {
   font-size: 15px;
   font-weight: 900;
-  color: rgba(0,0,0,0.78);
+  color: rgba(0, 0, 0, 0.78);
 }
 
 /* 预览文字 */
-.sms-preview{
+.sms-preview {
   font-size: 12px;
-  color: rgba(0,0,0,0.48);
+  color: rgba(0, 0, 0, 0.48);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 /* 右侧时间 & 未读 */
-.sms-right{
+.sms-right {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
@@ -914,36 +1057,40 @@
   gap: 6px;
 }
 
-.sms-time{
+.sms-time {
   font-size: 11px;
-  color: rgba(0,0,0,0.45);
+  color: rgba(0, 0, 0, 0.45);
 }
 
-.sms-dot{
+.sms-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: #ff6b6b;
 }
 
-.sms-dot.hidden{
+.sms-dot.hidden {
   display: none;
 }
+
 /* =========================
    SMS 聊天页（111 风格套皮）
    只作用于 .page-duanxin
 ========================= */
 
 /* 主题变量（复刻 111） */
-.page-duanxin{
-  --sms-bg: #f4dae4;       /* 整体插画底：粉 */
-  --sms-paper: #fdeee6;    /* 聊天舞台：浅米 */
-  --sms-bar: #bbaaea;      /* 顶栏：紫黄系 */
-  --sms-ink: rgba(35,28,22,.90);
-  --sms-muted: rgba(35,28,22,.55);
+.page-duanxin {
+  --sms-bg: #f4dae4;
+  /* 整体插画底：粉 */
+  --sms-paper: #fdeee6;
+  /* 聊天舞台：浅米 */
+  --sms-bar: #bbaaea;
+  /* 顶栏：紫黄系 */
+  --sms-ink: rgba(35, 28, 22, .90);
+  --sms-muted: rgba(35, 28, 22, .55);
 
-  --sms-line: 2px solid rgba(35,28,22,.65);
-  --sms-shadow: 0 10px 0 rgba(35,28,22,.18);
+  --sms-line: 2px solid rgba(35, 28, 22, .65);
+  --sms-shadow: 0 10px 0 rgba(35, 28, 22, .18);
 
   --sms-bubble-left: rgba(241, 228, 241, 0.92);
   --sms-bubble-right: rgba(255, 255, 255, 0.96);
@@ -952,13 +1099,13 @@
 }
 
 /* 聊天页整体：让 thread+compose 正常占满高度 */
-.page-duanxin [data-sms-view="thread"]{
+.page-duanxin [data-sms-view="thread"] {
   height: 100%;
 }
 
 /* 顶栏（111 topbar） */
 /* 顶部：透明容器（不再是一整条底色） */
-.page-duanxin .sms-topbar-thread{
+.page-duanxin .sms-topbar-thread {
   height: auto;
   background: transparent;
   border: 0;
@@ -973,14 +1120,14 @@
 }
 
 /* 中间标题：做成小卡片 */
-.page-duanxin .sms-thread-title{
+.page-duanxin .sms-thread-title {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 6.2px 26px;
   min-width: 58%;
   border-radius: 18px;
-  background:transparent;
+  background: transparent;
   font-weight: 950;
   color: var(--sms-ink);
   font-size: 22px;
@@ -989,72 +1136,84 @@
 
 
 /* 顶栏按钮（‹ / ≡） */
-.page-duanxin .sms-btn{
+.page-duanxin .sms-btn {
   width: 44px;
   height: 44px;
   border-radius: 14px;
   border: var(--sms-line);
-  background: rgba(255,255,255,.60);
+  background: rgba(255, 255, 255, .60);
   color: var(--sms-ink);
   font-size: 24px;
   font-weight: 950;
   cursor: pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow: 0 6px 0 rgba(35,28,22,.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 0 rgba(35, 28, 22, .18);
 }
-.page-duanxin .sms-btn:active{
+
+.page-duanxin .sms-btn:active {
   transform: translateY(2px);
-  box-shadow: 0 4px 0 rgba(35,28,22,.18);
+  box-shadow: 0 4px 0 rgba(35, 28, 22, .18);
 }
 
 
 /* 聊天舞台（纸张底） */
-.page-duanxin .sms-thread-paper{
-  flex: 1;                 /* 用 flex 自动撑满，不用 calc */
+.page-duanxin .sms-thread-paper {
+  flex: 1;
+  /* 用 flex 自动撑满，不用 calc */
   height: auto;
   overflow: auto;
   padding: 12px 16px 0px;
   scroll-behavior: smooth;
   background: transparent;
-   width: min(115%, 400px);
-  margin: 0 auto;    /* ✅ 去掉聊天区大底色 */
+  width: min(115%, 400px);
+  margin: 0 auto;
+  /* ✅ 去掉聊天区大底色 */
 }
 
 
 /* JS 渲染出来的行：.sms-row .me/.them */
-.page-duanxin .sms-row{
+.page-duanxin .sms-row {
   display: flex;
   gap: 10px;
   align-items: flex-end;
   margin: 10px 0;
 }
-.page-duanxin .sms-row.them{ justify-content: flex-start; }
-.page-duanxin .sms-row.me{ justify-content: flex-end; }
+
+.page-duanxin .sms-row.them {
+  justify-content: flex-start;
+}
+
+.page-duanxin .sms-row.me {
+  justify-content: flex-end;
+}
 
 /* 聊天头像：注意只限定在 thread 里，避免影响联系人列表头像 */
-.page-duanxin .sms-thread-paper .sms-ava{
+.page-duanxin .sms-thread-paper .sms-ava {
   width: 36px;
   height: 36px;
   border-radius: 50%;
   overflow: hidden;
   flex: 0 0 auto;
-  background: rgba(255,255,255,.35);
-  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(255, 255, 255, .35);
+  border: 1px solid rgba(0, 0, 0, .08);
 }
-.page-duanxin .sms-thread-paper .sms-ava img{
+
+.page-duanxin .sms-thread-paper .sms-ava img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-.page-duanxin .sms-thread-paper .sms-ava.hidden{
-  visibility: hidden; /* 连续消息占位对齐 */
+
+.page-duanxin .sms-thread-paper .sms-ava.hidden {
+  visibility: hidden;
+  /* 连续消息占位对齐 */
 }
 
 /* 气泡（复刻 111 bubble） */
-.page-duanxin .sms-row .sms-bubble{
+.page-duanxin .sms-row .sms-bubble {
   position: relative;
   max-width: 74%;
   padding: 10px 12px;
@@ -1064,25 +1223,27 @@
   color: var(--sms-ink);
 
   border: var(--sms-line);
-  box-shadow: 0 8px 0 rgba(35,28,22,.14);
+  box-shadow: 0 8px 0 rgba(35, 28, 22, .14);
   background: var(--sms-bubble-left);
 
   word-break: break-word;
   white-space: pre-wrap;
 }
-.page-duanxin .sms-row.them .sms-bubble{
+
+.page-duanxin .sms-row.them .sms-bubble {
   background: var(--sms-bubble-left);
   border-top-left-radius: 8px;
 }
-.page-duanxin .sms-row.me .sms-bubble{
+
+.page-duanxin .sms-row.me .sms-bubble {
   background: var(--sms-bubble-right);
   border-top-right-radius: 8px;
 }
 
 /* 底部输入区（111 compose） */
-.page-duanxin .sms-compose{
+.page-duanxin .sms-compose {
   height: auto;
-  padding: 0;              
+  padding: 0;
   background: transparent;
   backdrop-filter: none;
   border-top: none;
@@ -1090,20 +1251,21 @@
 
 
 /* 输入条容器 */
-.page-duanxin .sms-bar{
-  display:flex;
-  gap:10px;
-  align-items:center;
+.page-duanxin .sms-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
   padding: 6px 6px;
   border-radius: 14px;
-  margin: 10px 20px -2px;  /* 上/左右/下 */
-  background: rgba(255,255,255,.78);
+  margin: 10px 20px -2px;
+  /* 上/左右/下 */
+  background: rgba(255, 255, 255, .78);
   border: var(--sms-line);
-  box-shadow: 0 10px 0 rgba(35,28,22,.14);
+  box-shadow: 0 10px 0 rgba(35, 28, 22, .14);
 }
 
 /* textarea */
-.page-duanxin .sms-input{
+.page-duanxin .sms-input {
   flex: 1;
   resize: none;
   border: 0;
@@ -1115,55 +1277,68 @@
   min-height: 22px;
   max-height: 72px;
 }
-.page-duanxin .sms-input::placeholder{
-  color: rgba(35,28,22,.45);
+
+.page-duanxin .sms-input::placeholder {
+  color: rgba(35, 28, 22, .45);
 }
 
 /* 暂存/发送按钮 */
 .page-duanxin .sms-stash,
-.page-duanxin .sms-send{
+.page-duanxin .sms-send {
   width: 44px;
   height: 44px;
   border-radius: 12px;
   border: var(--sms-line);
-  background: rgba(255,255,255,.65);
+  background: rgba(255, 255, 255, .65);
   color: var(--sms-ink);
   font-size: 18px;
   font-weight: 950;
   cursor: pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow: 0 8px 0 rgba(35,28,22,.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 0 rgba(35, 28, 22, .16);
 }
+
 .page-duanxin .sms-stash:active,
-.page-duanxin .sms-send:active{
+.page-duanxin .sms-send:active {
   transform: translateY(2px);
-  box-shadow: 0 6px 0 rgba(35,28,22,.16);
+  box-shadow: 0 6px 0 rgba(35, 28, 22, .16);
 }
+
 /* 联系人列表整体位置：上下左右 */
-.sms-list{
-  padding: 40px 12px 12px 15px; /* 上 右 下 左：左边越小越靠左 */
-  gap: 20px;                   /* 卡片之间的距离 */
-  margin-top: 8px;             /* 离“联系人”标题的距离 */
+.sms-list {
+  padding: 40px 12px 12px 15px;
+  /* 上 右 下 左：左边越小越靠左 */
+  gap: 20px;
+  /* 卡片之间的距离 */
+  margin-top: 8px;
+  /* 离“联系人”标题的距离 */
 }
+
 /* 顶部“联系人/短信”标题：大小&位置 */
-.sms-topbar{
-  padding-top: 30px;          /* 往下 */
-  padding-left: 130px;         /* 往右 */
+.sms-topbar {
+  padding-top: 30px;
+  /* 往下 */
+  padding-left: 130px;
+  /* 往右 */
   padding-right: 12px;
 }
 
-.sms-title{
-  font-size: 20px;            /* 标题大小 */
+.sms-title {
+  font-size: 20px;
+  /* 标题大小 */
   font-weight: 900;
-  transform: translate(0px, 0px); /* 微调：x,y */
+  transform: translate(0px, 0px);
+  /* 微调：x,y */
 }
+
 /* ===== 顶部控制按钮：强制最上层 ===== */
 .phone-back,
-.phone-menu{
+.phone-menu {
   position: absolute;
-  z-index: 99999 !important;   /* ✅ 强制压过 phone-content/page */
+  z-index: 99999 !important;
+  /* ✅ 强制压过 phone-content/page */
   pointer-events: auto !important;
 }
 
@@ -1175,13 +1350,20 @@
 .phone-shell:not(.is-home) .home-only {
   display: none !important;
 }
+
 /* ✅ 让内容层可点（否则 home 内按钮全部失效） */
-.phone-content{ pointer-events: auto !important; }
-.page{ pointer-events: auto !important; }
+.phone-content {
+  pointer-events: auto !important;
+}
+
+.page {
+  pointer-events: auto !important;
+}
+
 /* =========================
    MiniPhone Preset Panel
    ========================= */
-.mp-preset-panel{
+.mp-preset-panel {
   position: absolute;
   inset: 0;
   z-index: 99998;
@@ -1189,30 +1371,30 @@
   align-items: center;
   justify-content: center;
 
-  background: rgba(0,0,0,.25);
+  background: rgba(0, 0, 0, .25);
   backdrop-filter: blur(4px);
   pointer-events: auto;
 }
 
-.mp-preset-panel[data-open="true"]{
+.mp-preset-panel[data-open="true"] {
   display: flex;
 }
 
-.mp-preset-card{
+.mp-preset-card {
   width: min(86%, 360px);
   border-radius: 18px;
 
-  background: rgba(255,255,255,.80);
-  border: 3px solid rgba(0,0,0,.75);
+  background: rgba(255, 255, 255, .80);
+  border: 3px solid rgba(0, 0, 0, .75);
   box-shadow:
-    0 10px 0 rgba(0,0,0,.18),
-    0 18px 36px rgba(0,0,0,.18);
+    0 10px 0 rgba(0, 0, 0, .18),
+    0 18px 36px rgba(0, 0, 0, .18);
 
   padding: 14px 14px 12px;
-  color: rgba(0,0,0,.78);
+  color: rgba(0, 0, 0, .78);
 }
 
-.mp-preset-head{
+.mp-preset-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1220,27 +1402,28 @@
   margin-bottom: 10px;
 }
 
-.mp-preset-title{
+.mp-preset-title {
   font-size: 16px;
   font-weight: 950;
 }
 
-.mp-preset-close{
+.mp-preset-close {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  border: 3px solid rgba(0,0,0,.75);
-  background: rgba(255,255,255,.65);
-  box-shadow: 0 6px 0 rgba(0,0,0,.18);
+  border: 3px solid rgba(0, 0, 0, .75);
+  background: rgba(255, 255, 255, .65);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .18);
   cursor: pointer;
   font-weight: 950;
 }
-.mp-preset-close:active{
+
+.mp-preset-close:active {
   transform: translateY(2px);
-  box-shadow: 0 4px 0 rgba(0,0,0,.18);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .18);
 }
 
-.mp-preset-toggle{
+.mp-preset-toggle {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1249,325 +1432,400 @@
   margin: 6px 0 10px;
 }
 
-.mp-preset-toggle input{
+.mp-preset-toggle input {
   width: 18px;
   height: 18px;
 }
 
-.mp-preset-text{
+.mp-preset-text {
   width: 100%;
   height: 160px;
   resize: none;
 
   border-radius: 14px;
-  border: 3px solid rgba(0,0,0,.65);
-  background: rgba(255,255,255,.70);
+  border: 3px solid rgba(0, 0, 0, .65);
+  background: rgba(255, 255, 255, .70);
 
   padding: 10px 10px;
   font-size: 13px;
   line-height: 1.35;
-  color: rgba(0,0,0,.80);
+  color: rgba(0, 0, 0, .80);
   outline: none;
 }
 
-.mp-preset-actions{
+.mp-preset-actions {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
   margin-top: 10px;
 }
 
-.mp-preset-btn{
+.mp-preset-btn {
   min-width: 86px;
   height: 40px;
   border-radius: 14px;
-  border: 3px solid rgba(0,0,0,.75);
-  background: rgba(255,255,255,.65);
-  box-shadow: 0 6px 0 rgba(0,0,0,.18);
+  border: 3px solid rgba(0, 0, 0, .75);
+  background: rgba(255, 255, 255, .65);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .18);
   font-weight: 950;
   cursor: pointer;
 }
-.mp-preset-btn:active{
+
+.mp-preset-btn:active {
   transform: translateY(2px);
-  box-shadow: 0 4px 0 rgba(0,0,0,.18);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .18);
 }
-.mp-preset-btn.ghost{
+
+.mp-preset-btn.ghost {
   opacity: .75;
 }
 
-.mp-preset-hint{
+.mp-preset-hint {
   margin-top: 8px;
   font-size: 11px;
-  color: rgba(0,0,0,.55);
+  color: rgba(0, 0, 0, .55);
 }
+
 /* =========================
    SMS Preset Manager (overlay)
    ========================= */
-.mp-menu-overlay{
-  position:absolute;
-  inset:0;
+.mp-menu-overlay {
+  position: absolute;
+  inset: 0;
   z-index: 99998;
-  display:none;
-  align-items:center;
-  justify-content:center;
+  display: none;
+  align-items: center;
+  justify-content: center;
 
-  background: rgba(0,0,0,.25);
+  background: rgba(0, 0, 0, .25);
   backdrop-filter: blur(4px);
-  pointer-events:auto;
+  pointer-events: auto;
 }
-.mp-menu-overlay[data-open="true"]{ display:flex; }
 
-.mp-menu-card{
+.mp-menu-overlay[data-open="true"] {
+  display: flex;
+}
+
+.mp-menu-card {
   width: min(90%, 380px);
   max-height: min(80%, 520px);
   overflow: hidden;
 
   border-radius: 18px;
-  background: rgba(255,255,255,.84);
-  border: 3px solid rgba(0,0,0,.75);
-  box-shadow: 0 10px 0 rgba(0,0,0,.18), 0 18px 36px rgba(0,0,0,.18);
+  background: rgba(255, 255, 255, .84);
+  border: 3px solid rgba(0, 0, 0, .75);
+  box-shadow: 0 10px 0 rgba(0, 0, 0, .18), 0 18px 36px rgba(0, 0, 0, .18);
 
-  display:flex;
-  flex-direction:column;
+  display: flex;
+  flex-direction: column;
   padding: 12px;
 }
 
-.mp-menu-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
+.mp-menu-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 10px;
 }
-.mp-menu-title{ font-size: 16px; font-weight: 950; }
-.mp-menu-close{
+
+.mp-menu-title {
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.mp-menu-close {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  border: 3px solid rgba(0,0,0,.75);
-  background: rgba(255,255,255,.65);
-  box-shadow: 0 6px 0 rgba(0,0,0,.18);
+  border: 3px solid rgba(0, 0, 0, .75);
+  background: rgba(255, 255, 255, .65);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .18);
   cursor: pointer;
   font-weight: 950;
 }
-.mp-menu-close:active{ transform: translateY(2px); box-shadow: 0 4px 0 rgba(0,0,0,.18); }
 
-.mp-menu-actions{
-  display:grid;
+.mp-menu-close:active {
+  transform: translateY(2px);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .18);
+}
+
+.mp-menu-actions {
+  display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 10px;
 }
-.mp-menu-btn{
+
+.mp-menu-btn {
   height: 40px;
   border-radius: 14px;
-  border: 3px solid rgba(0,0,0,.75);
-  background: rgba(255,255,255,.65);
-  box-shadow: 0 6px 0 rgba(0,0,0,.18);
+  border: 3px solid rgba(0, 0, 0, .75);
+  background: rgba(255, 255, 255, .65);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .18);
   font-weight: 950;
   cursor: pointer;
 }
-.mp-menu-btn:active{ transform: translateY(2px); box-shadow: 0 4px 0 rgba(0,0,0,.18); }
 
-.mp-preset-list{
+.mp-menu-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .18);
+}
+
+.mp-preset-list {
   flex: 1;
-  overflow:auto;
-  display:flex;
-  flex-direction:column;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   padding-right: 2px;
 }
-.mp-preset-empty{
-  opacity:.75;
+
+.mp-preset-empty {
+  opacity: .75;
   font-size: 12px;
   padding: 10px;
-  border: 2px dashed rgba(0,0,0,.25);
+  border: 2px dashed rgba(0, 0, 0, .25);
   border-radius: 14px;
-  background: rgba(255,255,255,.45);
+  background: rgba(255, 255, 255, .45);
 }
 
-.mp-preset-row{
+.mp-preset-row {
   border-radius: 16px;
-  border: 2px solid rgba(0,0,0,.18);
-  background: rgba(255,255,255,.60);
+  border: 2px solid rgba(0, 0, 0, .18);
+  background: rgba(255, 255, 255, .60);
   padding: 10px;
 }
-.mp-preset-top{
-  display:grid;
+
+.mp-preset-top {
+  display: grid;
   grid-template-columns: 42px 1fr auto;
   gap: 10px;
-  align-items:center;
+  align-items: center;
 }
 
-.mp-toggle{
-  width: 38px; height: 20px;
+.mp-toggle {
+  width: 38px;
+  height: 20px;
   border-radius: 999px;
-  border: 2px solid rgba(0,0,0,.35);
-  background: rgba(255,255,255,.6);
+  border: 2px solid rgba(0, 0, 0, .35);
+  background: rgba(255, 255, 255, .6);
   position: relative;
-  cursor:pointer;
+  cursor: pointer;
 }
-.mp-toggle::after{
-  content:'';
-  position:absolute;
-  top:50%; left:2px;
-  width: 14px; height: 14px;
+
+.mp-toggle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  width: 14px;
+  height: 14px;
   border-radius: 999px;
   transform: translateY(-50%);
-  background: rgba(0,0,0,.55);
+  background: rgba(0, 0, 0, .55);
   transition: all .15s ease;
 }
-.mp-toggle[data-on="true"]{ background: rgba(210,235,210,.85); }
-.mp-toggle[data-on="true"]::after{ left:20px; background: rgba(0,0,0,.7); }
 
-.mp-preset-title-input{
-  width:100%;
+.mp-toggle[data-on="true"] {
+  background: rgba(210, 235, 210, .85);
+}
+
+.mp-toggle[data-on="true"]::after {
+  left: 20px;
+  background: rgba(0, 0, 0, .7);
+}
+
+.mp-preset-title-input {
+  width: 100%;
   border-radius: 12px;
-  border: 2px solid rgba(0,0,0,.22);
-  background: rgba(255,255,255,.72);
+  border: 2px solid rgba(0, 0, 0, .22);
+  background: rgba(255, 255, 255, .72);
   padding: 8px 10px;
   font-weight: 950;
   outline: none;
 }
 
-.mp-row-btns{ display:flex; gap:8px; align-items:center; }
-.mp-chip{
-  border:2px solid rgba(0,0,0,.22);
-  background: rgba(255,255,255,.65);
+.mp-row-btns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mp-chip {
+  border: 2px solid rgba(0, 0, 0, .22);
+  background: rgba(255, 255, 255, .65);
   border-radius: 999px;
   padding: 6px 10px;
   font-weight: 950;
   cursor: pointer;
-  user-select:none;
+  user-select: none;
 }
-.mp-chip.danger{ background: rgba(255,220,220,.9); }
 
-.mp-preset-editor{ margin-top: 10px; display:none; }
-.mp-preset-row[data-open="true"] .mp-preset-editor{ display:block; }
+.mp-chip.danger {
+  background: rgba(255, 220, 220, .9);
+}
 
-.mp-preset-textarea{
-  width:100%;
+.mp-preset-editor {
+  margin-top: 10px;
+  display: none;
+}
+
+.mp-preset-row[data-open="true"] .mp-preset-editor {
+  display: block;
+}
+
+.mp-preset-textarea {
+  width: 100%;
   min-height: 110px;
   border-radius: 14px;
-  border: 2px solid rgba(0,0,0,.22);
-  background: rgba(255,255,255,.72);
+  border: 2px solid rgba(0, 0, 0, .22);
+  background: rgba(255, 255, 255, .72);
   padding: 10px;
   resize: vertical;
-  outline:none;
+  outline: none;
   font-size: 13px;
   line-height: 1.35;
 }
 
-.mp-menu-hint{
+.mp-menu-hint {
   margin-top: 8px;
   font-size: 11px;
-  color: rgba(0,0,0,.55);
+  color: rgba(0, 0, 0, .55);
 }
+
 /* 暂存中的“待发送”气泡：半透明 + 轻微虚线边 */
-.page-duanxin .sms-row.me.pending .sms-bubble{
+.page-duanxin .sms-row.me.pending .sms-bubble {
   opacity: .55;
   border-style: dashed;
 }
+
 /* ===== SMS 间距压紧：更像短信 ===== */
-.page-duanxin .sms-thread.sms-thread-paper{
-  gap: 0 !important;               /* 干掉容器 gap（你原来是 10px） */
+.page-duanxin .sms-thread.sms-thread-paper {
+  gap: 0 !important;
+  /* 干掉容器 gap（你原来是 10px） */
 }
 
-.page-duanxin .sms-row{
-  margin: 4px 0 !important;        /* 你原来是 10px */
-  gap: 8px !important;             /* 行内头像-气泡间距略紧一点 */
+.page-duanxin .sms-row {
+  margin: 4px 0 !important;
+  /* 你原来是 10px */
+  gap: 8px !important;
+  /* 行内头像-气泡间距略紧一点 */
 }
 
 /* 连续我方消息再紧一点（可选，手感更像连发） */
-.page-duanxin .sms-row.me + .sms-row.me{
+.page-duanxin .sms-row.me+.sms-row.me {
   margin-top: 2px !important;
 }
-.page-duanxin .sms-row.them + .sms-row.them{
+
+.page-duanxin .sms-row.them+.sms-row.them {
   margin-top: 2px !important;
 }
+
 /* =========================
    SMS Context Menu (cute)
    ========================= */
-.mp-ctx-overlay{
-  position:absolute;
-  inset:0;
+.mp-ctx-overlay {
+  position: absolute;
+  inset: 0;
   z-index: 99999;
-  display:none;
-  pointer-events:auto;
+  display: none;
+  pointer-events: auto;
 
-  background: rgba(0,0,0,.08);
+  background: rgba(0, 0, 0, .08);
   backdrop-filter: blur(2px);
 }
-.mp-ctx-overlay[data-open="true"]{ display:block; }
 
-.mp-ctx-card{
-  position:absolute;
+.mp-ctx-overlay[data-open="true"] {
+  display: block;
+}
+
+.mp-ctx-card {
+  position: absolute;
   min-width: 150px;
   max-width: 220px;
 
   border-radius: 16px;
-  background: rgba(255,255,255,.88);
-  border: 3px solid rgba(0,0,0,.78);
+  background: rgba(255, 255, 255, .88);
+  border: 3px solid rgba(0, 0, 0, .78);
 
   box-shadow:
-    0 10px 0 rgba(0,0,0,.18),
-    0 18px 34px rgba(0,0,0,.18);
+    0 10px 0 rgba(0, 0, 0, .18),
+    0 18px 34px rgba(0, 0, 0, .18);
 
   padding: 10px;
 }
 
-.mp-ctx-btn{
+.mp-ctx-btn {
   width: 100%;
   height: 40px;
   border-radius: 14px;
 
-  border: 2px solid rgba(0,0,0,.22);
-  background: rgba(255,255,255,.68);
+  border: 2px solid rgba(0, 0, 0, .22);
+  background: rgba(255, 255, 255, .68);
 
   font-weight: 950;
   cursor: pointer;
 
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  box-shadow: 0 6px 0 rgba(0,0,0,.16);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .16);
   margin: 6px 0;
 }
-.mp-ctx-btn:active{
+
+.mp-ctx-btn:active {
   transform: translateY(2px);
-  box-shadow: 0 4px 0 rgba(0,0,0,.16);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .16);
 }
-.mp-ctx-btn.danger{
-  background: rgba(255,220,220,.92);
+
+.mp-ctx-btn.danger {
+  background: rgba(255, 220, 220, .92);
 }
-.mp-ctx-btn[disabled]{
+
+.mp-ctx-btn[disabled] {
   opacity: .45;
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none !important;
 }
 
-.mp-ctx-sep{
+.mp-ctx-sep {
   height: 1px;
   margin: 8px 2px;
-  background: rgba(0,0,0,.18);
+  background: rgba(0, 0, 0, .18);
 }
 
-.mp-ctx-hint{
+.mp-ctx-hint {
   margin-top: 6px;
   font-size: 11px;
-  color: rgba(0,0,0,.55);
+  color: rgba(0, 0, 0, .55);
   text-align: center;
 }
+
 /* =========================
    SMS Reroll UI Anim
    ========================= */
-.mp-fadeout{
+.mp-fadeout {
   animation: mpFadeOut .16s ease forwards;
 }
-@keyframes mpFadeOut{
-  from{ opacity: 1; transform: translateY(0); }
-  to{ opacity: 0; transform: translateY(4px); }
+
+@keyframes mpFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }
 
+/* ===== reroll UI animation ===== */
+.sms-row.mp-fadeout {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity .18s ease, transform .18s ease;
+}
