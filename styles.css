@@ -38,6 +38,15 @@ body {
   overflow: hidden;
   font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
 }
+/* ===== 修复 Android Chrome 按钮文字变蓝 ===== */
+button,
+[type="button"],
+[type="submit"],
+[type="reset"]{
+  color: var(--desk-ink) !important;
+  -webkit-text-fill-color: var(--desk-ink) !important;
+  font: inherit;
+}
 
 .desktop {
   position: relative;
@@ -1940,4 +1949,12 @@ span,
 div,
 p {
   color: inherit;
+}
+/* 关键按钮类兜底（你页面上就是这些） */
+.startTab,
+.dashBox,
+.btn,
+.claimBtn{
+  color: var(--desk-ink) !important;
+  -webkit-text-fill-color: var(--desk-ink) !important;
 }

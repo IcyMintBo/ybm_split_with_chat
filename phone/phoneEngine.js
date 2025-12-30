@@ -712,40 +712,114 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     save();
   }
 
-  async function callChatCompletions({ baseUrl, apiKey, model, messages, stream, signal, max_tokens }) {
-    if (!baseUrl) throw new Error('Base URL 为空');
-    if (!model) throw new Error('Model 为空');
+function detectProvider({ model, baseUrl } = {}) {
+  const m = String(model || '').toLowerCase();
+  const u = String(baseUrl || '').toLowerCase();
 
-    const url = buildChatCompletionsUrl(baseUrl);
+  // 只靠 model 名识别最稳（你的 UI 就是填 model）
+  if (m.includes('claude') || m.includes('anthropic')) return 'anthropic';
+  if (m.includes('gemini')) return 'google';
+  if (m.includes('gpt') || m.includes('o1') || m.includes('o3') || m.includes('openai')) return 'openai';
 
-    const headers = { 'Content-Type': 'application/json' };
-    Object.assign(headers, buildAuthHeader(baseUrl, apiKey));
+  // 兜底：看域名
+  if (u.includes('anthropic')) return 'anthropic';
+  if (u.includes('google')) return 'google';
 
-    const body = { model, messages, temperature: 0.8, stream: false };
-    if (typeof max_tokens === 'number' && max_tokens > 0) body.max_tokens = Math.floor(max_tokens);
+  return 'openai';
+}
 
-    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal });
-    if (!res.ok) {
-      const t = await res.text().catch(() => '');
-      throw new Error(`API 错误 ${res.status}: ${t.slice(0, 200)}`);
-    }
-
-    const data = await res.json().catch(() => null);
-
-    let text = data?.choices?.[0]?.message?.content;
-    if (typeof text === 'string' && text.trim()) return text;
-
-    text = data?.choices?.[0]?.text;
-    if (typeof text === 'string' && text.trim()) return text;
-
-    const parts = data?.candidates?.[0]?.content?.parts || data?.candidates?.[0]?.parts;
-    if (Array.isArray(parts)) {
-      const t = parts.map(p => (typeof p?.text === 'string' ? p.text : '')).join('\n').trim();
-      if (t) return t;
-    }
-
-    throw new Error(`API 返回无法解析：${JSON.stringify(data).slice(0, 500)}`);
+function splitSystemAndOthers(messages = []) {
+  const sys = [];
+  const rest = [];
+  for (const m of (messages || [])) {
+    if (!m) continue;
+    if (m.role === 'system') sys.push(String(m.content || ''));
+    else rest.push({ role: m.role, content: String(m.content || '') });
   }
+  return { systemText: sys.join('\n\n').trim(), rest };
+}
+
+/**
+ * 统一把提示词喂进去：
+ * - 大部分 OpenAI-compat 会吃 role=system
+ * - 但一些 Claude 代理/网关会忽略 system => 需要把 system 再塞进第一条 user（双保险）
+ */
+function normalizeMessagesForAllModels({ provider, messages }) {
+  const { systemText, rest } = splitSystemAndOthers(messages);
+
+  // 没有 system 就不折腾
+  if (!systemText) return rest;
+
+  // 对 Claude：双保险，把 system 再注入第一条 user
+  // 注意：不删 system（因为我们已经 split 掉了 system role，这里返回的是 “无 system role” 的 rest）
+  if (provider === 'anthropic') {
+    const tag = '【系统提示】';
+    const injected = `${tag}\n${systemText}\n\n---\n\n`;
+
+    const out = rest.slice();
+    const firstUserIdx = out.findIndex(x => x && x.role === 'user');
+
+    if (firstUserIdx >= 0) {
+      out[firstUserIdx] = {
+        role: 'user',
+        content: injected + String(out[firstUserIdx].content || '')
+      };
+      return out;
+    }
+
+    // 没有 user（极少），就造一条
+    return [{ role: 'user', content: injected }, ...out];
+  }
+
+  // 其它模型：保留 system role 更标准
+  // 但我们这里 split 掉了 system，所以需要把 system 作为第一条 system 插回去
+  return [{ role: 'system', content: systemText }, ...rest];
+}
+
+async function callChatCompletions({ baseUrl, apiKey, model, messages, stream, signal, max_tokens }) {
+  if (!baseUrl) throw new Error('Base URL 为空');
+  if (!model) throw new Error('Model 为空');
+
+  const url = buildChatCompletionsUrl(baseUrl);
+
+  const headers = { 'Content-Type': 'application/json' };
+  Object.assign(headers, buildAuthHeader(baseUrl, apiKey));
+
+  const provider = detectProvider({ model, baseUrl });
+  const normalizedMessages = normalizeMessagesForAllModels({ provider, messages });
+
+  // ✅ 统一 body：你现在的后端就是 OpenAI-compat（Gemini/Claude 也是走这条）
+  const body = {
+    model,
+    messages: normalizedMessages,
+    temperature: 0.8,
+    stream: false
+  };
+  if (typeof max_tokens === 'number' && max_tokens > 0) body.max_tokens = Math.floor(max_tokens);
+
+  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`API 错误 ${res.status}: ${t.slice(0, 200)}`);
+  }
+
+  const data = await res.json().catch(() => null);
+
+  let text = data?.choices?.[0]?.message?.content;
+  if (typeof text === 'string' && text.trim()) return text;
+
+  text = data?.choices?.[0]?.text;
+  if (typeof text === 'string' && text.trim()) return text;
+
+  const parts = data?.candidates?.[0]?.content?.parts || data?.candidates?.[0]?.parts;
+  if (Array.isArray(parts)) {
+    const t = parts.map(p => (typeof p?.text === 'string' ? p.text : '')).join('\n').trim();
+    if (t) return t;
+  }
+
+  throw new Error(`API 返回无法解析：${JSON.stringify(data).slice(0, 500)}`);
+}
+
 function postProcessAssistantText(text, channel = 'main') {
   let out = String(text || '').trim();
   if (!out) return out;

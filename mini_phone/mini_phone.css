@@ -1985,3 +1985,12 @@
     0 6px 0 rgba(0, 0, 0, 0.12),
     0 12px 22px rgba(0, 0, 0, 0.12);
 }
+/* MiniPhone 里同样修 Android Chrome 蓝字 */
+#mini-phone-root button,
+#mini-phone-root [type="button"],
+#mini-phone-root [type="submit"],
+#mini-phone-root [type="reset"]{
+  color: #1a1a1a !important;
+  -webkit-text-fill-color: #1a1a1a !important;
+  font: inherit;
+}
