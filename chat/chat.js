@@ -910,18 +910,6 @@ if (!document.documentElement.dataset.phoneMaskBound) {
   }, true);
 }
 
-// ✅ 返回键：不要放在 phoneMaskBound 里，否则第二次进来就不绑定了
-const back = qs('chatBack');
-if (back && !back.dataset.bound) {
-  back.dataset.bound = '1';
-  back.textContent = '返回';
-  back.addEventListener('click', () => {
-    if (window.PhoneEngine?.goHome) { window.PhoneEngine.goHome(); return; }
-    if (window.PhoneEngine?.navigate) { window.PhoneEngine.navigate('home'); return; }
-    history.back();
-  });
-}
-
 // ✅ 清空：也不要放在 phoneMaskBound 里
 if (!document.documentElement.dataset.chatClearBound) {
   document.documentElement.dataset.chatClearBound = '1';
