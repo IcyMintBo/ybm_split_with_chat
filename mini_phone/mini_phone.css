@@ -1995,3 +1995,12 @@ button,
   color: var(--ink, #1f1f1f) !important;
   -webkit-text-fill-color: var(--ink, #1f1f1f) !important;
 }
+/* MiniPhone 里同样修 Android Chrome 蓝字 */
+#mini-phone-root button,
+#mini-phone-root [type="button"],
+#mini-phone-root [type="submit"],
+#mini-phone-root [type="reset"]{
+  color: #1a1a1a !important;
+  -webkit-text-fill-color: #1a1a1a !important;
+  font: inherit;
+}
