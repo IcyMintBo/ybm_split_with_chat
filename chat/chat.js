@@ -61,6 +61,80 @@
     }
     return 'user';
   }
+// ===== avatar (upload + persist) =====
+const AVA_KEY_PREFIX = 'YBM_AVATAR_V1_'; // e.g. YBM_AVATAR_V1_me / YBM_AVATAR_V1_caishu
+
+function getAvatarKey(id){ return AVA_KEY_PREFIX + String(id || 'me'); }
+
+function getStoredAvatar(id){
+  try { return localStorage.getItem(getAvatarKey(id)) || ''; } catch { return ''; }
+}
+
+function setStoredAvatar(id, dataUrl){
+  try {
+    if (!dataUrl) localStorage.removeItem(getAvatarKey(id));
+    else localStorage.setItem(getAvatarKey(id), dataUrl);
+  } catch (e) {
+    alert('头像保存失败：localStorage 空间不足。请换小一点的图片。');
+    throw e;
+  }
+}
+
+// 把任意图片压成方形 dataURL（默认 256x256，够清晰又不大）
+async function fileToSquareDataURL(file, size = 256, quality = 0.86){
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+
+  await new Promise((res, rej) => {
+    img.onload = () => res();
+    img.onerror = () => rej(new Error('image load failed'));
+    img.src = url;
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  const side = Math.min(w, h);
+  const sx = Math.floor((w - side) / 2);
+  const sy = Math.floor((h - side) / 2);
+
+  ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+  URL.revokeObjectURL(url);
+
+  // png 会很大，优先 jpeg
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
+// 给 <img> 安全设置头像：优先使用用户上传，其次尝试静态文件，最后隐藏
+function applyAvatarToImg(avaImg, role, cid){
+  const id = (role === 'me') ? 'me' : (cid || 'ybm');
+  const stored = getStoredAvatar(id);
+
+  // 统一的 fallback：失败就隐藏并移除 src，避免 404 刷屏
+  avaImg.onerror = () => {
+    avaImg.removeAttribute('src');
+    avaImg.style.display = 'none';
+  };
+  avaImg.onload = () => { avaImg.style.display = 'block'; };
+
+  if (stored) {
+    avaImg.src = stored;
+    return;
+  }
+
+  // 没有上传头像：me 默认不显示；assistant 尝试 ./assets/avatars/${cid}.png
+  if (role === 'me') {
+    avaImg.removeAttribute('src');
+    avaImg.style.display = 'none';
+    return;
+  }
+
+  avaImg.src = `./assets/avatars/${cid || 'ybm'}.png`; // 不存在会走 onerror 自动隐藏
+}
 
   function injectPolishOnce() {
     // 已迁移到 chat.css：避免 JS 注入样式覆盖 CSS，防止后续维护混乱
@@ -329,29 +403,33 @@ head.className = 'chatHead';
 const whoLeft = document.createElement('div');
 whoLeft.className = 'chatWhoLeft';
 
-// 头像（user/assistant 都显示；没有就自动隐藏）
-const ava = document.createElement('div');
-ava.className = 'chatAva';
+// 头像：只保留“角色(assistant)”头像；用户(me)不显示头像
+let ava = null;
+if (role !== 'me') {
+  ava = document.createElement('div');
+  ava.className = 'chatAva';
 
-const avaImg = document.createElement('img');
-avaImg.alt = '';
+  const avaImg = document.createElement('img');
+  avaImg.alt = '';
+  const cid = engine.getActiveContact?.() || 'ybm';
 
-const cid = engine.getActiveContact?.() || 'ybm';
-avaImg.src = (role === 'me')
-  ? `./assets/avatars/user.png`
-  : `./assets/avatars/${cid}.png`;
+  // ✅ 统一头像策略：优先用户上传（localStorage），其次静态文件，不存在自动隐藏（不会 404 刷屏）
+  applyAvatarToImg(avaImg, role, cid);
 
-// 头像缺失就隐藏容器
-avaImg.onerror = () => { ava.style.display = 'none'; };
+  // 如果图片最终被隐藏，就把容器也隐藏掉（更干净）
+  const _oldOnErr = avaImg.onerror;
+  avaImg.onerror = () => { _oldOnErr && _oldOnErr(); ava.style.display = 'none'; };
+  avaImg.onload  = () => { ava.style.display = 'block'; };
+  ava.appendChild(avaImg);
+}
 
-ava.appendChild(avaImg);
 
 // 名字
 const who = document.createElement('div');
 who.className = 'chatWho';
 who.textContent = (role === 'me') ? getUserDisplayName() : getActiveContactName(engine);
 
-whoLeft.appendChild(ava);
+if (ava) whoLeft.appendChild(ava);
 whoLeft.appendChild(who);
 
 // 右侧操作区
@@ -808,12 +886,18 @@ if (!document.documentElement.dataset.chatClearBound) {
   }, true);
 }
 
-
-
   }
 
-  // expose
-  window.ChatUI = { ensureMounted };
+// expose
+window.AvatarKit = {
+  getStoredAvatar,
+  setStoredAvatar,
+  fileToSquareDataURL,
+  applyAvatarToImg,
+};
+
+window.ChatUI = { ensureMounted };
+
 
   // auto
   ensureMounted();

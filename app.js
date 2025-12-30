@@ -1005,7 +1005,7 @@
 
 
   function bindPresetsPanel(root) {
-let cfg = ensurePromptCfg();
+    let cfg = ensurePromptCfg();
 
 
     // ① 删除重复的“导入/导出 textarea 区域”（你红框叉掉的那块）
@@ -1283,6 +1283,8 @@ let cfg = ensurePromptCfg();
   const PERSONA_LS_KEY = 'YBM_PERSONA_V1';
   const REGEX_LS_KEY = 'YBM_REGEX_CFG_V1';
   const ENGINE_LS_KEY = 'YBM_ENGINE_V1';
+  const USER_AVA_LS_KEY = 'YBM_AVATAR_V1_me';
+
 
   function downloadJsonFile(filename, obj) {
     try {
@@ -1388,13 +1390,6 @@ let cfg = ensurePromptCfg();
     </div>
 
     <div class="startItem">
-      <label style="display:flex; align-items:center; gap:10px;">
-        <input id="personaEnabled" type="checkbox" ${enabled ? 'checked' : ''} />
-        <b>启用人设注入</b>
-      </label>
-    </div>
-
-    <div class="startItem">
       <div style="font-weight:800; margin-bottom:6px;">名字</div>
       <input id="personaName" placeholder="例如：薄荷冰淇淋" value="${escapeHtml(name)}"
              style="width:100%; padding:10px 12px; border-radius:14px; border:2px solid rgba(0,0,0,.18); background:rgba(255,255,255,.55); outline:none;">
@@ -1416,11 +1411,12 @@ let cfg = ensurePromptCfg();
 
     wrap.querySelector('#personaSave')?.addEventListener('click', () => {
       const data = {
-        enabled: !!wrap.querySelector('#personaEnabled')?.checked,
+        enabled: true, // ✅ 默认永远注入，不提供开关
         name: (wrap.querySelector('#personaName')?.value || '').trim(),
         bio: (wrap.querySelector('#personaBio')?.value || '').trim(),
         updatedAt: Date.now()
       };
+
       localStorage.setItem(PERSONA_LS_KEY, JSON.stringify(data));
       alert('已保存。');
     });

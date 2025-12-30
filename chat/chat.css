@@ -635,3 +635,125 @@
   padding: 0;
   margin: 0;
 }
+/* =========================
+   Edit modal（消息编辑弹层）- 卡片同款风格
+   ========================= */
+
+.chatEditMask{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.22);
+  z-index: 10010;
+}
+
+/* 卡片：奶油底 + 粗描边 + 立体阴影 */
+.chatEditModal{
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10011;
+
+  width: min(760px, 92vw);
+  max-height: min(74vh, 620px);
+
+  display: flex;
+  flex-direction: column;
+
+  border-radius: 18px;
+  border: 3px solid rgba(0,0,0,.78);
+  background: #f7f1e6; /* 奶油纸 */
+  box-shadow:
+    0 10px 0 rgba(0,0,0,.22),
+    0 22px 40px rgba(0,0,0,.18);
+  overflow: hidden;
+}
+
+/* 顶栏：同款卡片头，简单干净 */
+.chatEditHeader{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 10px 12px;
+  background: #f3eadb;
+  border-bottom: 3px solid rgba(0,0,0,.72);
+}
+
+.chatEditTitle{
+  font-weight: 900;
+  font-size: 14px;
+  color: rgba(0,0,0,.86);
+  user-select: none;
+}
+
+/* 右侧按钮：同款小圆角按钮 */
+.chatEditHeaderRight{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chatEditIcon{
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 3px solid rgba(0,0,0,.72);
+  background: #fffaf1;
+  box-shadow: 0 5px 0 rgba(0,0,0,.22);
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+
+.chatEditIcon svg{ width: 18px; height: 18px; }
+
+.chatEditIcon:active{
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 rgba(0,0,0,.22);
+}
+
+/* 文本区：像卡片内部纸张 */
+.chatEditArea{
+  flex: 1;
+  min-height: 260px;
+  padding: 12px 12px;
+
+  border: none;
+  outline: none;
+  resize: none;
+
+  background: #fbf6ee;
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(0,0,0,.88);
+
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 底部留点呼吸（可选） */
+.chatEditModal::after{
+  content: "";
+  display: block;
+  height: 10px;
+  background: #f7f1e6;
+}
+
+/* 打开弹窗时禁滚动 */
+body.chat-editing{ overflow: hidden; }
+
+/* 小屏适配 */
+@media (max-width: 520px){
+  .chatEditModal{
+    width: 92vw;
+    max-height: 66vh;
+    border-radius: 16px;
+  }
+  .chatEditArea{ min-height: 220px; }
+}

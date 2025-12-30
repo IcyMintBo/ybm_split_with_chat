@@ -1952,3 +1952,21 @@
 .page-duanxin .sms-row.sys.sys-tip.peek .sms-bubble{
   color: rgba(0,0,0,0.75);
 }
+.sms-row.me .sms-del{
+  position:absolute;
+  top:-10px;
+  right:-10px;
+  width:22px;
+  height:22px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.18);
+  background:rgba(255,255,255,.9);
+  font-weight:700;
+  line-height:20px;
+  display:none;
+  cursor:pointer;
+}
+
+.sms-row.me:hover .sms-del{
+  display:block;
+}

@@ -582,12 +582,48 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     try { return JSON.parse(localStorage.getItem(PROMPT_LS_KEY) || 'null'); } catch { return null; }
   }
 
-  function buildSystemPromptFromCfg(contactId, opts = {}) {
+  function buildSystemPromptFromCfg(contactId, channel = 'chat') {
     const cfg = loadPromptCfg();
     const parts = [];
-    const scope = (opts && opts.scope) ? String(opts.scope).trim() : 'chat';
 
-    // 用户人设
+    const scope = channel === 'phone' ? 'sms' : 'chat';
+
+    // ===== 1️⃣ 预设（最高优先级）=====
+    let presetArr = null;
+    if (cfg?.presets) {
+      presetArr = scope === 'sms' ? cfg.presets.sms : cfg.presets.global;
+    }
+    if (Array.isArray(presetArr)) {
+      presetArr.forEach(p => {
+        if (p && p.enabled && p.content && String(p.content).trim()) {
+          parts.push(p.content.trim());
+        }
+      });
+    }
+
+    // ===== 2️⃣ 当前联系人世界书（强绑定角色）=====
+    if (
+      contactId &&
+      cfg?.worldbook?.contact &&
+      Array.isArray(cfg.worldbook.contact[contactId])
+    ) {
+      cfg.worldbook.contact[contactId].forEach(wb => {
+        if (wb && wb.enabled && wb.content && String(wb.content).trim()) {
+          parts.push(wb.content.trim());
+        }
+      });
+    }
+
+    // ===== 3️⃣ 全局世界书（环境）=====
+    if (Array.isArray(cfg?.worldbook?.global)) {
+      cfg.worldbook.global.forEach(wb => {
+        if (wb && wb.enabled && wb.content && String(wb.content).trim()) {
+          parts.push(wb.content.trim());
+        }
+      });
+    }
+
+    // ===== 4️⃣ 用户人设（最低权重）=====
     try {
       const personaRaw = localStorage.getItem('YBM_PERSONA_V1');
       const persona = personaRaw ? JSON.parse(personaRaw) : null;
@@ -606,36 +642,9 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
       }
     } catch { }
 
-    // 世界书：全局
-    if (cfg?.worldbook && Array.isArray(cfg.worldbook.global)) {
-      cfg.worldbook.global.forEach(wb => {
-        if (wb && wb.enabled && wb.content) parts.push(wb.content);
-      });
-    }
-
-    // 世界书：联系人
-    if (contactId && cfg?.worldbook?.contact && Array.isArray(cfg.worldbook.contact[contactId])) {
-      cfg.worldbook.contact[contactId].forEach(wb => {
-        if (wb && wb.enabled && wb.content) parts.push(wb.content);
-      });
-    }
-
-    // 预设：按 scope 注入
-    // chat -> cfg.presets.global（你开始界面/Chat 目前就是这个）
-    // sms  -> cfg.presets.sms（miniPhone 短信专用）
-    let presetArr = null;
-    if (cfg?.presets) {
-      if (scope === 'sms') presetArr = cfg.presets.sms;
-      else presetArr = cfg.presets.global;
-    }
-    if (Array.isArray(presetArr)) {
-      presetArr.forEach(p => {
-        if (p && p.enabled && p.content) parts.push(p.content);
-      });
-    }
-
     return parts.join('\n\n');
   }
+
 
 
   function buildAuthHeader(baseUrl, apiKey) {
@@ -703,7 +712,7 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     save();
   }
 
-  async function callChatCompletions({ baseUrl, apiKey, model, messages, stream, signal }) {
+  async function callChatCompletions({ baseUrl, apiKey, model, messages, stream, signal, max_tokens }) {
     if (!baseUrl) throw new Error('Base URL 为空');
     if (!model) throw new Error('Model 为空');
 
@@ -713,6 +722,7 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     Object.assign(headers, buildAuthHeader(baseUrl, apiKey));
 
     const body = { model, messages, temperature: 0.8, stream: false };
+    if (typeof max_tokens === 'number' && max_tokens > 0) body.max_tokens = Math.floor(max_tokens);
 
     const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal });
     if (!res.ok) {
@@ -736,28 +746,29 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
 
     throw new Error(`API 返回无法解析：${JSON.stringify(data).slice(0, 500)}`);
   }
-  function postProcessAssistantText(text, channel = 'main') {
-    let out = String(text || '').trim();
-    if (!out) return out;
+function postProcessAssistantText(text, channel = 'main') {
+  let out = String(text || '').trim();
+  if (!out) return out;
 
-    const HARD_LIMIT = channel === 'phone' ? 600 : 1200;
+  // ✅ phone（短信）不做硬截断：靠 max_tokens + SMS改写器 + UI拆行控制长度
+  if (channel === 'phone') return out;
 
-    if (out.length <= HARD_LIMIT) return out;
+  // main 保留原逻辑（避免主界面爆长）
+  const HARD_LIMIT = 1200;
+  if (out.length <= HARD_LIMIT) return out;
 
-    // 找安全切点
-    const cut = out.slice(0, HARD_LIMIT);
-    const safeIdx = Math.max(
-      cut.lastIndexOf('。'),
-      cut.lastIndexOf('！'),
-      cut.lastIndexOf('？'),
-      cut.lastIndexOf('\n')
-    );
+  const cut = out.slice(0, HARD_LIMIT);
+  const safeIdx = Math.max(
+    cut.lastIndexOf('。'),
+    cut.lastIndexOf('！'),
+    cut.lastIndexOf('？'),
+    cut.lastIndexOf('\n')
+  );
 
-    const finalText = (safeIdx > 100 ? cut.slice(0, safeIdx + 1) : cut)
-      + '\n\n（内容较长，已截断。需要继续请回复“继续”。）';
+  return (safeIdx > 100 ? cut.slice(0, safeIdx + 1) : cut)
+    + '\n\n（内容较长，已截断。需要继续请回复“继续”。）';
+}
 
-    return finalText;
-  }
   function stripThinking(text) {
     let out = String(text || '');
 
@@ -791,18 +802,18 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     // 1) 普通短信：对方：xxxx  或 对方:xxxx
     // 2) 撤回动作： [撤回]原消息内容 / 【撤回】原消息内容
     //    也允许带“对方：”前缀：对方：[撤回]... / 对方：【撤回】...
-const hasReplyLine =
-  /^\s*对方[:：]/m.test(t) ||
+    const hasReplyLine =
+      /^\s*对方[:：]/m.test(t) ||
 
-  // 撤回动作
-  /^\s*\[撤回\]/m.test(t) ||
-  /^\s*【撤回】/m.test(t) ||
-  /^\s*对方[:：]\s*\[撤回\]/m.test(t) ||
-  /^\s*对方[:：]\s*【撤回】/m.test(t) ||
+      // 撤回动作
+      /^\s*\[撤回\]/m.test(t) ||
+      /^\s*【撤回】/m.test(t) ||
+      /^\s*对方[:：]\s*\[撤回\]/m.test(t) ||
+      /^\s*对方[:：]\s*【撤回】/m.test(t) ||
 
-  // 转账动作
-  /^\s*【转账\|/m.test(t) ||
-  /^\s*对方[:：]\s*【转账\|/m.test(t);
+      // 转账动作
+      /^\s*【转账\|/m.test(t) ||
+      /^\s*对方[:：]\s*【转账\|/m.test(t);
 
     if (!hasReplyLine) return true;
 
@@ -886,7 +897,7 @@ const hasReplyLine =
   }
 
 
-  async function send({ text, channel, contactId, systemPrompt, maxChars, turnId } = {}) {
+  async function send({ text, channel, contactId, systemPrompt, maxChars, turnId, max_tokens } = {}) {
     if (!text || !text.trim()) return null;
     channel = channel === 'phone' ? 'phone' : 'main';
     contactId = ensureContact(contactId || getActiveContact());
@@ -908,7 +919,7 @@ const hasReplyLine =
       maxChars: maxChars || 16000,
     });
 
-    // ✅ assistant 也必须写 turnId，否则“最后一轮”删除/重roll 没法判定
+    // ✅ assistant 也必须写 turnId
     const assistantMsg = appendMessage({ contactId, channel, role: 'assistant', content: '', turnId: tid });
 
     try {
@@ -920,17 +931,21 @@ const hasReplyLine =
         apiKey: api.apiKey,
         model: api.model,
         messages: ctx,
-        stream: false
+        stream: false,
+        max_tokens, // ✅ 透传（服务端不支持就忽略）
       });
 
-
-      let out = postProcessAssistantText(reply || '', channel);
-
+      // ===========================
+      // ✅ 关键：phone 先剃 think，再截断，再判不合规改写
+      // ===========================
       if (channel === 'phone') {
-        // 先剃 think（保证 UI/历史不污染）
-        out = stripThinking(out);
+        // 1) 先剃 think，避免 think 抢占 600 截断配额
+        let out = stripThinking(reply || '');
 
-        // 不合规就走改写器：保证“永远像短信、永远中文、永远对方：”
+        // 2) 再截断（对剃过 think 的正文截断更稳定）
+        out = postProcessAssistantText(out, channel);
+
+        // 3) 不合规就走改写器（永远回到短信格式）
         if (needSmsRewrite(out)) {
           try {
             const repaired = await rewriteToSms({
@@ -939,14 +954,19 @@ const hasReplyLine =
               badAssistantText: reply || out
             });
             if (repaired) out = repaired;
-          } catch (e) {
+          } catch {
             // 改写失败也至少保证不出 think
             out = stripThinking(out);
           }
         }
+
+        assistantMsg.content = out;
+        save();
+        return assistantMsg;
       }
 
-      assistantMsg.content = out;
+      // main：照旧（可以保留截断）
+      assistantMsg.content = postProcessAssistantText(reply || '', channel);
       save();
       return assistantMsg;
 
@@ -957,6 +977,7 @@ const hasReplyLine =
       return assistantMsg;
     }
   }
+
 
   // ✅ 导出：这里现在不会再引用未定义的 getMessages 了
   window.PhoneEngine = {
