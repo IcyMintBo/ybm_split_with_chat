@@ -497,7 +497,7 @@ ops.appendChild(actions);
 // ✅ 气泡顶部先放 head（名字+头像+操作键）
 wrap.appendChild(head);
 
-// meta 这行你可以保留当“占位容器”，也可以直接不 append
+// meta 这行可以保留当“占位容器”，也可以直接不 append
 // wrap.appendChild(meta);
 
 wrap.appendChild(body);

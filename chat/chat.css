@@ -489,7 +489,7 @@
   transform: translateY(-1px);
 }
 
-/* 左侧小圆点（你真实 class 叫 chatChipDot） */
+/* 左侧小圆点（真实 class 叫 chatChipDot） */
 .chatChipDot {
   width: 12px;
   height: 12px;
@@ -499,7 +499,7 @@
   flex: 0 0 12px;
 }
 
-/* 文字（你 JS 创建的 label 没 class，所以直接取第二个 span） */
+/* 文字（JS 创建的 label 没 class，所以直接取第二个 span） */
 .chatChip>span:last-child {
   font-weight: 900;
   letter-spacing: .02em;
@@ -529,12 +529,12 @@
     width: min(92vw, 420px) !important;
     height: min(86vh, 740px) !important;
 
-    /* ⚠️ 你的桌面动画是 translateY(18px) -> translateY(0)
+    /* ⚠️ 桌面动画是 translateY(18px) -> translateY(0)
        手机端我们要在居中基础上再叠加这段动画 */
     transform: translate(-50%, calc(-50% + 18px)) !important;
   }
 
-  /* ✅ 适配你的“打开态”选择器：二选一，哪个存在用哪个 */
+  /* ✅ 适配“打开态”选择器：二选一，哪个存在用哪个 */
   .phoneOverlay.open,
   .phoneOverlay[data-open="true"] {
     transform: translate(-50%, -50%) !important;
@@ -770,7 +770,7 @@ button,
   appearance: none;
 }
 
-/* 你项目里按钮 class 的兜底（更稳） */
+/* 项目里按钮 class 的兜底（更稳） */
 .startTab,
 .dashBox,
 .btn,

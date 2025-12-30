@@ -20,7 +20,7 @@
     // 如果用户填到了 /chat/completions，裁回 /v1
     u = u.replace(/\/chat\/completions$/i, '');
 
-    // 如果没写 /v1，就补上（你说诺基亚要填完整，我们内部统一到 /v1）
+    // 如果没写 /v1，就补上（内部统一到 /v1）
     if (!/\/v1$/i.test(u)) {
       // 如果里面已经有 /v1/xxx，也裁到 /v1
       const m = u.match(/^(.*?\/v1)\b/i);
@@ -647,7 +647,7 @@
     let cfg = ensurePromptCfg();
     const cid = cfg.activeContactId;
 
-    // ① 删除重复的“导入/导出 textarea 区域”（你红框叉掉的那块）
+    // ① 删除重复的“导入/导出 textarea 区域”（红框叉掉的那块）
     //    不改 HTML，运行时移除
     const wbIo = root.querySelector('#wb-io');
     if (wbIo) {
@@ -700,7 +700,7 @@
     renderWorldbookList(root, cfg, 'global');
     renderWorldbookList(root, cfg, 'contact');
 
-    // ⑤ 新增按钮（多 selector 兜底：避免你模板里 id 改过导致点了没反应）
+    // ⑤ 新增按钮（多 selector 兜底：避免模板里 id 改过导致点了没反应）
     const btnAddGlobal =
       root.querySelector('#wb-add-global') ||
       root.querySelector('[data-act="wb-add-global"]') ||
@@ -1008,7 +1008,7 @@
     let cfg = ensurePromptCfg();
 
 
-    // ① 删除重复的“导入/导出 textarea 区域”（你红框叉掉的那块）
+    // ① 删除重复的“导入/导出 textarea 区域”（红框叉掉的那块）
     const io = root.querySelector('#preset-io');
     if (io) {
       const wrapper = io.closest('.wbIO') || io.parentElement;
@@ -1020,7 +1020,7 @@
     // ② 渲染
     renderPresetList(root, cfg);
 
-    // ③ “＋新增”按钮：多 selector 兜底（你说点了没反应，这里会强行匹配）
+    // ③ “＋新增”按钮：多 selector 兜底（说点了没反应，这里会强行匹配）
     const addBtn =
       root.querySelector('#preset-add-global') ||
       root.querySelector('#preset-add') ||
@@ -1029,7 +1029,7 @@
 
     addBtn?.addEventListener('click', () => {
       const item = makePresetItem();
-      // 新字段默认值（兼容你后续注入逻辑）
+      // 新字段默认值（兼容后续注入逻辑）
       item.injectMode = item.injectMode || 'always';
       item.keyword = item.keyword || '';
       cfg.presets.global.push(item);

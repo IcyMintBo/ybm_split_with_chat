@@ -1181,7 +1181,7 @@
   margin: 10px 0;
 }
 .page-duanxin .sms-thread-paper .sms-ava {
-  margin-top: 2px; /* 你觉得还低就改成 0 或 -1 */
+  margin-top: 2px; /* 觉得还低就改成 0 或 -1 */
 }
 
 .page-duanxin .sms-row.them {
@@ -1706,12 +1706,12 @@
 /* ===== SMS 间距压紧：更像短信 ===== */
 .page-duanxin .sms-thread.sms-thread-paper {
   gap: 0 !important;
-  /* 干掉容器 gap（你原来是 10px） */
+  /* 干掉容器 gap（原来是 10px） */
 }
 
 .page-duanxin .sms-row {
   margin: 4px 0 !important;
-  /* 你原来是 10px */
+  /* 原来是 10px */
   gap: 8px !important;
   /* 行内头像-气泡间距略紧一点 */
 }
@@ -1983,7 +1983,7 @@ button,
   appearance: none;
 }
 
-/* 你项目里按钮 class 的兜底（更稳） */
+/* 项目里按钮 class 的兜底（更稳） */
 .startTab,
 .dashBox,
 .btn,

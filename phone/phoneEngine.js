@@ -212,8 +212,6 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
   }
 
 
-
-  // ✅ 你缺的就是这个：给 UI 用的取消息接口
   // 支持两种调用方式：
   // 1) getMessages({ contactId, channel })
   // 2) getMessages(contactId, channel)
@@ -387,7 +385,7 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     return true;
   }
 
-  // ✅ 只重roll“最后一轮”的 assistant（符合你规则）
+  // ✅ 只重roll“最后一轮”的 assistant（符合规则）
   // 逻辑：找到 turnId 对应的最后一条 user 作为触发，清空该轮 assistant 内容 -> 重新请求 -> 写回同一条 assistant
   async function rerollLastTurn({ contactId, channel, turnId, maxChars } = {}) {
     channel = channel === 'phone' ? 'phone' : 'main';

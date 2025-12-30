@@ -135,7 +135,7 @@ button,
 }
 
 .phoneImgWrap {
-  /* 你这张图是 1024x1536（2:3），用 aspect-ratio 最稳 */
+  /* 这张图是 1024x1536（2:3），用 aspect-ratio 最稳 */
   width: min(420px, 92vw);
   aspect-ratio: 2 / 3;
   position: relative;
@@ -920,7 +920,7 @@ button,
 /* 顶栏按钮组：补一个“空位” */
 .startTabsSpacer {
   width: 88px;
-  /* 你想更宽就调大 */
+  /* 想更宽就调大 */
   height: 36px;
   border: var(--line-soft);
   border-radius: 12px;
@@ -1035,7 +1035,7 @@ button,
 /* 顶部按钮托盘：更像“系统菜单条” */
 .startTabsTray {
   width: min(760px, 92vw);
-  /* 跟 startCenter 对齐（你现在电脑端就是760） */
+  /* 跟 startCenter 对齐（现在电脑端就是760） */
   margin: 0 auto 12px;
   padding: 10px 12px;
   border: var(--line);
@@ -1085,7 +1085,7 @@ button,
   background: rgba(0, 0, 0, .08);
 }
 
-/* 不同面板的点色（你原来 p/o/s 继续用） */
+/* 不同面板的点色（原来 p/o/s 继续用） */
 .startDot.p {
   background: rgba(214, 140, 160, .35);
 }
@@ -1473,7 +1473,7 @@ button,
 @media (min-width: 981px) {
   .startBottomActions {
     margin-top: 26px;
-    /* 往下压：你觉得还空就调到 36/48 */
+    /* 往下压：觉得还空就调到 36/48 */
   }
 }
 
@@ -1935,7 +1935,7 @@ button,
   appearance: none;
 }
 
-/* 你项目里按钮 class 的兜底（更稳） */
+/* 项目里按钮 class 的兜底（更稳） */
 .startTab,
 .dashBox,
 .btn,
@@ -1947,7 +1947,7 @@ button,
   color: var(--ink, #1f1f1f) !important;
   -webkit-text-fill-color: var(--ink, #1f1f1f) !important;
 }
-/* 关键按钮类兜底（你页面上就是这些） */
+/* 关键按钮类兜底 */
 .startTab,
 .dashBox,
 .btn,

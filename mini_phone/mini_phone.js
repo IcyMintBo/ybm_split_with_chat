@@ -52,7 +52,7 @@ function cleanForSms(text) {
   s = s.replace(/`([^`]+)`/g, '$1');
 
   // 去掉很像“旁白块”的长段英文（短信不需要）
-  // （你不想过滤英文可以删掉这一段）
+  // （不想过滤英文可以删掉这一段）
   const lines = s.split('\n');
   s = lines.filter(l => {
     const t = l.trim();
@@ -364,7 +364,7 @@ async function ensureMounted() {
       const dir = prev ? -1 : +1;
       const to = (cur + dir + radios.length) % radios.length;
 
-      // ✅ 找到承载动画的容器（兼容你旧类名）
+      // ✅ 找到承载动画的容器（兼容旧类名）
       const panelBody =
         mount.querySelector('.mp-panel-body') ||
         mount.querySelector('.mp-panel') ||
@@ -897,7 +897,7 @@ function renderSmsPreview(mount, contactId, title) {
     return;
   }
 
-  // Debug 开关：默认关（需要时你可以在控制台 window.__SMS_DEBUG__=true）
+  // Debug 开关：默认关（需要时可以在控制台 window.__SMS_DEBUG__=true）
   window.__SMS_DEBUG__ = window.__SMS_DEBUG__ ?? false;
 
   // ✅ 控制“每轮 assistant 只显示一次头像”
@@ -910,7 +910,6 @@ function renderSmsPreview(mount, contactId, title) {
     const tid = m.turnId || m.turn_id || m.meta?.turnId || m.meta?.turn_id || '';
     const mid = m.id || '';
 
-    // ===== user（你）=====
 // ===== user（你）=====
 if (m.role === 'user') {
   lastAvatarKey = ''; // ✅ 用户发言后，下一轮 assistant 重新显示头像
@@ -1253,7 +1252,7 @@ window.__YBM_SMS_DRAFT_TURN__ = window.__YBM_SMS_DRAFT_TURN__ || {};
 
 
 function bindSmsSendOnce(mount, avatarSrc, contactId) {
-  // 进入不同联系人时要重新绑（否则你切联系人会用旧的 contactId）
+  // 进入不同联系人时要重新绑（否则切联系人会用旧的 contactId）
   const boundKey = `1:${contactId || 'ybm'}`;
   if (mount.dataset.smsSendBound === boundKey) return;
   mount.dataset.smsSendBound = boundKey;
@@ -1370,7 +1369,6 @@ function bindSmsSendOnce(mount, avatarSrc, contactId) {
 
         // ✅ 注入短信预设（关键：让模型“先天像短信”）
         // PhoneEngine 需要支持 systemPrompt / extraSystem 之类字段；
-        // 如果你现在的 PhoneEngine 还没吃这个字段，我下一步给你补到 phoneEngine.js。
         systemPrompt: smsPreset,
 
         // ✅ 短信专用短输出（若 PhoneEngine 支持）
@@ -1387,8 +1385,6 @@ function bindSmsSendOnce(mount, avatarSrc, contactId) {
       delete window.__YBM_SMS_DRAFT_TURN__[cid];
 
 
-      // 重新渲染线程（如果你现在是“从引擎读消息渲染”，这里会刷新到最新）
-      // 没有这个函数也没关系，不会报错
       try {
         if (typeof renderSmsPreview === 'function') {
           const title = mount.querySelector('[data-sms-thread-name]')?.textContent || '';
