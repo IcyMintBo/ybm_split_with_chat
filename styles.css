@@ -1913,3 +1913,31 @@ body {
   color: #e9eef2;
   user-select: none;
 }
+/* ====== 强制禁止移动端自动蓝色 ====== */
+
+/* 禁止 iOS / Android 自动染色 */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-fill-color: initial;
+}
+
+/* 所有链接强制继承父级颜色 */
+a,
+a:visited,
+a:hover,
+a:active {
+  color: inherit !important;
+  text-decoration: none;
+}
+
+/* iOS 特别爱动手的地方 */
+body {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* 防止 Safari 把文字当电话 */
+span,
+div,
+p {
+  color: inherit;
+}
