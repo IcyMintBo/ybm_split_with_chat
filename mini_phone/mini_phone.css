@@ -1970,3 +1970,28 @@
 .sms-row.me:hover .sms-del{
   display:block;
 }
+/* ===== iOS Safari: button 文案强制不变蓝 ===== */
+button,
+[type="button"],
+[type="submit"],
+[type="reset"]{
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+
+  /* 去掉 iOS 默认控件外观，避免系统蓝 */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* 你项目里按钮 class 的兜底（更稳） */
+.startTab,
+.dashBox,
+.btn,
+.claimBtn,
+.wbBtn,
+.mp-menu-btn,
+.mp-ctx-btn,
+.sms-item{
+  color: var(--ink, #1f1f1f) !important;
+  -webkit-text-fill-color: var(--ink, #1f1f1f) !important;
+}
