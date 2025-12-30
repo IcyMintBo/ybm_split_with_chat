@@ -353,7 +353,52 @@ if ($closest(e.target, 'img,button,input,textarea,select,a')) return;
     titlebar.insertAdjacentElement('afterend', bar);
   }
 
-  // ===== message actions icons =====
+  
+// ===== intro bubble (persist + editable/deletable) =====
+const INTRO_KEY_PREFIX = 'YBM_CHAT_INTRO_V1_'; // per contact: YBM_CHAT_INTRO_V1_ybm
+function getIntroKey(contactId){ return INTRO_KEY_PREFIX + String(contactId || 'default'); }
+
+function loadIntro(contactId){
+  try { return JSON.parse(localStorage.getItem(getIntroKey(contactId)) || 'null'); } catch { return null; }
+}
+function saveIntro(contactId, obj){
+  try { localStorage.setItem(getIntroKey(contactId), JSON.stringify(obj || null)); } catch {}
+}
+function clearIntro(contactId){
+  try { localStorage.removeItem(getIntroKey(contactId)); } catch {}
+}
+
+function clearAllIntros(){
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(INTRO_KEY_PREFIX)) localStorage.removeItem(k);
+    }
+  } catch {}
+}
+
+// 初始化：只在“从未初始化过”时写入；用户删除后会写 deleted:true，不会再自动复活（除非清空聊天）
+function ensureIntro(contactId, contactName){
+  const cur = loadIntro(contactId);
+  if (cur && (cur.inited || cur.deleted)) return;
+
+  const text = [
+    `【${contactName || '对话'}】`,
+    '这不是命令窗口，是一段正在发生的故事。',
+    '你可以直接开口，也可以先问一句：现在我该怎么做？'
+  ].join('\n');
+
+  const introMsg = {
+    id: 'intro_' + String(contactId || 'default'),
+    role: 'assistant',
+    content: text,
+    createdAt: Date.now(),
+    inited: true
+  };
+  saveIntro(contactId, introMsg);
+}
+
+// ===== message actions icons =====
   function iconEdit() {
     return `
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -389,6 +434,7 @@ if ($closest(e.target, 'img,button,input,textarea,select,a')) return;
 
     const role = msg.role === 'user' ? 'me' : 'assistant';
     const contactId = engine.getActiveContact?.() || 'ybm';
+    const isIntro = String(msg?.id || '').startsWith('intro_');
 
     // ===== 外层 item：名字在外面 =====
     const item = document.createElement('div');
@@ -403,25 +449,22 @@ head.className = 'chatHead';
 const whoLeft = document.createElement('div');
 whoLeft.className = 'chatWhoLeft';
 
-// 头像：只保留“角色(assistant)”头像；用户(me)不显示头像
-let ava = null;
-if (role !== 'me') {
-  ava = document.createElement('div');
-  ava.className = 'chatAva';
+// 头像（user/assistant 都显示；没有就自动隐藏）
+const ava = document.createElement('div');
+ava.className = 'chatAva';
 
-  const avaImg = document.createElement('img');
-  avaImg.alt = '';
-  const cid = engine.getActiveContact?.() || 'ybm';
+const avaImg = document.createElement('img');
+avaImg.alt = '';
+const cid = engine.getActiveContact?.() || 'ybm';
 
-  // ✅ 统一头像策略：优先用户上传（localStorage），其次静态文件，不存在自动隐藏（不会 404 刷屏）
-  applyAvatarToImg(avaImg, role, cid);
+// ✅ 统一头像策略：优先用户上传（localStorage），其次静态文件，不存在自动隐藏（不会 404 刷屏）
+applyAvatarToImg(avaImg, role, cid);
 
-  // 如果图片最终被隐藏，就把容器也隐藏掉（更干净）
-  const _oldOnErr = avaImg.onerror;
-  avaImg.onerror = () => { _oldOnErr && _oldOnErr(); ava.style.display = 'none'; };
-  avaImg.onload  = () => { ava.style.display = 'block'; };
-  ava.appendChild(avaImg);
-}
+// 如果图片最终被隐藏，就把容器也隐藏掉（更干净）
+const _oldOnErr = avaImg.onerror;
+avaImg.onerror = () => { _oldOnErr && _oldOnErr(); ava.style.display = 'none'; };
+avaImg.onload  = () => { ava.style.display = 'block'; };
+ava.appendChild(avaImg);
 
 
 // 名字
@@ -429,7 +472,7 @@ const who = document.createElement('div');
 who.className = 'chatWho';
 who.textContent = (role === 'me') ? getUserDisplayName() : getActiveContactName(engine);
 
-if (ava) whoLeft.appendChild(ava);
+whoLeft.appendChild(ava);
 whoLeft.appendChild(who);
 
 // 右侧操作区
@@ -579,7 +622,12 @@ item.appendChild(wrap);
 
       const save = () => {
         const newText = (area.value || '').trim();
-        engine.updateMessage?.({ contactId, msgId: msg.id, content: newText });
+        if (isIntro) {
+          const cur = loadIntro(contactId) || msg;
+          saveIntro(contactId, { ...cur, content: newText, deleted: false, inited: true });
+        } else {
+          engine.updateMessage?.({ contactId, msgId: msg.id, content: newText });
+        }
         cleanup();
         renderHistory(engine);
       };
@@ -619,12 +667,24 @@ item.appendChild(wrap);
     clearChatUI();
 
     const contactId = engine.getActiveContact?.() || 'ybm';
+    const contactName = (engine.listContacts?.() || []).find(c => c.id === contactId)?.name || contactId;
+
+    // 默认开场白：写进本地存储，渲染时作为第一条消息（可编辑/可删除）
+    ensureIntro(contactId, contactName);
+
+    const intro = loadIntro(contactId);
     const msgs = engine.getMessages?.({ contactId, channel: 'main' }) || [];
 
     // 找到最后一条 assistant（只对它显示重roll）
     let lastAssistantId = null;
     for (let i = msgs.length - 1; i >= 0; i--) {
       if (msgs[i]?.role === 'assistant') { lastAssistantId = msgs[i].id; break; }
+    }
+
+
+    // 先渲染开场白（不参与重roll判定）
+    if (intro && !intro.deleted && (intro.content || '').trim()) {
+      pushMsg(engine, intro, false);
     }
 
     for (const m of msgs) {
@@ -759,7 +819,15 @@ if (!mount.querySelector('.chatWindow')) {
         if (!msgId) return;
         const contactId = engine.getActiveContact?.() || 'default';
         if (!confirm('删除这条消息？')) return;
-        engine.deleteMessage?.({ contactId, msgId });
+
+        // 开场白（intro_）走本地存储：删除后不再自动生成，除非清空聊天
+        if (String(msgId).startsWith('intro_')) {
+          const cur = loadIntro(contactId) || { id: msgId, role: 'assistant', content: '' };
+          saveIntro(contactId, { ...cur, deleted: true, inited: true });
+        } else {
+          engine.deleteMessage?.({ contactId, msgId });
+        }
+
         renderHistory(engine);
       });
     }
@@ -872,6 +940,7 @@ if (!document.documentElement.dataset.chatClearBound) {
       const contactId = engine.getActiveContact?.() || 'default';
       if (!confirm('清空当前联系人的聊天记录？')) return;
       engine.clearMessages?.({ contactId });
+      clearIntro(contactId);
       closeClearModal();
       renderHistory(engine);
       return;
@@ -879,6 +948,7 @@ if (!document.documentElement.dataset.chatClearBound) {
     if ($closest(e.target, '#chatClearAll')) {
       if (!confirm('全清：清空所有联系人的聊天记录，确认继续？')) return;
       engine.clearAllMessages?.();
+      clearAllIntros();
       closeClearModal();
       renderHistory(engine);
       return;

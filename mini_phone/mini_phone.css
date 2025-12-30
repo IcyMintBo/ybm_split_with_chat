@@ -29,8 +29,8 @@
   --topbar-time-size: 18px;
 
   /* Home tuning */
-  --home-pad-top: 150px;
-  --panel-ml: 85px;
+  --home-pad-top: 170px;
+  --panel-ml: 95px;
   --panel-mt: 0px;
   --panel-scale: 1;
 
@@ -1951,22 +1951,4 @@
 /* 展开偷看态：仍保持“系统提示”风格，但更清晰一点 */
 .page-duanxin .sms-row.sys.sys-tip.peek .sms-bubble{
   color: rgba(0,0,0,0.75);
-}
-.sms-row.me .sms-del{
-  position:absolute;
-  top:-10px;
-  right:-10px;
-  width:22px;
-  height:22px;
-  border-radius:999px;
-  border:1px solid rgba(0,0,0,.18);
-  background:rgba(255,255,255,.9);
-  font-weight:700;
-  line-height:20px;
-  display:none;
-  cursor:pointer;
-}
-
-.sms-row.me:hover .sms-del{
-  display:block;
 }
