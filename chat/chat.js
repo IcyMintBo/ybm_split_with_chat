@@ -472,8 +472,11 @@ const who = document.createElement('div');
 who.className = 'chatWho';
 who.textContent = (role === 'me') ? getUserDisplayName() : getActiveContactName(engine);
 
-whoLeft.appendChild(ava);
+// ✅ user 不显示头像：连占位也不留；char 仍显示
+if (role !== 'me') whoLeft.appendChild(ava);
+
 whoLeft.appendChild(who);
+
 
 // 右侧操作区
 const ops = document.createElement('div');

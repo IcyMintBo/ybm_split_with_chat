@@ -1196,41 +1196,64 @@ function appendSmsBubble(thread, who, text, avatarSrc, opts = {}) {
       }
     });
   }
-  // ===== 右侧已发送消息：小删除按钮（用于“模型没回复”这种尴尬修正）=====
-  if (who === 'me' && !opts.pending && opts.msgId) {
-    row.classList.add('has-del');
+// ===== 右侧已发送消息：小删除按钮（用于“模型没回复”这种尴尬修正）=====
+let delBtn = null;
 
-    const del = document.createElement('button');
-    del.className = 'sms-del';
-    del.type = 'button';
-    del.textContent = '×';
-    del.title = '删除这条';
+if (who === 'me' && !opts.pending && opts.msgId) {
+  row.classList.add('has-del');
 
-    del.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+  const del = document.createElement('button');
+  delBtn = del;
 
-      const threadEl = row.closest('[data-sms-thread]');
-      const contactId =
-        threadEl?.dataset.contactId ||
-        mount?.dataset?.smsActiveContactId ||
-        'ybm';
+  del.className = 'sms-del';
+  del.type = 'button';
+  del.textContent = '×';
+  del.title = '删除这条';
 
-      try {
-        window.PhoneEngine?.deleteMessage?.({ contactId, msgId: String(opts.msgId) });
-      } catch { }
+  del.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-      try {
-        const mnt = row.closest('#miniPhoneMount') || document.getElementById('miniPhoneMount');
-        const title = mnt?.querySelector('[data-sms-thread-name]')?.textContent || '';
-        if (mnt && typeof renderSmsPreview === 'function') renderSmsPreview(mnt, contactId, title);
-      } catch { }
-    });
+    const threadEl = row.closest('[data-sms-thread]');
+    const contactId =
+      threadEl?.dataset.contactId ||
+      mount?.dataset?.smsActiveContactId ||
+      'ybm';
 
-    // 放进气泡里（定位用 CSS）
-    bubble.style.position = 'relative';
-    bubble.appendChild(del);
-  }
+    try {
+      window.PhoneEngine?.deleteMessage?.({ contactId, msgId: String(opts.msgId) });
+    } catch {}
+
+    try {
+      const mnt = row.closest('#miniPhoneMount') || document.getElementById('miniPhoneMount');
+      const title = mnt?.querySelector('[data-sms-thread-name]')?.textContent || '';
+      if (mnt && typeof renderSmsPreview === 'function') renderSmsPreview(mnt, contactId, title);
+    } catch {}
+  });
+
+  // 放进气泡里（定位用 CSS）
+  bubble.style.position = 'relative';
+  bubble.appendChild(del);
+}
+
+// ✅ 点一下这条气泡：才显示/隐藏 ×（移动端也好用）
+bubble.addEventListener('click', (e) => {
+  if (delBtn && e.target === delBtn) return; // 点到 × 自己就不切换
+  if (!delBtn) return; // 没有 × 的气泡不用处理
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  // 先收起其他我方消息的 ×
+  try {
+    thread?.querySelectorAll('.sms-row.me.show-del')
+      ?.forEach(x => x.classList.remove('show-del'));
+  } catch {}
+
+  // 再切换当前这条
+  row.classList.toggle('show-del');
+});
+
 
   if (who === 'me') {
     row.appendChild(bubble);
