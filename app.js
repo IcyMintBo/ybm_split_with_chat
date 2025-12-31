@@ -1718,25 +1718,29 @@
 
 
   // Main 页：所有 data-action="start" 的出发 -> 进聊天
-  document.addEventListener('click', (e) => {
-    const el = e.target.closest?.('[data-goto],[data-action],#chatBack');
-    if (!el) return;
+document.addEventListener('click', (e) => {
+  const el = e.target.closest?.('[data-goto],[data-action],#chatBack');
+  if (!el) return;
 
-    // chat 返回按钮（挂载后也能点）
-    if (el.id === 'chatBack') {
-      backToStart();
-      return;
-    }
+  // chat 返回按钮：捕获阶段硬拦截，防止任何 history.back() 把网页退掉
+  if (el.id === 'chatBack') {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    backToStart();
+    return;
+  }
 
-    if (el.dataset.goto != null) {
-      goto(parseInt(el.dataset.goto, 10));
-      return;
-    }
+  if (el.dataset.goto != null) {
+    goto(parseInt(el.dataset.goto, 10));
+    return;
+  }
 
-    if (el.dataset.action === 'start') {
-      openChat();
-    }
-  });
+  if (el.dataset.action === 'start') {
+    openChat();
+  }
+}, true); // ✅ 注意：这里必须是 true（捕获阶段）
+
 
   pages?.addEventListener('scroll', () => {
     clearTimeout(pages.__t);
