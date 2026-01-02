@@ -193,14 +193,23 @@
           </template>
 
 
-          <template id="startTplHelp">
-            <div class="startList">
-              <div class="startItem"><b>1）开始剧情</b><br />点中间按钮进入对话区（后续的“世界书/预设/存档流程”从这里接出去）。</div>
-              <div class="startItem"><b>2）顶部按钮</b><br />API / 说明 / 日志都是面板，不跳页：电脑端并排，手机端覆盖。</div>
-              <div class="startItem"><b>3）手机端手感</b><br />把它当成 SillyTavern：信息需要时叫出来，用完立刻收回。</div>
-              <div class="startItem"><b>4）图像口子</b><br />中间手机框支持直接换成 png；保持相对路径即可。</div>
-            </div>
-          </template>
+<template id="startTplHelp">
+  <div class="startList">
+    <div class="startItem"><b>遇到问题</b><br />遇见点不动、显示异常等情况，直接刷新网页即可。</div>
+
+    <div class="startItem"><b>1）填写 API</b><br />填写 API 地址和 Key。</div>
+    <div class="startItem"><b>2）拉取模型</b><br />拉取模型后点击测试，确认可用。</div>
+    <div class="startItem"><b>3）世界书</b><br />选择 世界书 → 载入默认。</div>
+    <div class="startItem"><b>4）预设</b><br />选择 预设 → 载入默认（可按喜好调整；每个条目都可点击查看/编辑）。</div>
+    <div class="startItem"><b>5）人设</b><br />设置自己的人设，点击出发。</div>
+    <div class="startItem"><b>6）进入手机</b><br />进入 Chat 界面后点击右上角小手机。</div>
+    <div class="startItem"><b>7）短信入口</b><br />点击第一个信封。右上角三横线按钮 → 载入默认。</div>
+    <div class="startItem"><b>完成</b><br />所有设置完成，可以开始游玩啦。</div>
+
+    <div class="startItem"><b>重要说明</b><br />出于合规考虑，预设里 NSFW 不提供更进阶的提示词设计示例；如有需要，用户可根据自身理解自行摸索与调整。</div>
+  </div>
+</template>
+
 
           <template id="startTplLog">
             <div class="startList">
@@ -217,7 +226,7 @@
               <div class="startItem"><b>薄荷</b><br />更冷的配色（占位）。</div>
               <button class="btn primary" type="button">应用（占位）</button>
               <div class="startItem" style="opacity:.85">
-                <b>提示：</b>先把 UI 口子放好，后续再接皮肤切换逻辑（CSS class / localStorage）。
+                <b>提示：</b>点不动，还没做。
               </div>
             </div>
           </template>
