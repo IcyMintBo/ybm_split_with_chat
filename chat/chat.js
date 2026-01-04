@@ -538,6 +538,17 @@
     const body = document.createElement('div');
     body.className = 'chatText';
     const raw = sanitizeModelText(msg.content || '');
+    // ===== error source tag (show to user) =====
+    if (msg?.meta?.errorSource) {
+      const tag = document.createElement('div');
+      tag.className = 'chatErrSource';
+      tag.textContent =
+        msg.meta.errorSource === 'api' ? '来源：外部 AI 服务' :
+          msg.meta.errorSource === 'api_abnormal' ? '来源：外部 AI 服务' :
+            '来源：项目本身';
+      wrap.appendChild(tag);
+    }
+
 
     // 先 escape，防止模型输出里夹 HTML 造成注入
     const escaped = raw.replace(/[&<>"']/g, c => ({

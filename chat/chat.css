@@ -757,3 +757,9 @@ body.chat-editing{ overflow: hidden; }
   }
   .chatEditArea{ min-height: 220px; }
 }
+.chatErrSource{
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: .75;
+  line-height: 1.2;
+}

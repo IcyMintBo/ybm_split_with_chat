@@ -67,32 +67,56 @@
   }
 
 
-  async function testChat({ baseUrl, apiKey, model }) {
-    const url = baseUrl.replace(/\/+$/, '') + '/chat/completions';
-    const headers = { 'Content-Type': 'application/json' };
-    Object.assign(headers, buildAuthHeader(baseUrl, apiKey));
+async function testChat({ baseUrl, apiKey, model }) {
+  const url = baseUrl.replace(/\/+$/, '') + '/chat/completions';
+  const headers = { 'Content-Type': 'application/json' };
+  Object.assign(headers, buildAuthHeader(baseUrl, apiKey));
 
-    const body = {
-      model,
-      messages: [
-        { role: 'system', content: 'You are a helpful assistant.' },
-        { role: 'user', content: 'ping' }
-      ],
-      temperature: 0.2,
-      stream: false
-    };
+  // ✅ “测试”只验证连通性与模型可用性：
+  // 一些 Claude/Anthropic 代理会把 /chat/completions 转发到 Messages API，
+  // 并拒绝 role=system（要求 top-level system）。
+  // 为了通吃所有网关/模型，这里不发 system role。
+  const body = {
+    model,
+    messages: [{ role: 'user', content: 'ping' }],
+    temperature: 0.2,
+    stream: false,
+    max_tokens: 32
+  };
 
-    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
 
-    if (!res.ok) {
-      const t = await res.text().catch(() => '');
-      throw new Error(`测试失败 ${res.status}\n${t.slice(0, 300)}`);
-    }
-
-    const data = await res.json().catch(() => ({}));
-    const text = data?.choices?.[0]?.message?.content || '';
-    return text;
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`测试失败 ${res.status}\n${t.slice(0, 300)}`);
   }
+
+  const data = await res.json().catch(() => ({}));
+
+  // OpenAI-compat
+  let text = data?.choices?.[0]?.message?.content;
+  if (typeof text === 'string' && text.trim()) return text;
+
+  // 少数网关把文本放在 choices[0].text
+  text = data?.choices?.[0]?.text;
+  if (typeof text === 'string' && text.trim()) return text;
+
+  // Gemini-compat
+  const parts = data?.candidates?.[0]?.content?.parts || data?.candidates?.[0]?.parts;
+  if (Array.isArray(parts)) {
+    const t = parts.map(p => (typeof p?.text === 'string' ? p.text : '')).join('\n').trim();
+    if (t) return t;
+  }
+
+  // Anthropic Messages API 兼容（部分网关会直接返回这种结构）
+  if (Array.isArray(data?.content)) {
+    const t = data.content.map(b => (typeof b?.text === 'string' ? b.text : '')).join('\n').trim();
+    if (t) return t;
+  }
+
+  return '';
+}
+
 
 
   function isApiReady() {
@@ -235,11 +259,27 @@
         setStatus(`✅ 测试成功\n模型回复：\n${reply || '（空）'}`);
         // 测试成功后认为 API 已配置完成
         markApiAttention(false);
-      } catch (e) {
-        setStatus(`❌ 测试失败：${e?.message || e}`);
-        markApiAttention(true);
-        shakeApiTab();
-      } finally {
+} catch (e) {
+  const msg = String(e?.message || e || '');
+  // 400 在很多反代/兼容网关里，代表“已连上但请求格式不兼容/缺字段”。
+  // 这时用户最关心的是“到底有没有通”，所以把信息讲清楚，不一刀切当作断连。
+  if (/\b测试失败\s*400\b/.test(msg)) {
+    setStatus(
+      [
+        '⚠️ 已连通（收到 400 返回）',
+        '这通常表示：接口是通的，但当前“测试请求”的格式不被该网关/该模型接受。',
+        '你仍然可以先保存，然后在聊天里验证（真实聊天会走更完整的兼容逻辑）。',
+        '',
+        msg
+      ].join('\n')
+    );
+  } else {
+    setStatus(`❌ 测试失败：${msg}`);
+  }
+  markApiAttention(true);
+  shakeApiTab();
+} finally {
+
         btnTest.disabled = false;
       }
     });

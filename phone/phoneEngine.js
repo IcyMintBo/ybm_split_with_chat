@@ -535,9 +535,19 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
         stream: false
       });
 
+      // main(chat)：先做“API 异常文本”判定，再正常后处理
+      if (isApiAbnormalReply(reply || '')) {
+        const p = buildErrorAssistantPayload(ERROR_SOURCE.API_ABNORMAL);
+        assistantMsg.content = p.content;
+        assistantMsg.meta = p.meta;
+        save();
+        return assistantMsg;
+      }
+
       assistantMsg.content = postProcessAssistantText(reply || '', channel);
       save();
       return assistantMsg;
+
     } catch (e) {
       assistantMsg.content = `（错误）${e?.message || e}`;
       assistantMsg.meta = { error: true, turnId: tid };
@@ -970,6 +980,51 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     }
   }
 
+  // ===== error source detect (api vs project) =====
+  const ERROR_SOURCE = {
+    PROJECT: 'project',
+    API: 'api',
+    API_ABNORMAL: 'api_abnormal',
+  };
+
+  function isApiAbnormalReply(text) {
+    const t = String(text || '').trim();
+    if (!t) return false;
+
+    // 拒答说明书
+    const patterns = [
+      /silently apologize/i,
+      /refuse to answer/i,
+      /unable to create/i,
+      /\bpolicy\b/i,
+      /\bsafety\b/i,
+      /content (is|was) not allowed/i,
+      /i am unable/i,
+    ];
+
+    return patterns.some((re) => re.test(t));
+  }
+
+  function buildErrorAssistantPayload(source, extraMsg) {
+    // 给用户看的文案：短、明确、可甩给接口方
+    if (source === ERROR_SOURCE.API_ABNORMAL) {
+      return {
+        content: '⚠ AI 回复异常\n来源：外部 AI 服务\n本次未生成有效内容，请联系接口服务提供方或稍后重试。',
+        meta: { error: true, errorSource: ERROR_SOURCE.API_ABNORMAL }
+      };
+    }
+    if (source === ERROR_SOURCE.API) {
+      return {
+        content: '⚠ AI 服务不可用\n来源：外部 AI 服务\n请求失败，请检查接口配置/额度，或联系接口服务提供方。',
+        meta: { error: true, errorSource: ERROR_SOURCE.API, detail: extraMsg || '' }
+      };
+    }
+    // PROJECT
+    return {
+      content: '⚠ 系统异常\n来源：项目本身\n页面功能出现异常，请刷新后再试。',
+      meta: { error: true, errorSource: ERROR_SOURCE.PROJECT, detail: extraMsg || '' }
+    };
+  }
 
   async function send({ text, channel, contactId, systemPrompt, maxChars, turnId, max_tokens } = {}) {
     if (!text || !text.trim()) return null;
@@ -1046,8 +1101,9 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
       return assistantMsg;
 
     } catch (e) {
-      assistantMsg.content = `（错误）${e?.message || e}`;
-      assistantMsg.meta = { error: true };
+      const p = buildErrorAssistantPayload(ERROR_SOURCE.API, e?.message || String(e));
+      assistantMsg.content = p.content;
+      assistantMsg.meta = p.meta;
       save();
       return assistantMsg;
     }
