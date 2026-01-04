@@ -241,17 +241,24 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
   }
 
   // ====== mutate messages (edit/delete/clear) ======
-  function updateMessage({ contactId, msgId, content } = {}) {
-    if (!msgId) return false;
-    contactId = ensureContact(contactId || getActiveContact());
-    const arr = state.messages[contactId] || [];
-    const m = arr.find(x => x && x.id === msgId);
-    if (!m) return false;
-    m.content = (content ?? '').toString();
-    m.ts = nowTs();
-    save();
-    return true;
-  }
+function updateMessage({ contactId, msgId, content } = {}) {
+  if (!msgId) return false;
+  contactId = ensureContact(contactId || getActiveContact());
+  const arr = state.messages[contactId] || [];
+  const m = arr.find(x => x && x.id === msgId);
+  if (!m) return false;
+
+  // ✅ 只改内容，不改 ts；否则会按时间排序被挪到最底
+  m.content = (content ?? '').toString();
+
+  // 可选：记录编辑时间（不参与排序）
+  if (!m.meta || typeof m.meta !== 'object') m.meta = {};
+  m.meta.editedAt = nowTs();
+
+  save();
+  return true;
+}
+
 
   function deleteMessage({ contactId, msgId } = {}) {
     if (!msgId) return false;

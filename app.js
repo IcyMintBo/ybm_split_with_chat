@@ -20,7 +20,6 @@
     // 如果用户填到了 /chat/completions，裁回 /v1
     u = u.replace(/\/chat\/completions$/i, '');
 
-    // 如果没写 /v1，就补上（你说诺基亚要填完整，我们内部统一到 /v1）
     if (!/\/v1$/i.test(u)) {
       // 如果里面已经有 /v1/xxx，也裁到 /v1
       const m = u.match(/^(.*?\/v1)\b/i);

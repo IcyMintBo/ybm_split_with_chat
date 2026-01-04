@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "scopes": {
+    "global": {
+      "enabled": true,
+      "notes": "mini phone presets seed (placeholder)",
+      "presets": {}
+    },
+    "contacts": {}
+  }
+}
