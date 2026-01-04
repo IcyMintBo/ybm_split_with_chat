@@ -150,21 +150,22 @@
 
     if (isSending) {
       send.innerHTML = `
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"></rect>
-        </svg>`;
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"></rect>
+      </svg>`;
       send.title = '正在等待回复…';
       return;
     }
 
     send.innerHTML = `
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M3.4 11.2 20.6 3.8c.8-.3 1.6.5 1.3 1.3l-7.4 17.2c-.3.8-1.5.8-1.8 0l-2.2-5.2-5.2-2.2c-.8-.3-.8-1.5 0-1.8Z"
-          fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-        <path d="M10.6 13.4 20.2 4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-      </svg>`;
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3.4 11.2 20.6 3.8c.8-.3 1.6.5 1.3 1.3l-7.4 17.2c-.3.8-1.5.8-1.8 0l-2.2-5.2-5.2-2.2c-.8-.3-.8-1.5 0-1.8Z"
+        fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M10.6 13.4 20.2 4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>`;
     send.title = '发送';
   }
+
 
   function smartScrollToBottom(box, force = false) {
     if (!box) return;
@@ -401,26 +402,27 @@
   // ===== message actions icons =====
   function iconEdit() {
     return `
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 20h4l11-11-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-        <path d="M13 6l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-      </svg>`;
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 20h4l11-11-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M13 6l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>`;
   }
   function iconTrash() {
     return `
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M7 7h10l-1 14H8L7 7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-        <path d="M9 7V5.6c0-.9.7-1.6 1.6-1.6h2.8c.9 0 1.6.7 1.6 1.6V7" fill="none" stroke="currentColor" stroke-width="1.8"/>
-        <path d="M5 7h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-      </svg>`;
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 7h10l-1 14H8L7 7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M9 7V5.6c0-.9.7-1.6 1.6-1.6h2.8c.9 0 1.6.7 1.6 1.6V7" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M5 7h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>`;
   }
   function iconReroll() {
     return `
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M20 12a8 8 0 1 1-2.3-5.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        <path d="M20 4v6h-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>`;
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20 12a8 8 0 1 1-2.3-5.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M20 4v6h-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
   }
+
 
   // ===== render =====
   function clearChatUI() {
