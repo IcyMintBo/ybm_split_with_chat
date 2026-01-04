@@ -1547,14 +1547,6 @@
           <input value="${escapeHtml(r.replace)}" placeholder="replace（替换成什么）"
                  style="width:100%; padding:8px 10px; border-radius:14px; border:2px solid rgba(0,0,0,.16); background:rgba(255,255,255,.55); outline:none;">
         </div>
-
-        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="wbBtn wbBtnPrimary" data-act="test" type="button">测试本条</button>
-          <span style="opacity:.75; font-size:12px;">只影响前端显示，不影响发给模型</span>
-        </div>
-
-        <textarea class="wbTextarea" data-act="sample" placeholder="粘一段文本测试效果（不会保存）"
-                  style="margin-top:10px; min-height:80px;"></textarea>
       `;
 
         const chk = row.querySelector('input[type="checkbox"]');
@@ -1581,19 +1573,6 @@
           save(); renderList();
         };
 
-        row.querySelector('[data-act="test"]').onclick = () => {
-          const sample = row.querySelector('textarea[data-act="sample"]').value || '';
-          let out = sample;
-          try {
-            const re = new RegExp(r.pattern || '', r.flags || 'g');
-            out = sample.replace(re, r.replace ?? '');
-          } catch (e) {
-            alert('正则不合法：' + (e?.message || e));
-            return;
-          }
-          row.querySelector('textarea[data-act="sample"]').value = out;
-        };
-
         list.appendChild(row);
       });
     }
@@ -1611,11 +1590,21 @@
       </label>
     </div>
 
-    <div class="wbRowBtns">
-      <button class="btn primary" id="regexAdd" type="button">＋ 新增规则</button>
-      <button class="btn" id="regexExport" type="button">导出</button>
-      <button class="btn" id="regexImport" type="button">导入</button>
-    </div>
+
+<div class="wbRowBtns wbRowBtnsFill">
+  <button class="wbBtn wbBtnPrimary" id="regexLoadDefault" type="button">载入默认</button>
+  <button class="wbBtn" id="regexImport" type="button">导入文件</button>
+  <button class="wbBtn wbBtnPrimary" id="regexExport" type="button">导出下载</button>
+</div>
+
+<div class="wbRowBtns" style="justify-content:space-between; align-items:center;">
+  <div class="regexRowTitle">正则</div>
+  <button class="wbBtn wbBtnPrimary" id="regexAdd" type="button">＋ 新增</button>
+</div>
+
+
+<div id="regexList"></div>
+
 
     <div id="regexList"></div>
   `;
@@ -1632,6 +1621,29 @@
       save();
       renderList();
     });
+    wrap.querySelector('#regexLoadDefault')?.addEventListener('click', async () => {
+      try {
+        const res = await fetch('./default_render_regex.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('无法读取 default_render_regex.json');
+
+        const def = await res.json();
+        const obj = def.render_regex ? def.render_regex : def;
+
+        if (!obj || !Array.isArray(obj.rules)) {
+          throw new Error('默认正则格式错误（缺少 rules）');
+        }
+
+        cfg.enabled = (typeof obj.enabled === 'boolean') ? obj.enabled : true;
+        cfg.rules = obj.rules;
+
+        save();
+        renderList();
+        alert('已载入默认正则');
+      } catch (e) {
+        console.error(e);
+        alert('载入失败：' + (e?.message || e));
+      }
+    });
 
     wrap.querySelector('#regexExport')?.addEventListener('click', () => {
       downloadJsonFile('ybm_render_regex.json', cfg);
@@ -1647,6 +1659,39 @@
     renderList();
     return wrap;
   }
+  // =========================
+  // Render Regex：给聊天渲染层使用（不影响发给模型）
+  // =========================
+  function loadRenderRegexCfg() {
+    try { return JSON.parse(localStorage.getItem(REGEX_LS_KEY) || 'null') || {}; }
+    catch { return {}; }
+  }
+
+  function applyRenderRegex(html) {
+    const cfg = loadRenderRegexCfg();
+    if (!cfg || cfg.enabled === false) return html;
+    if (!Array.isArray(cfg.rules) || cfg.rules.length === 0) return html;
+
+    let out = String(html ?? '');
+    for (const r of cfg.rules) {
+      if (!r || r.enabled === false) continue;
+      const pat = r.pattern ?? '';
+      if (!pat) continue;
+      const flags = (r.flags ?? 'g') || 'g';
+      const rep = String(r.replace ?? '');
+
+      try {
+        const re = new RegExp(pat, flags);
+        out = out.replace(re, rep);
+      } catch (e) {
+        console.warn('[render-regex] bad rule:', r?.name || r, e);
+      }
+    }
+    return out;
+  }
+
+  // 给 chat/chat.js 调用
+  window.YBM_applyRenderRegex = applyRenderRegex;
 
   // 绑定按钮：打开自定义面板
   document.getElementById('btnRole')?.addEventListener('click', () => {
@@ -1718,28 +1763,28 @@
 
 
   // Main 页：所有 data-action="start" 的出发 -> 进聊天
-document.addEventListener('click', (e) => {
-  const el = e.target.closest?.('[data-goto],[data-action],#chatBack');
-  if (!el) return;
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest?.('[data-goto],[data-action],#chatBack');
+    if (!el) return;
 
-  // chat 返回按钮：捕获阶段硬拦截，防止任何 history.back() 把网页退掉
-  if (el.id === 'chatBack') {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-    backToStart();
-    return;
-  }
+    // chat 返回按钮：捕获阶段硬拦截，防止任何 history.back() 把网页退掉
+    if (el.id === 'chatBack') {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      backToStart();
+      return;
+    }
 
-  if (el.dataset.goto != null) {
-    goto(parseInt(el.dataset.goto, 10));
-    return;
-  }
+    if (el.dataset.goto != null) {
+      goto(parseInt(el.dataset.goto, 10));
+      return;
+    }
 
-  if (el.dataset.action === 'start') {
-    openChat();
-  }
-}, true); // ✅ 注意：这里必须是 true（捕获阶段）
+    if (el.dataset.action === 'start') {
+      openChat();
+    }
+  }, true); // ✅ 注意：这里必须是 true（捕获阶段）
 
 
   pages?.addEventListener('scroll', () => {

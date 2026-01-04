@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "rules": [
+    {
+      "enabled": true,
+      "name": "内心戏：【……】灰底覆盖",
+      "pattern": "【……([^】\\n]+)】",
+      "flags": "g",
+      "replace": "<span style=\"background:rgba(0,0,0,.12); border-radius:8px; padding:1px 6px; box-shadow: inset 0 -0.45em 0 rgba(0,0,0,.10);\">【$1】</span>"
+    },
+    {
+      "enabled": true,
+      "name": "默认测试：TEST → OK",
+      "pattern": "TEST",
+      "flags": "g",
+      "replace": "【TEST_OK】"
+    }
+  ]
+}

@@ -712,136 +712,136 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     save();
   }
 
-function detectProvider({ model, baseUrl } = {}) {
-  const m = String(model || '').toLowerCase();
-  const u = String(baseUrl || '').toLowerCase();
+  function detectProvider({ model, baseUrl } = {}) {
+    const m = String(model || '').toLowerCase();
+    const u = String(baseUrl || '').toLowerCase();
 
-  // 只靠 model 名识别最稳（你的 UI 就是填 model）
-  if (m.includes('claude') || m.includes('anthropic')) return 'anthropic';
-  if (m.includes('gemini')) return 'google';
-  if (m.includes('gpt') || m.includes('o1') || m.includes('o3') || m.includes('openai')) return 'openai';
+    // 只靠 model 名识别最稳（你的 UI 就是填 model）
+    if (m.includes('claude') || m.includes('anthropic')) return 'anthropic';
+    if (m.includes('gemini')) return 'google';
+    if (m.includes('gpt') || m.includes('o1') || m.includes('o3') || m.includes('openai')) return 'openai';
 
-  // 兜底：看域名
-  if (u.includes('anthropic')) return 'anthropic';
-  if (u.includes('google')) return 'google';
+    // 兜底：看域名
+    if (u.includes('anthropic')) return 'anthropic';
+    if (u.includes('google')) return 'google';
 
-  return 'openai';
-}
-
-function splitSystemAndOthers(messages = []) {
-  const sys = [];
-  const rest = [];
-  for (const m of (messages || [])) {
-    if (!m) continue;
-    if (m.role === 'system') sys.push(String(m.content || ''));
-    else rest.push({ role: m.role, content: String(m.content || '') });
+    return 'openai';
   }
-  return { systemText: sys.join('\n\n').trim(), rest };
-}
 
-/**
- * 统一把提示词喂进去：
- * - 大部分 OpenAI-compat 会吃 role=system
- * - 但一些 Claude 代理/网关会忽略 system => 需要把 system 再塞进第一条 user（双保险）
- */
-function normalizeMessagesForAllModels({ provider, messages }) {
-  const { systemText, rest } = splitSystemAndOthers(messages);
+  function splitSystemAndOthers(messages = []) {
+    const sys = [];
+    const rest = [];
+    for (const m of (messages || [])) {
+      if (!m) continue;
+      if (m.role === 'system') sys.push(String(m.content || ''));
+      else rest.push({ role: m.role, content: String(m.content || '') });
+    }
+    return { systemText: sys.join('\n\n').trim(), rest };
+  }
 
-  // 没有 system 就不折腾
-  if (!systemText) return rest;
+  /**
+   * 统一把提示词喂进去：
+   * - 大部分 OpenAI-compat 会吃 role=system
+   * - 但一些 Claude 代理/网关会忽略 system => 需要把 system 再塞进第一条 user（双保险）
+   */
+  function normalizeMessagesForAllModels({ provider, messages }) {
+    const { systemText, rest } = splitSystemAndOthers(messages);
 
-  // 对 Claude：双保险，把 system 再注入第一条 user
-  // 注意：不删 system（因为我们已经 split 掉了 system role，这里返回的是 “无 system role” 的 rest）
-  if (provider === 'anthropic') {
-    const tag = '【系统提示】';
-    const injected = `${tag}\n${systemText}\n\n---\n\n`;
+    // 没有 system 就不折腾
+    if (!systemText) return rest;
 
-    const out = rest.slice();
-    const firstUserIdx = out.findIndex(x => x && x.role === 'user');
+    // 对 Claude：双保险，把 system 再注入第一条 user
+    // 注意：不删 system（因为我们已经 split 掉了 system role，这里返回的是 “无 system role” 的 rest）
+    if (provider === 'anthropic') {
+      const tag = '【系统提示】';
+      const injected = `${tag}\n${systemText}\n\n---\n\n`;
 
-    if (firstUserIdx >= 0) {
-      out[firstUserIdx] = {
-        role: 'user',
-        content: injected + String(out[firstUserIdx].content || '')
-      };
-      return out;
+      const out = rest.slice();
+      const firstUserIdx = out.findIndex(x => x && x.role === 'user');
+
+      if (firstUserIdx >= 0) {
+        out[firstUserIdx] = {
+          role: 'user',
+          content: injected + String(out[firstUserIdx].content || '')
+        };
+        return out;
+      }
+
+      // 没有 user（极少），就造一条
+      return [{ role: 'user', content: injected }, ...out];
     }
 
-    // 没有 user（极少），就造一条
-    return [{ role: 'user', content: injected }, ...out];
+    // 其它模型：保留 system role 更标准
+    // 但我们这里 split 掉了 system，所以需要把 system 作为第一条 system 插回去
+    return [{ role: 'system', content: systemText }, ...rest];
   }
 
-  // 其它模型：保留 system role 更标准
-  // 但我们这里 split 掉了 system，所以需要把 system 作为第一条 system 插回去
-  return [{ role: 'system', content: systemText }, ...rest];
-}
+  async function callChatCompletions({ baseUrl, apiKey, model, messages, stream, signal, max_tokens }) {
+    if (!baseUrl) throw new Error('Base URL 为空');
+    if (!model) throw new Error('Model 为空');
 
-async function callChatCompletions({ baseUrl, apiKey, model, messages, stream, signal, max_tokens }) {
-  if (!baseUrl) throw new Error('Base URL 为空');
-  if (!model) throw new Error('Model 为空');
+    const url = buildChatCompletionsUrl(baseUrl);
 
-  const url = buildChatCompletionsUrl(baseUrl);
+    const headers = { 'Content-Type': 'application/json' };
+    Object.assign(headers, buildAuthHeader(baseUrl, apiKey));
 
-  const headers = { 'Content-Type': 'application/json' };
-  Object.assign(headers, buildAuthHeader(baseUrl, apiKey));
+    const provider = detectProvider({ model, baseUrl });
+    const normalizedMessages = normalizeMessagesForAllModels({ provider, messages });
 
-  const provider = detectProvider({ model, baseUrl });
-  const normalizedMessages = normalizeMessagesForAllModels({ provider, messages });
+    // ✅ 统一 body：你现在的后端就是 OpenAI-compat（Gemini/Claude 也是走这条）
+    const body = {
+      model,
+      messages: normalizedMessages,
+      temperature: 0.8,
+      stream: false
+    };
+    if (typeof max_tokens === 'number' && max_tokens > 0) body.max_tokens = Math.floor(max_tokens);
 
-  // ✅ 统一 body：你现在的后端就是 OpenAI-compat（Gemini/Claude 也是走这条）
-  const body = {
-    model,
-    messages: normalizedMessages,
-    temperature: 0.8,
-    stream: false
-  };
-  if (typeof max_tokens === 'number' && max_tokens > 0) body.max_tokens = Math.floor(max_tokens);
+    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal });
+    if (!res.ok) {
+      const t = await res.text().catch(() => '');
+      throw new Error(`API 错误 ${res.status}: ${t.slice(0, 200)}`);
+    }
 
-  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal });
-  if (!res.ok) {
-    const t = await res.text().catch(() => '');
-    throw new Error(`API 错误 ${res.status}: ${t.slice(0, 200)}`);
+    const data = await res.json().catch(() => null);
+
+    let text = data?.choices?.[0]?.message?.content;
+    if (typeof text === 'string' && text.trim()) return text;
+
+    text = data?.choices?.[0]?.text;
+    if (typeof text === 'string' && text.trim()) return text;
+
+    const parts = data?.candidates?.[0]?.content?.parts || data?.candidates?.[0]?.parts;
+    if (Array.isArray(parts)) {
+      const t = parts.map(p => (typeof p?.text === 'string' ? p.text : '')).join('\n').trim();
+      if (t) return t;
+    }
+
+    throw new Error(`API 返回无法解析：${JSON.stringify(data).slice(0, 500)}`);
   }
 
-  const data = await res.json().catch(() => null);
+  function postProcessAssistantText(text, channel = 'main') {
+    let out = String(text || '').trim();
+    if (!out) return out;
 
-  let text = data?.choices?.[0]?.message?.content;
-  if (typeof text === 'string' && text.trim()) return text;
+    // ✅ phone（短信）不做硬截断：靠 max_tokens + SMS改写器 + UI拆行控制长度
+    if (channel === 'phone') return out;
 
-  text = data?.choices?.[0]?.text;
-  if (typeof text === 'string' && text.trim()) return text;
+    // main 保留原逻辑（避免主界面爆长）
+    const HARD_LIMIT = 1200;
+    if (out.length <= HARD_LIMIT) return out;
 
-  const parts = data?.candidates?.[0]?.content?.parts || data?.candidates?.[0]?.parts;
-  if (Array.isArray(parts)) {
-    const t = parts.map(p => (typeof p?.text === 'string' ? p.text : '')).join('\n').trim();
-    if (t) return t;
+    const cut = out.slice(0, HARD_LIMIT);
+    const safeIdx = Math.max(
+      cut.lastIndexOf('。'),
+      cut.lastIndexOf('！'),
+      cut.lastIndexOf('？'),
+      cut.lastIndexOf('\n')
+    );
+
+    return (safeIdx > 100 ? cut.slice(0, safeIdx + 1) : cut)
+      + '\n\n（内容较长，已截断。需要继续请回复“继续”。）';
   }
-
-  throw new Error(`API 返回无法解析：${JSON.stringify(data).slice(0, 500)}`);
-}
-
-function postProcessAssistantText(text, channel = 'main') {
-  let out = String(text || '').trim();
-  if (!out) return out;
-
-  // ✅ phone（短信）不做硬截断：靠 max_tokens + SMS改写器 + UI拆行控制长度
-  if (channel === 'phone') return out;
-
-  // main 保留原逻辑（避免主界面爆长）
-  const HARD_LIMIT = 1200;
-  if (out.length <= HARD_LIMIT) return out;
-
-  const cut = out.slice(0, HARD_LIMIT);
-  const safeIdx = Math.max(
-    cut.lastIndexOf('。'),
-    cut.lastIndexOf('！'),
-    cut.lastIndexOf('？'),
-    cut.lastIndexOf('\n')
-  );
-
-  return (safeIdx > 100 ? cut.slice(0, safeIdx + 1) : cut)
-    + '\n\n（内容较长，已截断。需要继续请回复“继续”。）';
-}
 
   function stripThinking(text) {
     let out = String(text || '');
@@ -1040,7 +1040,8 @@ function postProcessAssistantText(text, channel = 'main') {
       }
 
       // main：照旧（可以保留截断）
-      assistantMsg.content = postProcessAssistantText(reply || '', channel);
+      const cleaned = stripThinking(reply || '');
+      assistantMsg.content = postProcessAssistantText(cleaned, channel);
       save();
       return assistantMsg;
 

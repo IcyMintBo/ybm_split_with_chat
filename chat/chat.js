@@ -61,80 +61,80 @@
     }
     return 'user';
   }
-// ===== avatar (upload + persist) =====
-const AVA_KEY_PREFIX = 'YBM_AVATAR_V1_'; // e.g. YBM_AVATAR_V1_me / YBM_AVATAR_V1_caishu
+  // ===== avatar (upload + persist) =====
+  const AVA_KEY_PREFIX = 'YBM_AVATAR_V1_'; // e.g. YBM_AVATAR_V1_me / YBM_AVATAR_V1_caishu
 
-function getAvatarKey(id){ return AVA_KEY_PREFIX + String(id || 'me'); }
+  function getAvatarKey(id) { return AVA_KEY_PREFIX + String(id || 'me'); }
 
-function getStoredAvatar(id){
-  try { return localStorage.getItem(getAvatarKey(id)) || ''; } catch { return ''; }
-}
-
-function setStoredAvatar(id, dataUrl){
-  try {
-    if (!dataUrl) localStorage.removeItem(getAvatarKey(id));
-    else localStorage.setItem(getAvatarKey(id), dataUrl);
-  } catch (e) {
-    alert('头像保存失败：localStorage 空间不足。请换小一点的图片。');
-    throw e;
-  }
-}
-
-// 把任意图片压成方形 dataURL（默认 256x256，够清晰又不大）
-async function fileToSquareDataURL(file, size = 256, quality = 0.86){
-  const img = new Image();
-  const url = URL.createObjectURL(file);
-
-  await new Promise((res, rej) => {
-    img.onload = () => res();
-    img.onerror = () => rej(new Error('image load failed'));
-    img.src = url;
-  });
-
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-
-  const w = img.naturalWidth || img.width;
-  const h = img.naturalHeight || img.height;
-  const side = Math.min(w, h);
-  const sx = Math.floor((w - side) / 2);
-  const sy = Math.floor((h - side) / 2);
-
-  ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
-  URL.revokeObjectURL(url);
-
-  // png 会很大，优先 jpeg
-  return canvas.toDataURL('image/jpeg', quality);
-}
-
-// 给 <img> 安全设置头像：优先使用用户上传，其次尝试静态文件，最后隐藏
-function applyAvatarToImg(avaImg, role, cid){
-  const id = (role === 'me') ? 'me' : (cid || 'ybm');
-  const stored = getStoredAvatar(id);
-
-  // 统一的 fallback：失败就隐藏并移除 src，避免 404 刷屏
-  avaImg.onerror = () => {
-    avaImg.removeAttribute('src');
-    avaImg.style.display = 'none';
-  };
-  avaImg.onload = () => { avaImg.style.display = 'block'; };
-
-  if (stored) {
-    avaImg.src = stored;
-    return;
+  function getStoredAvatar(id) {
+    try { return localStorage.getItem(getAvatarKey(id)) || ''; } catch { return ''; }
   }
 
-  // 没有上传头像：me 默认不显示；assistant 尝试 ./assets/avatars/${cid}.png
-  if (role === 'me') {
-    avaImg.removeAttribute('src');
-    avaImg.style.display = 'none';
-    return;
+  function setStoredAvatar(id, dataUrl) {
+    try {
+      if (!dataUrl) localStorage.removeItem(getAvatarKey(id));
+      else localStorage.setItem(getAvatarKey(id), dataUrl);
+    } catch (e) {
+      alert('头像保存失败：localStorage 空间不足。请换小一点的图片。');
+      throw e;
+    }
   }
 
-  avaImg.src = `./assets/avatars/${cid || 'ybm'}.png`; // 不存在会走 onerror 自动隐藏
-}
+  // 把任意图片压成方形 dataURL（默认 256x256，够清晰又不大）
+  async function fileToSquareDataURL(file, size = 256, quality = 0.86) {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    await new Promise((res, rej) => {
+      img.onload = () => res();
+      img.onerror = () => rej(new Error('image load failed'));
+      img.src = url;
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    const side = Math.min(w, h);
+    const sx = Math.floor((w - side) / 2);
+    const sy = Math.floor((h - side) / 2);
+
+    ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+    URL.revokeObjectURL(url);
+
+    // png 会很大，优先 jpeg
+    return canvas.toDataURL('image/jpeg', quality);
+  }
+
+  // 给 <img> 安全设置头像：优先使用用户上传，其次尝试静态文件，最后隐藏
+  function applyAvatarToImg(avaImg, role, cid) {
+    const id = (role === 'me') ? 'me' : (cid || 'ybm');
+    const stored = getStoredAvatar(id);
+
+    // 统一的 fallback：失败就隐藏并移除 src，避免 404 刷屏
+    avaImg.onerror = () => {
+      avaImg.removeAttribute('src');
+      avaImg.style.display = 'none';
+    };
+    avaImg.onload = () => { avaImg.style.display = 'block'; };
+
+    if (stored) {
+      avaImg.src = stored;
+      return;
+    }
+
+    // 没有上传头像：me 默认不显示；assistant 尝试 ./assets/avatars/${cid}.png
+    if (role === 'me') {
+      avaImg.removeAttribute('src');
+      avaImg.style.display = 'none';
+      return;
+    }
+
+    avaImg.src = `./assets/avatars/${cid || 'ybm'}.png`; // 不存在会走 onerror 自动隐藏
+  }
 
   function injectPolishOnce() {
     // 已迁移到 chat.css：避免 JS 注入样式覆盖 CSS，防止后续维护混乱
@@ -191,89 +191,89 @@ function applyAvatarToImg(avaImg, role, cid){
       el.setAttribute('aria-hidden', open ? 'false' : 'true');
     });
   }
-function ensurePhoneOverlayDOM() {
-  // 遮罩
-  if (!document.getElementById('phoneMask')) {
-    const mask = document.createElement('div');
-    mask.id = 'phoneMask';
-    mask.className = 'phoneMask';
-    mask.dataset.open = 'false';
-    mask.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(mask);
+  function ensurePhoneOverlayDOM() {
+    // 遮罩
+    if (!document.getElementById('phoneMask')) {
+      const mask = document.createElement('div');
+      mask.id = 'phoneMask';
+      mask.className = 'phoneMask';
+      mask.dataset.open = 'false';
+      mask.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(mask);
+    }
+
+    // 容器
+    if (!document.getElementById('phoneOverlay')) {
+      const overlay = document.createElement('div');
+      overlay.id = 'phoneOverlay';
+      overlay.className = 'phoneOverlay';
+      overlay.dataset.open = 'false';
+      overlay.setAttribute('aria-hidden', 'true');
+
+      overlay.innerHTML = `<div id="miniPhoneMount" class="miniPhoneMount"></div>`;
+      document.body.appendChild(overlay);
+
+      // ✅ 新增：只在创建时绑定一次拖动
+      enableOverlayDrag(overlay);
+    }
   }
 
-  // 容器
-  if (!document.getElementById('phoneOverlay')) {
-    const overlay = document.createElement('div');
-    overlay.id = 'phoneOverlay';
-    overlay.className = 'phoneOverlay';
-    overlay.dataset.open = 'false';
-    overlay.setAttribute('aria-hidden', 'true');
-
-    overlay.innerHTML = `<div id="miniPhoneMount" class="miniPhoneMount"></div>`;
-    document.body.appendChild(overlay);
-
-    // ✅ 新增：只在创建时绑定一次拖动
-    enableOverlayDrag(overlay);
+  function openPhone() {
+    ensurePhoneOverlayDOM();
+    setOpenByIdAll('phoneOverlay', true);
+    setOpenByIdAll('phoneMask', true);
   }
-}
 
-function openPhone() {
-  ensurePhoneOverlayDOM();
-  setOpenByIdAll('phoneOverlay', true);
-  setOpenByIdAll('phoneMask', true);
-}
+  function closePhone() {
+    setOpenByIdAll('phoneOverlay', false);
+    setOpenByIdAll('phoneMask', false);
+  }
+  function enableOverlayDrag(overlay) {
+    if (!overlay) return;
 
-function closePhone() {
-  setOpenByIdAll('phoneOverlay', false);
-  setOpenByIdAll('phoneMask', false);
-}
-function enableOverlayDrag(overlay){
-  if (!overlay) return;
+    // 只在电脑端启用
+    if (!window.matchMedia('(pointer: fine)').matches) return;
 
-  // 只在电脑端启用
-  if (!window.matchMedia('(pointer: fine)').matches) return;
+    if (overlay.dataset.dragBound) return;
+    overlay.dataset.dragBound = '1';
 
-  if (overlay.dataset.dragBound) return;
-  overlay.dataset.dragBound = '1';
+    let dragging = false;
+    let startX = 0, startY = 0;
+    let baseLeft = 0, baseTop = 0;
 
-  let dragging = false;
-  let startX = 0, startY = 0;
-  let baseLeft = 0, baseTop = 0;
+    // 用 left/top 定位，方便拖动
+    overlay.style.right = 'auto';
+    overlay.style.bottom = 'auto';
+    overlay.style.left = overlay.style.left || '16px';
+    overlay.style.top = overlay.style.top || '64px';
 
-  // 用 left/top 定位，方便拖动
-  overlay.style.right = 'auto';
-  overlay.style.bottom = 'auto';
-  overlay.style.left = overlay.style.left || '16px';
-  overlay.style.top  = overlay.style.top  || '64px';
-
-  overlay.addEventListener('mousedown', (e) => {
-    // 点在图标/按钮/输入框上不拖，避免影响 app 点击
-if ($closest(e.target, 'img,button,input,textarea,select,a')) return;
+    overlay.addEventListener('mousedown', (e) => {
+      // 点在图标/按钮/输入框上不拖，避免影响 app 点击
+      if ($closest(e.target, 'img,button,input,textarea,select,a')) return;
 
 
-    const r = overlay.getBoundingClientRect();
-    baseLeft = r.left;
-    baseTop = r.top;
-    startX = e.clientX;
-    startY = e.clientY;
+      const r = overlay.getBoundingClientRect();
+      baseLeft = r.left;
+      baseTop = r.top;
+      startX = e.clientX;
+      startY = e.clientY;
 
-    dragging = true;
-    e.preventDefault();
-  });
+      dragging = true;
+      e.preventDefault();
+    });
 
-  window.addEventListener('mousemove', (e) => {
-    if (!dragging) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-    overlay.style.left = `${baseLeft + dx}px`;
-    overlay.style.top  = `${baseTop + dy}px`;
-  });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      overlay.style.left = `${baseLeft + dx}px`;
+      overlay.style.top = `${baseTop + dy}px`;
+    });
 
-  window.addEventListener('mouseup', () => {
-    dragging = false;
-  });
-}
+    window.addEventListener('mouseup', () => {
+      dragging = false;
+    });
+  }
 
   // ===== load mini_phone module once =====
   function ensureMiniPhoneLoaded() {
@@ -353,52 +353,52 @@ if ($closest(e.target, 'img,button,input,textarea,select,a')) return;
     titlebar.insertAdjacentElement('afterend', bar);
   }
 
-  
-// ===== intro bubble (persist + editable/deletable) =====
-const INTRO_KEY_PREFIX = 'YBM_CHAT_INTRO_V1_'; // per contact: YBM_CHAT_INTRO_V1_ybm
-function getIntroKey(contactId){ return INTRO_KEY_PREFIX + String(contactId || 'default'); }
 
-function loadIntro(contactId){
-  try { return JSON.parse(localStorage.getItem(getIntroKey(contactId)) || 'null'); } catch { return null; }
-}
-function saveIntro(contactId, obj){
-  try { localStorage.setItem(getIntroKey(contactId), JSON.stringify(obj || null)); } catch {}
-}
-function clearIntro(contactId){
-  try { localStorage.removeItem(getIntroKey(contactId)); } catch {}
-}
+  // ===== intro bubble (persist + editable/deletable) =====
+  const INTRO_KEY_PREFIX = 'YBM_CHAT_INTRO_V1_'; // per contact: YBM_CHAT_INTRO_V1_ybm
+  function getIntroKey(contactId) { return INTRO_KEY_PREFIX + String(contactId || 'default'); }
 
-function clearAllIntros(){
-  try {
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const k = localStorage.key(i);
-      if (k && k.startsWith(INTRO_KEY_PREFIX)) localStorage.removeItem(k);
-    }
-  } catch {}
-}
+  function loadIntro(contactId) {
+    try { return JSON.parse(localStorage.getItem(getIntroKey(contactId)) || 'null'); } catch { return null; }
+  }
+  function saveIntro(contactId, obj) {
+    try { localStorage.setItem(getIntroKey(contactId), JSON.stringify(obj || null)); } catch { }
+  }
+  function clearIntro(contactId) {
+    try { localStorage.removeItem(getIntroKey(contactId)); } catch { }
+  }
 
-// 初始化：只在“从未初始化过”时写入；用户删除后会写 deleted:true，不会再自动复活（除非清空聊天）
-function ensureIntro(contactId, contactName){
-  const cur = loadIntro(contactId);
-  if (cur && (cur.inited || cur.deleted)) return;
+  function clearAllIntros() {
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(INTRO_KEY_PREFIX)) localStorage.removeItem(k);
+      }
+    } catch { }
+  }
 
-  const text = [
-    `【${contactName || '对话'}】`,
-    '这不是命令窗口，是一段正在发生的故事。',
-    '你可以直接开口，也可以先问一句：现在我该怎么做？'
-  ].join('\n');
+  // 初始化：只在“从未初始化过”时写入；用户删除后会写 deleted:true，不会再自动复活（除非清空聊天）
+  function ensureIntro(contactId, contactName) {
+    const cur = loadIntro(contactId);
+    if (cur && (cur.inited || cur.deleted)) return;
 
-  const introMsg = {
-    id: 'intro_' + String(contactId || 'default'),
-    role: 'assistant',
-    content: text,
-    createdAt: Date.now(),
-    inited: true
-  };
-  saveIntro(contactId, introMsg);
-}
+    const text = [
+      `【${contactName || '对话'}】`,
+      '这不是命令窗口，是一段正在发生的故事。',
+      '你可以直接开口，也可以先问一句：现在我该怎么做？'
+    ].join('\n');
 
-// ===== message actions icons =====
+    const introMsg = {
+      id: 'intro_' + String(contactId || 'default'),
+      role: 'assistant',
+      content: text,
+      createdAt: Date.now(),
+      inited: true
+    };
+    saveIntro(contactId, introMsg);
+  }
+
+  // ===== message actions icons =====
   function iconEdit() {
     return `
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -442,48 +442,48 @@ function ensureIntro(contactId, contactName){
     item.dataset.msgId = msg.id;
     item.dataset.role = msg.role;
 
-// ===== 气泡头部：头像+名字(左) + 操作键(右) =====
-const head = document.createElement('div');
-head.className = 'chatHead';
+    // ===== 气泡头部：头像+名字(左) + 操作键(右) =====
+    const head = document.createElement('div');
+    head.className = 'chatHead';
 
-const whoLeft = document.createElement('div');
-whoLeft.className = 'chatWhoLeft';
+    const whoLeft = document.createElement('div');
+    whoLeft.className = 'chatWhoLeft';
 
-// 头像（user/assistant 都显示；没有就自动隐藏）
-const ava = document.createElement('div');
-ava.className = 'chatAva';
+    // 头像（user/assistant 都显示；没有就自动隐藏）
+    const ava = document.createElement('div');
+    ava.className = 'chatAva';
 
-const avaImg = document.createElement('img');
-avaImg.alt = '';
-const cid = engine.getActiveContact?.() || 'ybm';
+    const avaImg = document.createElement('img');
+    avaImg.alt = '';
+    const cid = engine.getActiveContact?.() || 'ybm';
 
-// ✅ 统一头像策略：优先用户上传（localStorage），其次静态文件，不存在自动隐藏（不会 404 刷屏）
-applyAvatarToImg(avaImg, role, cid);
+    // ✅ 统一头像策略：优先用户上传（localStorage），其次静态文件，不存在自动隐藏（不会 404 刷屏）
+    applyAvatarToImg(avaImg, role, cid);
 
-// 如果图片最终被隐藏，就把容器也隐藏掉（更干净）
-const _oldOnErr = avaImg.onerror;
-avaImg.onerror = () => { _oldOnErr && _oldOnErr(); ava.style.display = 'none'; };
-avaImg.onload  = () => { ava.style.display = 'block'; };
-ava.appendChild(avaImg);
-
-
-// 名字
-const who = document.createElement('div');
-who.className = 'chatWho';
-who.textContent = (role === 'me') ? getUserDisplayName() : getActiveContactName(engine);
-
-// ✅ user 不显示头像：连占位也不留；char 仍显示
-if (role !== 'me') whoLeft.appendChild(ava);
-
-whoLeft.appendChild(who);
+    // 如果图片最终被隐藏，就把容器也隐藏掉（更干净）
+    const _oldOnErr = avaImg.onerror;
+    avaImg.onerror = () => { _oldOnErr && _oldOnErr(); ava.style.display = 'none'; };
+    avaImg.onload = () => { ava.style.display = 'block'; };
+    ava.appendChild(avaImg);
 
 
-// 右侧操作区
-const ops = document.createElement('div');
-ops.className = 'chatOps';
+    // 名字
+    const who = document.createElement('div');
+    who.className = 'chatWho';
+    who.textContent = (role === 'me') ? getUserDisplayName() : getActiveContactName(engine);
 
-head.appendChild(whoLeft);
-head.appendChild(ops);
+    // ✅ user 不显示头像：连占位也不留；char 仍显示
+    if (role !== 'me') whoLeft.appendChild(ava);
+
+    whoLeft.appendChild(who);
+
+
+    // 右侧操作区
+    const ops = document.createElement('div');
+    ops.className = 'chatOps';
+
+    head.appendChild(whoLeft);
+    head.appendChild(ops);
 
 
     // ===== 卡片本体 =====
@@ -527,29 +527,38 @@ head.appendChild(ops);
       actions.appendChild(btnReroll);
     }
 
-actions.appendChild(btnEdit);
-actions.appendChild(btnDel);
+    actions.appendChild(btnEdit);
+    actions.appendChild(btnDel);
 
-// ✅ 操作键放到气泡头部右侧
-ops.appendChild(actions);
-
+    // ✅ 操作键放到气泡头部右侧
+    ops.appendChild(actions);
 
 
     // 内容（注意：不要再用 chatBody 这个 class，避免和页面容器 .chatBody 撞名）
     const body = document.createElement('div');
     body.className = 'chatText';
-    body.textContent = applyRenderRegex(sanitizeModelText(msg.content || ''));
+    const raw = sanitizeModelText(msg.content || '');
 
-// ✅ 气泡顶部先放 head（名字+头像+操作键）
-wrap.appendChild(head);
+    // 先 escape，防止模型输出里夹 HTML 造成注入
+    const escaped = raw.replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
 
-// meta 这行你可以保留当“占位容器”，也可以直接不 append
-// wrap.appendChild(meta);
+    // 先跑正则（此时还是 \n），最后再把换行变成 <br>
+    const withRegex = applyRenderRegex(escaped);
+    body.innerHTML = withRegex.replace(/\n/g, '<br>');
 
-wrap.appendChild(body);
 
-// ✅ 不再把 tag 放在外面了
-item.appendChild(wrap);
+    // ✅ 气泡顶部先放 head（名字+头像+操作键）
+    wrap.appendChild(head);
+
+    // meta 这行你可以保留当“占位容器”，也可以直接不 append
+    // wrap.appendChild(meta);
+
+    wrap.appendChild(body);
+
+    // ✅ 不再把 tag 放在外面了
+    item.appendChild(wrap);
 
     box.appendChild(item);
 
@@ -699,24 +708,24 @@ item.appendChild(wrap);
     smartScrollToBottom(box, true);
   }
 
-function ensureClearModalDOM() {
-  // 如果没有，就动态创建，避免“点了没反应”
-  if (!qs('chatClearMask')) {
-    const mask = document.createElement('div');
-    mask.id = 'chatClearMask';
-    mask.className = 'chatClearMask';
-    mask.style.display = 'none';
-    mask.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(mask);
-  }
+  function ensureClearModalDOM() {
+    // 如果没有，就动态创建，避免“点了没反应”
+    if (!qs('chatClearMask')) {
+      const mask = document.createElement('div');
+      mask.id = 'chatClearMask';
+      mask.className = 'chatClearMask';
+      mask.style.display = 'none';
+      mask.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(mask);
+    }
 
-  if (!qs('chatClearModal')) {
-    const modal = document.createElement('div');
-    modal.id = 'chatClearModal';
-    modal.className = 'chatClearModal';
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden', 'true');
-    modal.innerHTML = `
+    if (!qs('chatClearModal')) {
+      const modal = document.createElement('div');
+      modal.id = 'chatClearModal';
+      modal.className = 'chatClearModal';
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+      modal.innerHTML = `
       <div class="chatClearCard" role="dialog" aria-modal="true">
         <div class="chatClearTitle">清空聊天</div>
         <div class="chatClearBtns">
@@ -726,41 +735,41 @@ function ensureClearModalDOM() {
         </div>
       </div>
     `;
-    document.body.appendChild(modal);
+      document.body.appendChild(modal);
+    }
   }
-}
 
-function openClearModal() {
-  ensureClearModalDOM();
+  function openClearModal() {
+    ensureClearModalDOM();
 
-  const mask = qs('chatClearMask');
-  const modal = qs('chatClearModal');
-  if (!mask || !modal) return;
+    const mask = qs('chatClearMask');
+    const modal = qs('chatClearModal');
+    if (!mask || !modal) return;
 
-  mask.style.display = 'block';
-  modal.style.display = 'flex';
+    mask.style.display = 'block';
+    modal.style.display = 'flex';
 
-  // ✅ 关键：配合 chat.css 的 data-open
-  modal.dataset.open = 'true';
+    // ✅ 关键：配合 chat.css 的 data-open
+    modal.dataset.open = 'true';
 
-  mask.setAttribute('aria-hidden', 'false');
-  modal.setAttribute('aria-hidden', 'false');
-}
+    mask.setAttribute('aria-hidden', 'false');
+    modal.setAttribute('aria-hidden', 'false');
+  }
 
-function closeClearModal() {
-  const mask = qs('chatClearMask');
-  const modal = qs('chatClearModal');
-  if (!mask || !modal) return;
+  function closeClearModal() {
+    const mask = qs('chatClearMask');
+    const modal = qs('chatClearModal');
+    if (!mask || !modal) return;
 
-  // ✅ 关键：关掉 data-open
-  modal.dataset.open = 'false';
+    // ✅ 关键：关掉 data-open
+    modal.dataset.open = 'false';
 
-  mask.style.display = 'none';
-  modal.style.display = 'none';
+    mask.style.display = 'none';
+    modal.style.display = 'none';
 
-  mask.setAttribute('aria-hidden', 'true');
-  modal.setAttribute('aria-hidden', 'true');
-}
+    mask.setAttribute('aria-hidden', 'true');
+    modal.setAttribute('aria-hidden', 'true');
+  }
 
   // ===== mount chat.html into #mountChat =====
   async function ensureMounted() {
@@ -776,24 +785,24 @@ function closeClearModal() {
       return false;
     }
 
-// ✅ 只要 mount 里还没有 chatWindow，就加载 chat.html
-if (!mount.querySelector('.chatWindow')) {
-  try {
-    const url = new URL('./chat/chat.html', document.baseURI).href;
-    const resp = await fetch(url, { cache: 'no-store' });
-    if (!resp.ok) throw new Error('chat.html fetch failed: ' + resp.status);
+    // ✅ 只要 mount 里还没有 chatWindow，就加载 chat.html
+    if (!mount.querySelector('.chatWindow')) {
+      try {
+        const url = new URL('./chat/chat.html', document.baseURI).href;
+        const resp = await fetch(url, { cache: 'no-store' });
+        if (!resp.ok) throw new Error('chat.html fetch failed: ' + resp.status);
 
-    mount.innerHTML = await resp.text();
+        mount.innerHTML = await resp.text();
 
-    // ✅ 校验：没有输入框就报警（不阻断）
-    if (!mount.querySelector('#chatInput')) {
-      console.error('[chat] mounted html has no #chatInput. First 300 chars:\n', mount.innerHTML.slice(0, 300));
+        // ✅ 校验：没有输入框就报警（不阻断）
+        if (!mount.querySelector('#chatInput')) {
+          console.error('[chat] mounted html has no #chatInput. First 300 chars:\n', mount.innerHTML.slice(0, 300));
+        }
+      } catch (e) {
+        console.error('[chat] cannot load ./chat/chat.html', e);
+        return false;
+      }
     }
-  } catch (e) {
-    console.error('[chat] cannot load ./chat/chat.html', e);
-    return false;
-  }
-}
 
 
     initChat(engine);
@@ -870,7 +879,7 @@ if (!mount.querySelector('.chatWindow')) {
 
         setSendingState(true);
         try {
-          await engine.send?.({ text: t, channel: 'main' });
+          await engine.send?.({ text: t, channel: 'main', max_tokens: 520 });
           renderHistory(engine);
         } catch (e) {
           console.error(e);
@@ -881,83 +890,83 @@ if (!mount.querySelector('.chatWindow')) {
       });
     }
 
-document.addEventListener('click', async (e) => {
-  const btn = $closest(e.target, '#chatDeviceBtn');
-  if (!btn) return;
+    document.addEventListener('click', async (e) => {
+      const btn = $closest(e.target, '#chatDeviceBtn');
+      if (!btn) return;
 
-  // ✅ 先确保 phoneOverlay/phoneMask/miniPhoneMount 存在
-  ensurePhoneOverlayDOM();
+      // ✅ 先确保 phoneOverlay/phoneMask/miniPhoneMount 存在
+      ensurePhoneOverlayDOM();
 
-  const ok = await ensureMiniPhoneLoaded();
-  if (!ok) {
-    console.warn('[mini_phone] load failed');
-    alert('小手机模块加载失败：请打开F12看 Console 的红色报错（一般是路径/404）');
-    return;
+      const ok = await ensureMiniPhoneLoaded();
+      if (!ok) {
+        console.warn('[mini_phone] load failed');
+        alert('小手机模块加载失败：请打开F12看 Console 的红色报错（一般是路径/404）');
+        return;
+      }
+
+      // ✅ 只让 mini_phone 自己负责 open/close（不要再叠一层 openPhone）
+      await window.MiniPhone?.open?.();
+    }, true);
+
+
+    // 关闭 mini_phone：用委托（phoneMask 是动态创建的）
+    if (!document.documentElement.dataset.phoneMaskBound) {
+      document.documentElement.dataset.phoneMaskBound = '1';
+
+      document.addEventListener('click', (e) => {
+        if (!$closest(e.target, '#phoneMask')) return;
+        window.MiniPhone?.close?.();
+      }, true);
+    }
+
+    // ✅ 清空：也不要放在 phoneMaskBound 里
+    if (!document.documentElement.dataset.chatClearBound) {
+      document.documentElement.dataset.chatClearBound = '1';
+
+      document.addEventListener('click', (e) => {
+        if ($closest(e.target, '#chatClearBtn')) {
+          openClearModal();
+          return;
+        }
+        if ($closest(e.target, '#chatClearCancel')) {
+          closeClearModal();
+          return;
+        }
+        if ($closest(e.target, '#chatClearMask')) {
+          closeClearModal();
+          return;
+        }
+        if ($closest(e.target, '#chatClearCurrent')) {
+          const contactId = engine.getActiveContact?.() || 'default';
+          if (!confirm('清空当前联系人的聊天记录？')) return;
+          engine.clearMessages?.({ contactId });
+          clearIntro(contactId);
+          closeClearModal();
+          renderHistory(engine);
+          return;
+        }
+        if ($closest(e.target, '#chatClearAll')) {
+          if (!confirm('全清：清空所有联系人的聊天记录，确认继续？')) return;
+          engine.clearAllMessages?.();
+          clearAllIntros();
+          closeClearModal();
+          renderHistory(engine);
+          return;
+        }
+      }, true);
+    }
+
   }
 
-  // ✅ 只让 mini_phone 自己负责 open/close（不要再叠一层 openPhone）
-  await window.MiniPhone?.open?.();
-}, true);
+  // expose
+  window.AvatarKit = {
+    getStoredAvatar,
+    setStoredAvatar,
+    fileToSquareDataURL,
+    applyAvatarToImg,
+  };
 
-
-// 关闭 mini_phone：用委托（phoneMask 是动态创建的）
-if (!document.documentElement.dataset.phoneMaskBound) {
-  document.documentElement.dataset.phoneMaskBound = '1';
-
-  document.addEventListener('click', (e) => {
-    if (!$closest(e.target, '#phoneMask')) return;
-    window.MiniPhone?.close?.();
-  }, true);
-}
-
-// ✅ 清空：也不要放在 phoneMaskBound 里
-if (!document.documentElement.dataset.chatClearBound) {
-  document.documentElement.dataset.chatClearBound = '1';
-
-  document.addEventListener('click', (e) => {
-    if ($closest(e.target, '#chatClearBtn')) {
-      openClearModal();
-      return;
-    }
-    if ($closest(e.target, '#chatClearCancel')) {
-      closeClearModal();
-      return;
-    }
-    if ($closest(e.target, '#chatClearMask')) {
-      closeClearModal();
-      return;
-    }
-    if ($closest(e.target, '#chatClearCurrent')) {
-      const contactId = engine.getActiveContact?.() || 'default';
-      if (!confirm('清空当前联系人的聊天记录？')) return;
-      engine.clearMessages?.({ contactId });
-      clearIntro(contactId);
-      closeClearModal();
-      renderHistory(engine);
-      return;
-    }
-    if ($closest(e.target, '#chatClearAll')) {
-      if (!confirm('全清：清空所有联系人的聊天记录，确认继续？')) return;
-      engine.clearAllMessages?.();
-      clearAllIntros();
-      closeClearModal();
-      renderHistory(engine);
-      return;
-    }
-  }, true);
-}
-
-  }
-
-// expose
-window.AvatarKit = {
-  getStoredAvatar,
-  setStoredAvatar,
-  fileToSquareDataURL,
-  applyAvatarToImg,
-};
-
-window.ChatUI = { ensureMounted };
+  window.ChatUI = { ensureMounted };
 
 
   // auto

@@ -1923,3 +1923,29 @@ button,
   user-select: none;
 }
 
+.wbRowBtns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+/* 让一排按钮均分占满（用于正则面板第一排） */
+.wbRowBtnsFill{
+  width: 100%;
+  flex-wrap: nowrap;          /* 强制同一排 */
+}
+.wbRowBtnsFill .wbBtn{
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* 正则面板第二排左侧标题 */
+.regexRowTitle{
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  opacity: .92;
+  padding: 2px 4px;
+}
