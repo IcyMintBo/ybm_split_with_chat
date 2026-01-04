@@ -1,6 +1,23 @@
 (() => {
   // ===== API Config (Start) =====
   const API_LS_KEY = 'YBM_API_CFG_V1';
+  // ===== Viewport vars (fix iOS vh / show full shell) =====
+  function __setViewportVars() {
+    const vv = window.visualViewport;
+    const h = (vv && vv.height) ? vv.height : window.innerHeight;
+    const w = (vv && vv.width) ? vv.width : window.innerWidth;
+
+    document.documentElement.style.setProperty('--vvh', `${h}px`);
+    document.documentElement.style.setProperty('--vvw', `${w}px`);
+  }
+
+  __setViewportVars();
+  window.addEventListener('resize', __setViewportVars);
+  window.addEventListener('orientationchange', __setViewportVars);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', __setViewportVars);
+    window.visualViewport.addEventListener('scroll', __setViewportVars);
+  }
 
   function loadApiCfg() {
     try { return JSON.parse(localStorage.getItem(API_LS_KEY) || '{}'); } catch { return {}; }
