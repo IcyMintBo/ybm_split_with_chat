@@ -149,20 +149,20 @@
     if (input) input.disabled = !!isSending;
 
     if (isSending) {
-      send.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"></rect>
-      </svg>`;
+send.innerHTML = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+    <rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"></rect>
+  </svg>`;
       send.title = '正在等待回复…';
       return;
     }
 
-    send.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M3.4 11.2 20.6 3.8c.8-.3 1.6.5 1.3 1.3l-7.4 17.2c-.3.8-1.5.8-1.8 0l-2.2-5.2-5.2-2.2c-.8-.3-.8-1.5 0-1.8Z"
-        fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-      <path d="M10.6 13.4 20.2 4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-    </svg>`;
+send.innerHTML = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M3.4 11.2 20.6 3.8c.8-.3 1.6.5 1.3 1.3l-7.4 17.2c-.3.8-1.5.8-1.8 0l-2.2-5.2-5.2-2.2c-.8-.3-.8-1.5 0-1.8Z"
+      fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M10.6 13.4 20.2 4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>`;
     send.title = '发送';
   }
 
