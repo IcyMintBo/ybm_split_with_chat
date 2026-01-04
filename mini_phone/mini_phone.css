@@ -103,7 +103,37 @@
   pointer-events: auto;
 }
 
-/* Back */
+/* Home 专用：关闭小手机（位置/样式独立于 phone-back） */
+.phone-home-close{
+  position: absolute;
+  left: var(--home-close-left, 18px);
+  top: var(--home-close-top, 78px);
+  z-index: 99999 !important;
+  pointer-events: auto !important;
+
+  width: 54px;
+  height: 54px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.phone-home-close::before{
+  content: "‹";
+  display: block;
+  font-size: 64px;
+  font-weight: 1000;
+  line-height: 1;
+  color: #ff4b4b;               /* 红色返回/关闭感 */
+  transform: translateY(-6px);  /* 微调垂直位置 */
+  text-shadow: 0 2px 0 rgba(255,255,255,.65);
+}
+
+.phone-home-close:active{
+  transform: translateY(2px);
+}
+
 /* Back (icon button) */
 .phone-back {
   position: absolute;

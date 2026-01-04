@@ -468,6 +468,19 @@ async function ensureMounted() {
       showPage('home', { push: false });
     }, true);
   }
+  // delegate: home close button (close overlay)
+  if (!mount.dataset.mpExitDelegated) {
+    mount.dataset.mpExitDelegated = '1';
+
+    mount.addEventListener('click', (e) => {
+      const hit = $closest(e.target, '[data-mp-exit], .phone-home-close');
+      if (!hit) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      close();
+    }, true);
+  }
 
   // mask click closes
   const mask = byId(MASK_ID);
