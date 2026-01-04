@@ -789,3 +789,9 @@ body.chat-editing{ overflow: hidden; }
   opacity: .75;
   line-height: 1.2;
 }
+#chatSend svg{
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+#chatSend{ color:#2b2b2b; }
