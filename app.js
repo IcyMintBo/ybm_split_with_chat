@@ -37,11 +37,16 @@
     // 如果用户填到了 /chat/completions，裁回 /v1
     u = u.replace(/\/chat\/completions$/i, '');
 
-    if (!/\/v1$/i.test(u)) {
+    // 若识别为智谱（open.bigmodel.cn），则不自动补 /v1
+    const isZhipuUrl = /open\.bigmodel\.cn/i.test(u);
+    if (!isZhipuUrl && !/\/v1$/i.test(u)) {
       // 如果里面已经有 /v1/xxx，也裁到 /v1
       const m = u.match(/^(.*?\/v1)\b/i);
-      if (m && m[1]) u = m[1];
-      else u = u + '/v1';
+      if (m && m[1]) {
+        u = m[1];
+      } else {
+        u = u + '/v1';
+      }
     }
 
     const endpoint = u.replace(/\/+$/, '') + '/chat/completions';
