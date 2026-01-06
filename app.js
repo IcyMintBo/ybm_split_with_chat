@@ -26,49 +26,71 @@
     localStorage.setItem(API_LS_KEY, JSON.stringify(cfg || {}));
   }
 
-  function normalizeBaseUrl(input) {
-    let u = (input || '').trim();
-    if (!u) return { baseUrl: '', endpoint: '' };
+function normalizeBaseUrl(input) {
+  let u = (input || '').trim();
+  if (!u) return { baseUrl: '', endpoint: '' };
 
-    // 去掉结尾空格/斜杠
-    u = u.replace(/\s+/g, '');
-    u = u.replace(/\/+$/, '');
+  // 去掉空白
+  u = u.replace(/\s+/g, '');
 
-    // 如果用户填到了 /chat/completions，裁回 /v1
-    u = u.replace(/\/chat\/completions$/i, '');
+  // 没有协议就补 https://（小白常见）
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
 
-    // 若识别为智谱（open.bigmodel.cn），则不自动补 /v1
-    const isZhipuUrl = /open\.bigmodel\.cn/i.test(u);
-    if (!isZhipuUrl && !/\/v1$/i.test(u)) {
-      // 如果里面已经有 /v1/xxx，也裁到 /v1
-      const m = u.match(/^(.*?\/v1)\b/i);
-      if (m && m[1]) {
-        u = m[1];
-      } else {
-        u = u + '/v1';
-      }
-    }
+  // 合并多余斜杠（保留协议里的 //）
+  u = u.replace(/([^:]\/)\/+/g, '$1');
 
+  // 去掉末尾斜杠
+  u = u.replace(/\/+$/, '');
+
+  // 小白经常把 endpoint 一起粘进来：把它们剥掉（但不裁版本号）
+  // 只剥“确定是 endpoint 的尾巴”
+  u = u.replace(/\/(chat\/completions|responses|messages)$/i, '');
+
+  // 智谱：保持用户原样（它本来就是 /api/paas/v4 体系），不要补 /v1
+  const isZhipuUrl = /open\.bigmodel\.cn/i.test(u);
+  if (isZhipuUrl) {
     const endpoint = u.replace(/\/+$/, '') + '/chat/completions';
     return { baseUrl: u, endpoint };
   }
-  // 针对部分兼容网关（如 tiantianai.pro）授权头不完全一致
-  function buildAuthHeader(baseUrl, apiKey) {
-    if (!apiKey) return {};
-    const key = apiKey.trim();
-    if (!key) return {};
-    const lower = (baseUrl || '').toLowerCase();
 
-    // tiantianai：很多示例是 Authorization: sk-xxx（不带 Bearer）
-    if (lower.includes('tiantianai.pro')) {
-      return { Authorization: key };
-    }
+  // ✅ 如果用户已经写了版本号（v1/v2/v3/v4/v1beta...），一律不补、不裁
+  const hasVersion =
+    /\/v\d+(\b|\/)/i.test(u) ||
+    /\/v\d+beta(\b|\/)/i.test(u) ||
+    /\/v1beta(\b|\/)/i.test(u);
 
-    // 默认：Bearer
-    let auth = key;
-    if (!/^bearer\s+/i.test(auth)) auth = `Bearer ${auth}`;
-    return { Authorization: auth };
+  // ✅ 只有“完全没版本号”时才补 /v1（照顾小白）
+  if (!hasVersion) {
+    u = u + '/v1';
   }
+
+  const endpoint = u.replace(/\/+$/, '') + '/chat/completions';
+  return { baseUrl: u, endpoint };
+}
+
+// 针对部分兼容网关：Authorization 头写法不完全一致（不点名任何站）
+function buildAuthHeader(baseUrl, apiKey) {
+  if (!apiKey) return {};
+  const key = apiKey.trim();
+  if (!key) return {};
+
+  // 用户自己带前缀：完全尊重（兼容各种第三方文档写法）
+  // 例：Bearer xxx / Token xxx / Api-Key xxx / sk-xxx（注意：sk-xxx 不算前缀）
+  if (/^(bearer|token|api-key)\s+/i.test(key)) {
+    return { Authorization: key };
+  }
+
+  const lower = (baseUrl || '').toLowerCase();
+
+  // 如果 baseUrl 看起来是“标准 OpenAI 兼容”的路径（包含 /v1），默认加 Bearer
+  // 这样 OpenAI/大多数代理平台开箱即用
+  if (/\/v1(\b|\/)/i.test(lower)) {
+    return { Authorization: 'Bearer ' + key };
+  }
+
+  // 否则：保持不带 Bearer（留给野生中转/非标准网关）
+  return { Authorization: key };
+}
 
   async function fetchModels({ baseUrl, apiKey }) {
     const url = baseUrl.replace(/\/+$/, '') + '/models';
