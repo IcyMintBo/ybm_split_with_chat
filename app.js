@@ -377,15 +377,26 @@ async function testChat({ baseUrl, apiKey, model }) {
       }
     } catch { }
 
-    try {
-      if (!hasPresets) {
-        const r = await fetch('./default_presets.json', { cache: 'no-store' });
-        if (r.ok) {
-          const j = await r.json();
-          if (j.presets) base.presets = j.presets;
-        }
+try {
+  if (!hasPresets) {
+    const r = await fetch('./default_presets.json', { cache: 'no-store' });
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.presets && typeof j.presets === 'object') {
+        // ✅ 合并而不是覆盖：保留已有的 presets.sms / presets.xxx
+        const oldPresets = (base.presets && typeof base.presets === 'object') ? base.presets : {};
+        const newPresets = j.presets;
+
+        base.presets = { ...oldPresets, ...newPresets };
+
+        // ✅ 如果新文件里只有 global，就只更新 global；否则保留旧 global
+        if (Array.isArray(newPresets.global)) base.presets.global = newPresets.global;
+        else if (Array.isArray(oldPresets.global)) base.presets.global = oldPresets.global;
       }
-    } catch { }
+    }
+  }
+} catch { }
+
 
     // 如果默认文件没拉到，也保证结构存在
     if (!base.worldbook) base.worldbook = { global: [], contact: {} };
