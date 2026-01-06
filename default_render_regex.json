@@ -3,10 +3,10 @@
   "rules": [
     {
       "enabled": true,
-      "name": "内心戏：【……】灰底覆盖",
+      "name": "内心戏：【……】灰底覆盖 + 单引号",
       "pattern": "【……([^】\\n]+)】",
       "flags": "g",
-      "replace": "<span style=\"background: rgba(0,0,0,.14); padding:2px 6px;\">$1</span>"
+      "replace": "<span style=\"background: rgba(0,0,0,.14); padding:2px 6px;\">‘$1’</span>"
     }
   ]
 }
