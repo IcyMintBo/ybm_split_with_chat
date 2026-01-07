@@ -241,23 +241,23 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
   }
 
   // ====== mutate messages (edit/delete/clear) ======
-function updateMessage({ contactId, msgId, content } = {}) {
-  if (!msgId) return false;
-  contactId = ensureContact(contactId || getActiveContact());
-  const arr = state.messages[contactId] || [];
-  const m = arr.find(x => x && x.id === msgId);
-  if (!m) return false;
+  function updateMessage({ contactId, msgId, content } = {}) {
+    if (!msgId) return false;
+    contactId = ensureContact(contactId || getActiveContact());
+    const arr = state.messages[contactId] || [];
+    const m = arr.find(x => x && x.id === msgId);
+    if (!m) return false;
 
-  // ✅ 只改内容，不改 ts；否则会按时间排序被挪到最底
-  m.content = (content ?? '').toString();
+    // ✅ 只改内容，不改 ts；否则会按时间排序被挪到最底
+    m.content = (content ?? '').toString();
 
-  // 可选：记录编辑时间（不参与排序）
-  if (!m.meta || typeof m.meta !== 'object') m.meta = {};
-  m.meta.editedAt = nowTs();
+    // 可选：记录编辑时间（不参与排序）
+    if (!m.meta || typeof m.meta !== 'object') m.meta = {};
+    m.meta.editedAt = nowTs();
 
-  save();
-  return true;
-}
+    save();
+    return true;
+  }
 
 
   function deleteMessage({ contactId, msgId } = {}) {
@@ -804,20 +804,98 @@ function updateMessage({ contactId, msgId, content } = {}) {
 
     const provider = detectProvider({ model, baseUrl });
     const normalizedMessages = normalizeMessagesForAllModels({ provider, messages });
+    // ✅ Claude/某些反代要求：除最后一条可选的 assistant 外，所有消息 content 必须非空
+    const sanitizeMessages = (msgs) => {
+      if (!Array.isArray(msgs)) return [];
 
-    // ✅ 统一 body：你现在的后端就是 OpenAI-compat（Gemini/Claude 也是走这条）
+      // 统一把 content 转成字符串（兼容 content 是数组/对象的情况）
+      const toText = (c) => {
+        if (c == null) return '';
+        if (typeof c === 'string') return c;
+        try {
+          return JSON.stringify(c);
+        } catch {
+          return String(c);
+        }
+      };
+
+      // 先做浅拷贝并标准化 content
+      let m = msgs.map(x => ({ ...x, content: toText(x.content) }));
+
+      // 找到最后一条“assistant”消息的位置（如果它在最后，允许为空）
+      const lastIdx = m.length - 1;
+      const lastIsEmptyAssistant =
+        lastIdx >= 0 &&
+        m[lastIdx]?.role === 'assistant' &&
+        (m[lastIdx]?.content ?? '').trim() === '';
+
+      // 过滤规则：content 为空的消息全部删掉；但如果“最后一条 assistant 为空”，保留它
+      m = m.filter((msg, idx) => {
+        const empty = (msg.content ?? '').trim() === '';
+        if (!empty) return true;
+        if (lastIsEmptyAssistant && idx === lastIdx) return true;
+        return false;
+      });
+
+      return m;
+    };
+
+    const safeMessages = sanitizeMessages(normalizedMessages);
+
+
     const body = {
       model,
-      messages: normalizedMessages,
+      messages: safeMessages,
       temperature: 0.8,
       stream: false
     };
-    if (typeof max_tokens === 'number' && max_tokens > 0) body.max_tokens = Math.floor(max_tokens);
+
+    // ✅ Claude/Anthropic：永远带 >=1 的 max_tokens（彻底规避网关缺失->0 的坑）
+    const toPosInt = (v) => {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return null;
+      const i = Math.floor(n);
+      return i >= 1 ? i : null;
+    };
+    const mt = toPosInt(max_tokens);
+    if (provider === 'anthropic') body.max_tokens = mt ?? 520;
+    else if (mt != null) body.max_tokens = mt;
+
+    // ✅ Debug：把“实际发出去的 payload”也打印（不含 key）
+    try {
+      const enabled =
+        (localStorage.getItem('YBM_DEBUG_LLM') === '1') ||
+        (location.search.includes('debugllm=1'));
+      if (enabled) {
+        console.groupCollapsed(
+          `%c[LLM:payload] ${provider} ${model}`,
+          'color:#2b6cb0;font-weight:700;'
+        );
+        console.log('url:', url);
+        console.log('body:', body);
+        console.groupEnd();
+      }
+    } catch { }
 
     const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal });
+
+    // ✅ 关键：400/401/… 时把“完整响应体”留在 console，并把 status 带到 error 上层
     if (!res.ok) {
       const t = await res.text().catch(() => '');
-      throw new Error(`API 错误 ${res.status}: ${t.slice(0, 200)}`);
+
+      // console 打完整（不要 slice）
+      console.error('[LLM] HTTP error', {
+        status: res.status,
+        url,
+        responseText: t
+      });
+
+      const err = new Error(`API 错误 ${res.status}: ${t.slice(0, 800)}`); // UI 里仍然别太长
+      err.status = res.status;
+      err.url = url;
+      err.responseText = t;
+      err.provider = provider;
+      throw err;
     }
 
     const data = await res.json().catch(() => null);
@@ -836,6 +914,7 @@ function updateMessage({ contactId, msgId, content } = {}) {
 
     throw new Error(`API 返回无法解析：${JSON.stringify(data).slice(0, 500)}`);
   }
+
 
   function postProcessAssistantText(text, channel = 'main') {
     let out = String(text || '').trim();
@@ -1062,14 +1141,67 @@ function updateMessage({ contactId, msgId, content } = {}) {
       // ✅ F12 查看本次真实发送给模型的 messages（含 system/worldbook/preset/历史）
       debugDumpLLMRequest({ tag: `send:${channel}`, api, messages: ctx });
 
-      const reply = await callChatCompletions({
-        baseUrl: api.baseUrl,
-        apiKey: api.apiKey,
-        model: api.model,
-        messages: ctx,
-        stream: false,
-        max_tokens, // ✅ 透传（服务端不支持就忽略）
-      });
+      let reply = '';
+      try {
+        reply = await callChatCompletions({
+          baseUrl: api.baseUrl,
+          apiKey: api.apiKey,
+          model: api.model,
+          messages: ctx,
+          stream: false,
+          max_tokens,
+        });
+      } catch (e) {
+        // ✅ chat 端最常见的 400：反代网关对“上下文/体积”更敏感
+        // 直接自动降上下文重试两档：8000 -> 4000
+        const status = e?.status;
+        const provider = detectProvider({ model: api.model, baseUrl: api.baseUrl });
+
+        if (channel === 'main' && status === 400 && provider === 'anthropic') {
+          console.warn('[LLM] 400 on main, retry with shorter context…');
+
+          const sys2 = buildSystemPromptFromCfg(contactId, channel);
+
+          const ctx8000 = buildContext({
+            contactId,
+            systemPrompt: sys2,
+            maxChars: 8000,
+          });
+
+          try {
+            reply = await callChatCompletions({
+              baseUrl: api.baseUrl,
+              apiKey: api.apiKey,
+              model: api.model,
+              messages: ctx8000,
+              stream: false,
+              max_tokens,
+            });
+          } catch (e2) {
+            const status2 = e2?.status;
+            if (status2 === 400) {
+              const ctx4000 = buildContext({
+                contactId,
+                systemPrompt: sys2,
+                maxChars: 4000,
+              });
+              reply = await callChatCompletions({
+                baseUrl: api.baseUrl,
+                apiKey: api.apiKey,
+                model: api.model,
+                messages: ctx4000,
+                stream: false,
+                max_tokens,
+              });
+            } else {
+              throw e2;
+            }
+          }
+        } else {
+          throw e;
+        }
+      }
+
 
       // ===========================
       // ✅ 关键：phone 先剃 think，再截断，再判不合规改写
