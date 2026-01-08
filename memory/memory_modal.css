@@ -1,0 +1,44 @@
+/* assets/memory_modal.css */
+#ybm-memory-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 9999;
+  display: none;
+}
+#ybm-memory-modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 360px;
+  background: #111;
+  color: #eee;
+  border-radius: 10px;
+  padding: 16px;
+  z-index: 10000;
+  display: none;
+  box-shadow: 0 10px 30px rgba(0,0,0,.6);
+}
+#ybm-memory-modal h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+#ybm-memory-modal p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  opacity: .9;
+}
+#ybm-memory-modal .btns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+#ybm-memory-modal button {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 0;
+  cursor: pointer;
+}
+#ybm-memory-confirm { background: #4da3ff; color: #000; }
+#ybm-memory-skip { background: #333; color: #ccc; }

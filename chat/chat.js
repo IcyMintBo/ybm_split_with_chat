@@ -21,13 +21,29 @@
     el.style.height = Math.min(el.scrollHeight, maxH) + 'px';
   }
 
-  function sanitizeModelText(text) {
-    let out = String(text ?? '');
-    out = out.replace(/<think>[\s\S]*?<\/think>/gi, '');
-    out = out.replace(/<analysis>[\s\S]*?<\/analysis>/gi, '');
-    out = out.replace(/^\s*<think>[\s\S]*$/i, '').trim();
-    return out;
-  }
+function sanitizeModelText(text) {
+  let out = String(text ?? '');
+
+  // 1) think/analysis
+  out = out.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  out = out.replace(/<analysis>[\s\S]*?<\/analysis>/gi, '');
+  out = out.replace(/^\s*<think>[\s\S]*$/i, '').trim();
+
+  // 2) grok render tags（完整块）
+  out = out.replace(/<grok:render\b[\s\S]*?<\/grok:render>/gi, '');
+
+  // 3) grok render tags（不完整/残片：按“行”兜底清理）
+  out = out.replace(/^\s*<\/?grok:[^>\n]*>\s*$/gim, '');
+  out = out.replace(/^\s*<\/?argument[^>\n]*>\s*$/gim, '');
+
+  // 4) 万一有“已转义”的残留（极少数渠道会直接返回 &lt;...&gt;）
+  out = out.replace(/&lt;grok:render\b[\s\S]*?&lt;\/grok:render&gt;/gi, '');
+  out = out.replace(/^\s*&lt;\/?grok:[^&\n]*&gt;\s*$/gim, '');
+  out = out.replace(/^\s*&lt;\/?argument[^&\n]*&gt;\s*$/gim, '');
+
+  return out.trim();
+}
+
 
   function applyRenderRegex(text) {
     let out = String(text ?? '');
@@ -467,18 +483,54 @@ send.innerHTML = `
     const _oldOnErr = avaImg.onerror;
     avaImg.onerror = () => { _oldOnErr && _oldOnErr(); ava.style.display = 'none'; };
     avaImg.onload = () => { ava.style.display = 'block'; };
-    ava.appendChild(avaImg);
+ava.appendChild(avaImg);
+
+// ✅ 计算“该条消息对应的轮数”（按 main channel 中 user 出现次数累计到当前 msg）
+function getTurnAtThisMsg(engine, contactId, msg) {
+  try {
+    const all = engine.getMessages?.(contactId) || [];
+    const main = all
+      .filter(m => m && m.channel === 'main' && (m.role === 'user' || m.role === 'assistant'))
+      .slice()
+      .sort((a, b) => (a.ts || 0) - (b.ts || 0));
+
+    let turns = 0;
+    for (const m of main) {
+      if (m.role === 'user') turns++;
+      if (m.id === msg.id) break;
+      // 兜底：如果某些 msg 没有 id，就用时间戳停止
+      if (!m.id && msg?.ts && m.ts === msg.ts) break;
+    }
+    return turns || 0;
+  } catch {
+    return 0;
+  }
+}
 
 
-    // 名字
-    const who = document.createElement('div');
-    who.className = 'chatWho';
-    who.textContent = (role === 'me') ? getUserDisplayName() : getActiveContactName(engine);
 
-    // ✅ user 不显示头像：连占位也不留；char 仍显示
-    if (role !== 'me') whoLeft.appendChild(ava);
+const who = document.createElement('div');
+who.className = 'chatWho';
+who.textContent = (role === 'me') ? getUserDisplayName() : getActiveContactName(engine);
 
-    whoLeft.appendChild(who);
+const whoBox = document.createElement('div');
+whoBox.className = 'chatWhoBox';
+whoBox.appendChild(who);
+
+// ✅ 仅 assistant 显示：名字下方的小轮数（低存在感）
+if (role !== 'me') {
+  const t = getTurnAtThisMsg(engine, contactId, msg);
+  const meta = document.createElement('div');
+  meta.className = 'chatTurnMeta';
+  meta.textContent = t ? String(t) : '';
+  whoBox.appendChild(meta);
+}
+
+// ✅ user 不显示头像：连占位也不留；char 仍显示
+if (role !== 'me') whoLeft.appendChild(ava);
+
+whoLeft.appendChild(whoBox);
+
 
 
     // 右侧操作区
