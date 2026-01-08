@@ -108,7 +108,8 @@
                     <div class="startBottomActions" aria-label="行动区">
                       <div class="dashActions">
                         <button class="btn secondary" id="btnSaveCfg" type="button">保存设置</button>
-                        <button class="btn" id="btnResetCfg" type="button">恢复默认</button>
+                        <button class="btn" id="btnResetCfg" type="button">总结模块</button>
+
                       </div>
                       <button class="btn primary dashGo" id="btnGo" type="button">出发</button>
                     </div>
@@ -192,20 +193,20 @@
           </template>
 
 
-<template id="startTplHelp">
-  <div class="startList">
-    <div class="startItem"><b>遇到问题</b><br />遇见点不动、显示异常等情况，直接刷新网页即可。</div>
-    <div class="startItem"><b>1）填写 API</b><br />填写 API 地址和 Key。</div>
-    <div class="startItem"><b>2）拉取模型</b><br />拉取模型后点击测试，确认可用。</div>
-    <div class="startItem"><b>3）世界书</b><br />选择 世界书 → 载入默认。</div>
-    <div class="startItem"><b>4）预设</b><br />选择 预设 → 载入默认（可按喜好调整；每个条目都可点击查看/编辑）。</div>
-    <div class="startItem"><b>5）人设</b><br />设置自己的人设，点击出发。</div>
-    <div class="startItem"><b>6）进入手机</b><br />进入 Chat 界面后点击右上角小手机。</div>
-    <div class="startItem"><b>7）短信入口</b><br />点击第一个信封。右上角三横线按钮 → 载入默认。</div>
-    <div class="startItem"><b>完成</b><br />所有设置完成，可以开始游玩啦。</div>
-    <div class="startItem"><b>重要说明</b><br />出于合规考虑，预设里 NSFW 不提供更进阶的提示词设计示例；如有需要，用户可根据自身理解自行摸索与调整。</div>
-  </div>
-</template>
+          <template id="startTplHelp">
+            <div class="startList">
+              <div class="startItem"><b>遇到问题</b><br />遇见点不动、显示异常等情况，直接刷新网页即可。</div>
+              <div class="startItem"><b>1）填写 API</b><br />填写 API 地址和 Key。</div>
+              <div class="startItem"><b>2）拉取模型</b><br />拉取模型后点击测试，确认可用。</div>
+              <div class="startItem"><b>3）世界书</b><br />选择 世界书 → 载入默认。</div>
+              <div class="startItem"><b>4）预设</b><br />选择 预设 → 载入默认（可按喜好调整；每个条目都可点击查看/编辑）。</div>
+              <div class="startItem"><b>5）人设</b><br />设置自己的人设，点击出发。</div>
+              <div class="startItem"><b>6）进入手机</b><br />进入 Chat 界面后点击右上角小手机。</div>
+              <div class="startItem"><b>7）短信入口</b><br />点击第一个信封。右上角三横线按钮 → 载入默认。</div>
+              <div class="startItem"><b>完成</b><br />所有设置完成，可以开始游玩啦。</div>
+              <div class="startItem"><b>重要说明</b><br />出于合规考虑，预设里 NSFW 不提供更进阶的提示词设计示例；如有需要，用户可根据自身理解自行摸索与调整。</div>
+            </div>
+          </template>
 
           <template id="startTplLog">
             <div class="startList">
@@ -274,6 +275,37 @@
               </div>
             </div>
             <textarea id="wb-io" class="wbTextarea" placeholder="这里放 JSON（导入 / 导出用）"></textarea>
+          </div>
+        </div>
+      </template>
+      <template id="startTplSummary">
+        <div class="wbPad">
+          <div class="wbHeaderRow">
+            <div>
+              <div class="wbTitleBig">总结模块</div>
+              <div class="wbSub">
+                对话长期摘要。可由 AI 自动生成，也可手动修正。
+              </div>
+            </div>
+          </div>
+
+          <div class="wbSection">
+            <div class="wbSectionTitle">启用总结模块</div>
+
+            <label class="wbToggle">
+              <input type="checkbox" id="summary-enabled-toggle">
+              <span class="wbToggleTrack"></span>
+            </label>
+
+            <div class="wbHint">
+              关闭后，所有自动总结与记忆功能将被彻底禁用。
+            </div>
+          </div>
+
+          <div class="wbSection">
+            <div class="wbSectionTitle">当前摘要内容</div>
+            <textarea id="summary-content-editor" class="wbTextarea" placeholder="这里是对话的长期摘要内容，可手动修改。"
+              rows="8"></textarea>
           </div>
         </div>
       </template>
@@ -472,9 +504,16 @@
     </div>
   </div>
 
+<link rel="stylesheet" href="memory/memory_modal.css">
+
+  <script src="./memory/MemoryManager.js"></script>
+  <script src="./memory/SummaryStore.js"></script>
+  <script src="./memory/MemoryModal.js"></script>
+
   <script src="./phone/phoneEngine.js"></script>
   <script src="./app.js"></script>
   <script src="./chat/chat.js"></script>
+
 </body>
 
 </html>

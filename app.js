@@ -1799,7 +1799,6 @@ try {
   });
 
   document.getElementById('btnSaveCfg')?.addEventListener('click', () => alert('保存设置（占位）'));
-  document.getElementById('btnResetCfg')?.addEventListener('click', () => alert('恢复默认（占位）'));
 
   // ===== Main window (3 pages) =====
   const pages = document.getElementById('pages');
@@ -1892,3 +1891,123 @@ try {
   setView(viewLauncher);
   windowEl?.classList.remove('on');
 })();
+// ===== Memory 总开关（Summary Module Kill Switch）=====
+(function initMemorySwitch() {
+  const KEY = '__YBM_MEMORY_ENABLED__';
+  const saved = localStorage.getItem(KEY);
+
+  window.__YBM_FEATURE_FLAGS__ = {
+    memoryEnabled: saved !== 'false'  // 默认开启
+  };
+
+  // 给调试用
+  window.__toggleMemory = function (on) {
+    const v = on !== false;
+    localStorage.setItem(KEY, String(v));
+    window.__YBM_FEATURE_FLAGS__.memoryEnabled = v;
+    console.log('[Memory] enabled =', v);
+  };
+})();
+
+// ===== 打开「总结模块」并绑定开关 =====
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('btnResetCfg');
+  if (!btn) {
+    console.warn('[Summary] btnResetCfg not found');
+    return;
+  }
+
+  btn.addEventListener('click', () => {
+    const tpl = document.getElementById('startTplSummary');
+    const overlay = document.getElementById('startOverlay');
+    const body = document.getElementById('startOverlayBody');
+    const title = document.getElementById('startOverlayTitle');
+
+    if (!tpl || !overlay || !body || !title) {
+      console.warn('[Summary] overlay or template not found');
+      return;
+    }
+
+    // 打开面板
+    body.innerHTML = '';
+    body.appendChild(tpl.content.cloneNode(true));
+    title.textContent = '总结模块';
+    overlay.dataset.open = 'true';
+    // ===== Summary 面板：加载/保存当前联系人摘要 =====
+try {
+  const store = window.__YBM_MEMORY_STORE__;
+  const engine = window.PhoneEngine || window.ChatEngine;
+  const cid = engine?.getActiveContact?.() || 'ybm';
+
+  const ta = document.getElementById('summary-content-editor');
+  if (ta && store) {
+    ta.value = store.getSummary(cid) || '';
+
+    let t = null;
+    ta.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        store.setSummary(cid, ta.value || '');
+      }, 250);
+    });
+
+    // 监听自动生成后的更新
+    const onUpd = (e) => {
+      const d = e?.detail;
+      if (!d || d.contactId !== cid) return;
+      ta.value = d.text || '';
+    };
+    window.addEventListener('ybm:summary-updated', onUpd);
+
+    // 面板关闭时解绑（避免越绑越多）
+    const obs = new MutationObserver(() => {
+      if (overlay.dataset.open !== 'true') {
+        window.removeEventListener('ybm:summary-updated', onUpd);
+        obs.disconnect();
+      }
+    });
+    obs.observe(overlay, { attributes: true, attributeFilter: ['data-open'] });
+  }
+} catch {}
+
+
+    console.log('[Summary] panel opened');
+
+    // ===== 下面是关键：绑定开关 =====
+    const toggle = document.getElementById('summary-enabled-toggle');
+    if (!toggle) {
+      console.warn('[Summary] toggle not found');
+      return;
+    }
+
+    // 当前状态（默认 true）
+    const cur =
+      window.__YBM_FEATURE_FLAGS__?.memoryEnabled !== false;
+
+    // 初始化开关 UI
+    toggle.checked = cur;
+
+    // 绑定变化事件
+    toggle.addEventListener('change', () => {
+      const next = toggle.checked;
+
+      // 持久化
+      localStorage.setItem(
+        '__YBM_MEMORY_ENABLED__',
+        String(next)
+      );
+
+      // 全局生效
+      if (!window.__YBM_FEATURE_FLAGS__) {
+        window.__YBM_FEATURE_FLAGS__ = {};
+      }
+      window.__YBM_FEATURE_FLAGS__.memoryEnabled = next;
+
+      console.log(
+        '[Summary] memoryEnabled =',
+        next ? 'ON' : 'OFF'
+      );
+    });
+  });
+});
+

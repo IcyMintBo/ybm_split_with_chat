@@ -327,8 +327,10 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     const ctxAll = buildContext({
       contactId,
       systemPrompt: sys,
-      maxChars: maxChars || 16000
+      maxChars: maxChars || 16000,
+      channel
     });
+
 
     // 截断到 lastU（避免把旧 lastA 喂回去）
     const ctx = [];
@@ -424,8 +426,10 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     const ctxAll = buildContext({
       contactId,
       systemPrompt: sys,
-      maxChars: maxChars || 16000
+      maxChars: maxChars || 16000,
+      channel
     });
+
 
     // 截断到 lastU（避免把旧 assistant 喂回去）
     const ctx = [];
@@ -563,22 +567,52 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     }
   }
 
-  // 把 main + phone 合并成给模型看的上下文（但 UI 不串）
-  function buildContext({ contactId, systemPrompt, maxChars } = {}) {
+  // ✅ 给模型看的上下文：按 channel 过滤；摘要为空=全量；摘要有=最近N轮
+  function buildContext({ contactId, systemPrompt, maxChars, channel = 'chat' } = {}) {
     contactId = ensureContact(contactId || getActiveContact());
     const all = state.messages[contactId] || [];
 
+    // 1) 只取对应 channel 的消息
+    const wantChannel = (channel === 'phone') ? 'phone' : 'main';
+    const sorted = all
+      .filter(m => m && m.channel === wantChannel)
+      .slice()
+      .sort((a, b) => a.ts - b.ts);
+
+    // 2) 判断是否已有摘要（有摘要就只发近5轮；没摘要就全量）
+    let turnLimit = null; // null = 全量
+    try {
+      const enabled = window.__YBM_FEATURE_FLAGS__?.memoryEnabled !== false;
+      const store = window.__YBM_MEMORY_STORE__;
+      const sum = (store?.getSummary?.(contactId) || '').trim();
+    if (enabled && sum && wantChannel === 'main') turnLimit = 5;
+    } catch { }
+
+    // 3) 把“最近N轮”裁出来（按用户消息数计轮）
+    let sliced = sorted;
+    if (turnLimit && turnLimit > 0) {
+      let need = turnLimit;
+      let startIdx = 0;
+      for (let i = sorted.length - 1; i >= 0; i--) {
+        if (sorted[i].role === 'user') {
+          need--;
+          if (need === 0) { startIdx = i; break; }
+        }
+      }
+      sliced = sorted.slice(startIdx);
+    }
+
+    // 4) 拼 messages：system + sliced
     const messages = [];
     if (systemPrompt && systemPrompt.trim()) {
       messages.push({ role: 'system', content: systemPrompt.trim() });
     }
-
-    const sorted = all.slice().sort((a, b) => a.ts - b.ts);
-    for (const m of sorted) {
-      if (m.role !== 'user' && m.role !== 'assistant' && m.role !== 'system') continue;
+    for (const m of sliced) {
+      if (m.role !== 'user' && m.role !== 'assistant') continue;
       messages.push({ role: m.role, content: m.content || '' });
     }
 
+    // 5) 最后再按 maxChars 兜底裁剪
     if (maxChars && maxChars > 0) {
       let total = 0;
       for (let i = messages.length - 1; i >= 0; i--) {
@@ -588,6 +622,7 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     }
     return messages;
   }
+
 
   // ====== API cfg: prefer localStorage (Start 页配置) ======
   function loadApiCfg() {
@@ -659,7 +694,23 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
       }
     } catch { }
 
+    // ✅ 注入长期摘要（放在系统提示末尾，避免抢优先级）
+    try {
+      const store = window.__YBM_MEMORY_STORE__;
+      const sum = (store?.getSummary(contactId) || '').trim();
+      const last = store?.getLastRange(contactId);
+      if (sum) {
+        parts.push(
+          [
+            '【长期摘要】' + (last ? `（最近总结范围：${last.from}-${last.to}）` : ''),
+            sum
+          ].join('\n')
+        );
+      }
+    } catch { }
+
     return parts.join('\n\n');
+
   }
 
 
@@ -914,6 +965,125 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
 
     throw new Error(`API 返回无法解析：${JSON.stringify(data).slice(0, 500)}`);
   }
+  // ===== Memory: summary generator (used by MemoryManager) =====
+  function buildTurnsFromMessages(allMessages) {
+    const main = Array.isArray(allMessages)
+      ? allMessages.filter(m => m?.channel === 'main' && (m.role === 'user' || m.role === 'assistant'))
+      : [];
+
+    const turns = [];
+    let cur = null;
+
+    for (const m of main) {
+      if (m.role === 'user') {
+        cur = { u: String(m.content || ''), a: '' };
+        turns.push(cur);
+      } else {
+        if (!cur) { cur = { u: '', a: '' }; turns.push(cur); }
+        cur.a = String(m.content || '');
+      }
+    }
+    return turns;
+  }
+
+  function clampCnChars(s, target = 1200, slack = 50) {
+    const t = String(s || '').trim();
+    if (t.length <= target + slack) return t;
+
+    const hard = target + slack;
+    const cut = t.slice(0, hard);
+    const m = cut.match(/[\s\S]*[。！？；]\s*/);
+    return (m ? m[0] : cut).trim();
+  }
+
+  // ✅ 关键：必须是函数，不能写在顶层
+  window.__YBM_SUMMARY_GENERATOR__ = async function ({ contactId, range, allMessages, extraInstruction } = {}) {
+    const api = loadApiCfg();
+    const from = range?.from ?? 1;
+    const to = range?.to ?? from;
+
+    const turns = buildTurnsFromMessages(allMessages);
+    const slice = turns.slice(Math.max(0, from - 1), Math.min(turns.length, to));
+
+    const transcript = slice.map((t, i) => {
+      const idx = from + i;
+      return `第${idx}轮\n用户：${t.u || '(空)'}\n助手：${t.a || '(空)'}`;
+    }).join('\n\n');
+
+    const store = window.__YBM_MEMORY_STORE__;
+    const prevSummary = (store?.getSummary?.(contactId) || '').trim();
+
+const sys = [
+  '你是一个【长期记忆摘要】助手。',
+  '你的职责不是复述剧情，而是为后续对话生成“可被调用的记忆索引”。',
+  '',
+  '什么是长期记忆摘要：',
+  '- 不是故事回放',
+  '- 不是人物设定说明',
+  '- 不是情节细节堆砌',
+  '- 而是“未来对话时，模型应该记住的事情”',
+  '',
+  '【重要规则】',
+  '1. 不要重复世界书或既有人设中已有的身份、背景、性格设定',
+  '2. 不要详细描写亲密或性行为过程，只保留结果与关系变化',
+  '3. 能用一句话说清的，不要写成一段',
+  '4. 重点记录“变化”和“结果”，而不是过程',
+  '5. 所有内容都应服务于后续对话的连续性与一致性'
+].join('\n');
+
+const user = [
+  '你将维护一份【阶段性长期记忆摘要】。',
+  '当提供“上一次摘要”时，你需要在保留其有效信息的前提下，吸收新增对话内容，并重新压缩生成新的摘要（覆盖旧摘要）。',
+  '',
+  '【摘要应重点关注以下内容】',
+  '- 本阶段发生了哪些关键事件（1–3条即可）',
+  '- 这些事件对双方关系造成了什么变化（确认、加深、缓和、裂痕等）',
+  '- 是否留下了可以在后续继续展开的情绪、矛盾或线索',
+  '',
+  '【明确不要做的事情】',
+  '- 不要复述完整剧情',
+  '- 不要罗列细节描写',
+  '- 不要总结人物身份、外貌、固定性格',
+  '',
+  prevSummary ? `【上一次阶段性记忆摘要】\n${prevSummary}` : '',
+  '',
+  `【新增对话内容（第${from}-${to}轮）】`,
+  transcript,
+  '',
+  '【输出格式（必须严格遵守）】',
+  '',
+  '【阶段性记忆摘要】',
+  '- 事件：',
+  '  - （用高度概括的语言描述发生了什么）',
+  '- 关系变化：',
+  '  - （关系是否发生确认、加深、缓和、动摇等）',
+  '- 情绪与状态：',
+  '  - （本阶段结束时双方的主要情绪或状态）',
+  '- 待延续线索（如有）：',
+  '  - （后续对话可继续展开的点，没有可写“无”）',
+  '',
+  '【字数要求】',
+  '- 总字数控制在 300–500 字之间',
+  '- 宁可偏短，也不要冗余'
+].join('\n');
+
+
+    const messages = [
+      { role: 'system', content: sys },
+      { role: 'user', content: user }
+    ];
+
+    let text = await callChatCompletions({
+      baseUrl: api.baseUrl,
+      apiKey: api.apiKey,
+      model: api.model,
+      messages,
+      stream: false
+    });
+
+    text = clampCnChars(text, 1200, 50);
+    return String(text || '').trim();
+  };
 
 
   function postProcessAssistantText(text, channel = 'main') {
@@ -957,6 +1127,11 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
 
     // 5) [thinking] / (thinking) 这类段落
     out = out.replace(/^\s*(?:\[\s*thinking\s*\]|\(\s*thinking\s*\))[\s\S]*?(?:\n{2,}|$)/gim, '');
+
+    // 6) grok 的工具标记（完整块 + 残片兜底）
+    out = out.replace(/<grok:render\b[\s\S]*?<\/grok:render>/gi, '');
+    out = out.replace(/^\s*<\/?grok:[^>\n]*>\s*$/gim, '');
+    out = out.replace(/^\s*<\/?argument[^>\n]*>\s*$/gim, '');
 
     return out.trim();
   }
@@ -1134,6 +1309,46 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
       maxChars: maxChars || 16000,
     });
 
+
+    // ===== Memory prompt UI (v1, with global switch) =====
+    try {
+      const flags = window.__YBM_FEATURE_FLAGS__;
+      const store = window.__YBM_MEMORY_STORE__;
+      const modal = window.__YBM_MEMORY_MODAL__;
+      const result = __memoryResult;
+
+      if (
+        flags?.memoryEnabled !== false &&
+        result?.shouldPrompt &&
+        modal &&
+        store &&
+        !store.hasSkipped(contactId, result.turnCount)
+      ) {
+        const confirmModal = window.__YBM_MEMORY_CONFIRM_MODAL__;
+
+        confirmModal?.show({
+          summaryRangeText: `将生成第 ${result.summaryRange.from}–${result.summaryRange.to} 轮的长期摘要`,
+          onConfirm() {
+            console.log('[Memory] user confirmed, start generating summary');
+
+            // 👉 这里只做一件事：开始生成摘要
+            window.__YBM_MEMORY__?.MemoryManager.generateSummary({
+              contactId,
+              range: result.summaryRange
+            });
+          },
+          onSkip() {
+            store.markSkipped(contactId, result.turnCount);
+            console.log('[Memory] user skipped at turn', result.turnCount);
+          }
+        });
+
+      }
+    } catch (e) {
+      console.warn('[Memory] modal error:', e);
+    }
+
+
     // ✅ assistant 也必须写 turnId
     const assistantMsg = appendMessage({ contactId, channel, role: 'assistant', content: '', turnId: tid });
 
@@ -1233,11 +1448,126 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
         return assistantMsg;
       }
 
-      // main：照旧（可以保留截断）
       const cleaned = stripThinking(reply || '');
       assistantMsg.content = postProcessAssistantText(cleaned, channel);
       save();
+
+      // ===== Memory prompt AFTER assistant reply (v2) =====
+      try {
+        const flags = window.__YBM_FEATURE_FLAGS__;
+        const mem = window.__YBM_MEMORY__?.MemoryManager;
+        const store = window.__YBM_MEMORY_STORE__;
+        const confirmModal = window.__YBM_MEMORY_CONFIRM_MODAL__;
+
+        if (flags?.memoryEnabled !== false && mem && channel === 'main') {
+          const result = mem.checkShouldPrompt({
+            allMessages: state.messages[contactId],
+            contactId
+          });
+          console.log('[Memory]', result);
+
+          if (
+            result?.shouldPrompt &&
+            result?.summaryRange?.from != null &&
+            result?.summaryRange?.to != null &&
+            confirmModal &&
+            store &&
+            !store.hasSkipped(contactId, result.turnCount)
+          ) {
+            // 给 UI 一点时间先把 assistant 渲染出来
+            setTimeout(() => {
+              confirmModal.show({
+                summaryRangeText: `将生成第 ${result.summaryRange.from}–${result.summaryRange.to} 轮的长期摘要（触发点：第 ${result.turnCount} 轮）`,
+                onConfirm() {
+                  console.log('[Memory] user confirmed, start generating summary');
+                  mem.generateSummary({
+                    contactId,
+                    range: result.summaryRange,
+                    allMessages: state.messages[contactId]
+                  });
+                },
+                onSkip() {
+                  store.markSkipped(contactId, result.turnCount);
+                  console.log('[Memory] user skipped at turn', result.turnCount);
+                }
+              });
+            }, 50);
+          }
+        }
+      } catch (e) {
+        console.warn('[Memory] after-reply hook error:', e);
+      }
+
       return assistantMsg;
+
+
+      // ===== Memory auto flow (v1 minimal) =====
+      try {
+        const flags = window.__YBM_FEATURE_FLAGS__;
+        const mem = window.__YBM_MEMORY__?.MemoryManager;
+
+        if (flags?.memoryEnabled !== false && mem && channel === 'main') {
+          const result = mem.checkShouldPrompt({
+            allMessages: messages,
+            contactId
+          });
+
+          if (result?.shouldPrompt && result?.summaryRange?.from && result?.summaryRange?.to) {
+            const store = window.__YBM_SUMMARY_STORE__;
+            const turnKey = result.turnCount;
+
+            // 有 store 就用 store 记 skip；没有也不影响流程
+            const skipped = store?.hasSkipped?.(contactId, turnKey);
+
+            if (!skipped) {
+              const ok = window.confirm(
+                `需要生成长期摘要吗？\n` +
+                `本次将总结第 ${result.summaryRange.from}-${result.summaryRange.to} 轮（触发点：第 ${result.turnCount} 轮）`
+              );
+
+              if (ok) {
+                console.log('[Memory] user confirmed, generating summary (fake)...');
+
+                // ✅ 先用假生成跑通流程（下一步再接真实 LLM）
+                const fakeSummary =
+                  `【测试摘要】\n` +
+                  `总结范围：${result.summaryRange.from}-${result.summaryRange.to}\n` +
+                  `触发轮次：${result.turnCount}\n` +
+                  `（下一步接真实模型生成）`;
+
+                // 保存
+                store?.setSummary?.(contactId, fakeSummary);
+                console.log('[Memory] summary generated & saved (fake)');
+
+                // 如果你想弹出你那个编辑弹窗（你本地已经有 __YBM_MEMORY_MODAL__）
+                window.__YBM_MEMORY_MODAL__?.show?.({
+                  initialText: fakeSummary,
+                  onSave(text) {
+                    store?.setSummary?.(contactId, text);
+                    console.log('[Memory] summary saved');
+                  },
+                  onSkip() {
+                    store?.markSkipped?.(contactId, turnKey);
+                    console.log('[Memory] edit skipped');
+                  },
+                  onRegenerate(prev) {
+                    return prev + '\n\n【重新生成】（测试）';
+                  }
+                });
+
+              } else {
+                store?.markSkipped?.(contactId, turnKey);
+                console.log('[Memory] user skipped at turn', turnKey);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[Memory] modal error:', e);
+      }
+
+      return assistantMsg;
+
 
     } catch (e) {
       const p = buildErrorAssistantPayload(ERROR_SOURCE.API, e?.message || String(e));
