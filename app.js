@@ -1216,12 +1216,17 @@ try {
   const viewMain = document.getElementById('viewMain');
   const windowEl = document.getElementById('window');
 
-  // 关键：chat 是后挂载的，所以不能只在一开始缓存 viewChat
-  function setView(target) {
-    // 每次都扫一遍现有的 .view（包括后挂载的 viewChat）
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
-    target?.classList.add('on');
-  }
+function setView(target) {
+  // 每次都扫一遍现有的 .view（包括后挂载的 viewChat）
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  target?.classList.add('on');
+
+  // ✅ 移动端：在 Chat 里锁外层滚动，避免“外层/内层抢滚动”
+  const isChat = target && target.id === 'viewChat';
+  document.body.classList.toggle('lockScroll', !!isChat);
+  document.querySelector('.desktop')?.classList.toggle('lockScroll', !!isChat);
+}
+
 
   // ===== Launcher -> Start =====
   const btnClaim = document.getElementById('btnClaim');

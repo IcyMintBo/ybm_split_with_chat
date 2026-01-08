@@ -88,6 +88,11 @@
   overflow-y: auto;
   padding: 12px;
   box-sizing: border-box;
+
+  /* ✅ 防止滚动传递到外层（安卓很关键） */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 /* message item */

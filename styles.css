@@ -1140,6 +1140,16 @@ button,
     align-items: flex-start !important;
   }
 }
+/* ✅ Chat 模式：移动端锁外层滚动，只让聊天区自己滚 */
+@media (max-width: 980px) {
+  body.lockScroll {
+    overflow: hidden !important;
+    height: 100% !important;
+  }
+  .desktop.lockScroll {
+    overflow: hidden !important;
+  }
+}
 
 .startPage {
   padding-top: var(--start-top-gap);
