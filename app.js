@@ -1216,12 +1216,17 @@ try {
   const viewMain = document.getElementById('viewMain');
   const windowEl = document.getElementById('window');
 
-  // 关键：chat 是后挂载的，所以不能只在一开始缓存 viewChat
-  function setView(target) {
-    // 每次都扫一遍现有的 .view（包括后挂载的 viewChat）
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
-    target?.classList.add('on');
-  }
+function setView(target) {
+  // 每次都扫一遍现有的 .view（包括后挂载的 viewChat）
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  target?.classList.add('on');
+
+  // ✅ 移动端：在 Chat 里锁外层滚动，避免“外层/内层抢滚动”
+  const isChat = target && target.id === 'viewChat';
+  document.body.classList.toggle('lockScroll', !!isChat);
+  document.querySelector('.desktop')?.classList.toggle('lockScroll', !!isChat);
+}
+
 
   // ===== Launcher -> Start =====
   const btnClaim = document.getElementById('btnClaim');
@@ -1897,7 +1902,7 @@ try {
   const saved = localStorage.getItem(KEY);
 
   window.__YBM_FEATURE_FLAGS__ = {
-    memoryEnabled: saved !== 'false'  // 默认开启
+    memoryEnabled: saved !== 'true'  // 默认关闭
   };
 
   // 给调试用
@@ -1933,43 +1938,292 @@ document.addEventListener('DOMContentLoaded', () => {
     body.appendChild(tpl.content.cloneNode(true));
     title.textContent = '总结模块';
     overlay.dataset.open = 'true';
-    // ===== Summary 面板：加载/保存当前联系人摘要 =====
+// ===== Summary 面板：加载/保存（按联系人分开，胶囊切换）=====
+// ✅ 增加：手动总结按钮（按当前轮数向下取整，按 10 轮一块总结）
 try {
   const store = window.__YBM_MEMORY_STORE__;
   const engine = window.PhoneEngine || window.ChatEngine;
-  const cid = engine?.getActiveContact?.() || 'ybm';
 
   const ta = document.getElementById('summary-content-editor');
-  if (ta && store) {
-    ta.value = store.getSummary(cid) || '';
+  const pills = document.getElementById('summary-contact-pills');
 
-    let t = null;
-    ta.addEventListener('input', () => {
-      clearTimeout(t);
-      t = setTimeout(() => {
-        store.setSummary(cid, ta.value || '');
-      }, 250);
-    });
+  // ✅ 新增：按钮与状态文案
+  const btnGen = document.getElementById('summary-generate-now');
+  const btnReset = document.getElementById('summary-reset-progress');
+  const manualStatus = document.getElementById('summary-manual-status');
 
-    // 监听自动生成后的更新
-    const onUpd = (e) => {
-      const d = e?.detail;
-      if (!d || d.contactId !== cid) return;
-      ta.value = d.text || '';
-    };
-    window.addEventListener('ybm:summary-updated', onUpd);
-
-    // 面板关闭时解绑（避免越绑越多）
-    const obs = new MutationObserver(() => {
-      if (overlay.dataset.open !== 'true') {
-        window.removeEventListener('ybm:summary-updated', onUpd);
-        obs.disconnect();
-      }
-    });
-    obs.observe(overlay, { attributes: true, attributeFilter: ['data-open'] });
+  if (!store || !engine || !ta || !pills || !btnGen || !btnReset || !manualStatus) {
+    throw new Error('summary panel missing deps');
   }
-} catch {}
 
+
+  // 取联系人：优先引擎真实联系人
+  const contacts =
+    (engine.listContacts?.() && engine.listContacts().length ? engine.listContacts() : null) ||
+    (engine.getContacts?.() && engine.getContacts().length ? engine.getContacts() : null) ||
+    [
+      { id: 'ybm', name: '岩白眉' },
+      { id: 'caishu', name: '猜叔' },
+      { id: 'dantuo', name: '但拓' },
+      { id: 'zhoubin', name: '州槟' }
+    ];
+
+  let activeCid = engine.getActiveContact?.() || contacts[0]?.id || 'ybm';
+
+  // -------- 基础：加载/保存摘要 --------
+  function load(cid) {
+    ta.value = store.getSummary(cid) || '';
+    updateManualUI(cid); // ✅ 新增：每次加载也刷新“手动总结”状态
+  }
+  function save(cid) {
+    store.setSummary(cid, ta.value || '');
+  }
+
+  // -------- 关键：计算当前 user 轮数（尽量多兜底，拿不到就禁用按钮）--------
+  function getUserTurnCount(cid) {
+    // 尝试 1：引擎提供 getMessages({contactId})
+    try {
+      const all1 = engine.getMessages?.({ contactId: cid });
+      if (Array.isArray(all1)) {
+        return all1.filter(m => m && m.channel === 'main' && m.role === 'user').length;
+      }
+    } catch {}
+
+    // 尝试 2：引擎提供 getMessages(cid) 或 getMessages()
+    try {
+      const all2 = engine.getMessages?.(cid) || engine.getMessages?.();
+      if (Array.isArray(all2)) {
+        return all2.filter(m => m && m.channel === 'main' && m.role === 'user').length;
+      }
+    } catch {}
+
+    // 尝试 3：ChatUI 可能有拿消息的方法（兜底）
+    try {
+      const all3 = window.ChatUI?.engine?.getMessages?.({ contactId: cid });
+      if (Array.isArray(all3)) {
+        return all3.filter(m => m && m.channel === 'main' && m.role === 'user').length;
+      }
+    } catch {}
+
+    return null; // 拿不到就返回 null
+  }
+
+  // -------- 关键：按你现在的自动逻辑保持一致：留 5 轮缓冲、每 10 轮一块 --------
+  function calcManualRange(cid) {
+    const turnCount = getUserTurnCount(cid);
+    if (turnCount == null) return { range: null, reason: 'no_turn_count', turnCount: null, canEnd: 0 };
+
+    const PROMPT_OFFSET = 5;   // 留最近 5 轮不要总结（跟你现在自动触发一致）
+    const BLOCK = 10;          // 每次总结 10 轮
+
+    const effective = turnCount - PROMPT_OFFSET;
+    const canEnd = Math.floor(effective / BLOCK) * BLOCK; // 可总结到的“整十轮”
+    if (canEnd < BLOCK) return { range: null, reason: 'too_early', turnCount, canEnd };
+
+    const last = store.getLastRange?.(cid);
+    const lastTo = Number(last?.to || 0) || 0;
+
+    const nextFrom = lastTo + 1;
+    const nextTo = lastTo + BLOCK;
+
+    if (nextTo <= canEnd) {
+      return { range: { from: nextFrom, to: nextTo }, reason: 'ok', turnCount, canEnd };
+    }
+    return { range: null, reason: 'not_ready', turnCount, canEnd };
+  }
+
+  function updateManualUI(cid) {
+    const enabled = window.__YBM_FEATURE_FLAGS__?.memoryEnabled !== false;
+
+    if (!enabled) {
+      btnGen.disabled = true;
+      manualStatus.textContent = '总结模块已关闭：开启后才可手动生成摘要。';
+      return;
+    }
+
+    const r = calcManualRange(cid);
+
+    if (r.reason === 'no_turn_count') {
+      btnGen.disabled = true;
+      manualStatus.textContent = '无法读取当前轮数（引擎未暴露 getMessages）。手动总结暂不可用。';
+      return;
+    }
+
+    if (r.range) {
+      btnGen.disabled = false;
+      manualStatus.textContent =
+        `将总结第 ${r.range.from}–${r.range.to} 轮（当前第 ${r.turnCount} 轮；按规则最多可总结到第 ${r.canEnd} 轮）。`;
+    } else {
+      btnGen.disabled = true;
+      manualStatus.textContent =
+        `暂无可总结的新段落（当前第 ${r.turnCount} 轮；按规则最多可总结到第 ${r.canEnd} 轮）。`;
+    }
+  }
+
+  // -------- 渲染胶囊 --------
+  function renderPills() {
+    pills.classList.add('chatContactBar'); // 让主界面也吃到 chat 那套样式
+    pills.innerHTML = '';
+
+    for (const c of contacts) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'chatChip' + (c.id === activeCid ? ' active' : '');
+      btn.dataset.cid = c.id;
+
+      const dot = document.createElement('span');
+      dot.className = 'chatChipDot';
+
+      const label = document.createElement('span');
+      label.textContent = c.name || c.id;
+
+      btn.appendChild(dot);
+      btn.appendChild(label);
+
+      btn.addEventListener('click', () => {
+        activeCid = c.id;
+
+        pills.querySelectorAll('.chatChip').forEach(el => {
+          el.classList.toggle('active', el.dataset.cid === activeCid);
+        });
+
+        load(activeCid);
+      });
+
+      pills.appendChild(btn);
+    }
+  }
+
+  renderPills();
+  load(activeCid);
+
+  // 编辑自动保存：写回当前 activeCid
+  let t = null;
+  ta.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(() => save(activeCid), 250);
+  });
+
+  // ✅ 新增：按钮点击 → 手动生成摘要
+  btnGen.addEventListener('click', async () => {
+    const enabled = window.__YBM_FEATURE_FLAGS__?.memoryEnabled !== false;
+    if (!enabled) {
+      updateManualUI(activeCid);
+      return;
+    }
+
+    const mem = window.__YBM_MEMORY__?.MemoryManager;
+    if (!mem?.generateSummary) {
+      manualStatus.textContent = '未找到 MemoryManager.generateSummary，无法生成摘要。';
+      btnGen.disabled = true;
+      return;
+    }
+
+    const r = calcManualRange(activeCid);
+    if (!r.range) {
+      updateManualUI(activeCid);
+      return;
+    }
+
+    try {
+      btnGen.disabled = true;
+      manualStatus.textContent = `正在生成第 ${r.range.from}–${r.range.to} 轮摘要...`;
+
+      // 这里和你现在 MemoryManager 的签名保持一致：传 allMessages + range
+      const allMessages =
+        engine.getMessages?.({ contactId: activeCid }) ||
+        engine.getMessages?.(activeCid) ||
+        engine.getMessages?.() ||
+        [];
+
+      await mem.generateSummary({
+        contactId: activeCid,
+        range: r.range,
+        allMessages
+      });
+
+      // 成功后：刷新 textarea + 文案
+      load(activeCid);
+    } catch (e) {
+      console.warn('[Summary] manual generate failed', e);
+      manualStatus.textContent = `手动生成失败：${e?.message || e}`;
+      updateManualUI(activeCid);
+    }
+  });
+  // ✅ 新增：清空摘要并重置进度（summary + lastRange + skip）
+  function hardResetSummaryProgress(cid) {
+    const contactKey = String(cid || 'default');
+
+    // 1) 清空摘要文本（走 store）
+    try { store.setSummary?.(contactKey, ''); } catch {}
+
+    // 2) 清空 lastRange（走 store）
+    try { store.setLastRange?.(contactKey, null); } catch {}
+
+    // 3) 清空 skip（直接改 localStorage）
+    try {
+      const KEY_SKIP = '__YBM_MEMORY_SKIP__';
+      const KEY_SUMMARY = '__YBM_MEMORY_SUMMARY__';
+      const KEY_META = '__YBM_MEMORY_META__';
+
+      const loadLS = (k) => {
+        try { return JSON.parse(localStorage.getItem(k)) || {}; } catch { return {}; }
+      };
+      const saveLS = (k, v) => localStorage.setItem(k, JSON.stringify(v || {}));
+
+      // summary：确保真删干净（你的 SummaryStore 里 key 是 makeKey(contactId)，但你这里用的也是 contactId 作 key）
+      const s = loadLS(KEY_SUMMARY);
+      if (contactKey in s) delete s[contactKey];
+      saveLS(KEY_SUMMARY, s);
+
+      // meta：lastRange 清空
+      const m = loadLS(KEY_META);
+      if (m[contactKey]) m[contactKey].lastRange = null;
+      saveLS(KEY_META, m);
+
+      // skip：删掉
+      const sk = loadLS(KEY_SKIP);
+      if (contactKey in sk) delete sk[contactKey];
+      saveLS(KEY_SKIP, sk);
+    } catch {}
+  }
+
+  btnReset.addEventListener('click', () => {
+    hardResetSummaryProgress(activeCid);
+    ta.value = '';
+    manualStatus.textContent = '已清空摘要并重置进度（lastRange / skip 已清零）。现在可以重新手动总结。';
+    updateManualUI(activeCid);
+  });
+
+  // 自动生成摘要后：只更新当前正在看的这一份
+  const onUpd = (e) => {
+    const d = e?.detail;
+    if (!d) return;
+    if (d.contactId !== activeCid) return;
+    ta.value = d.text || '';
+    updateManualUI(activeCid); // ✅ 新增：生成后也刷新按钮状态
+  };
+  window.addEventListener('ybm:summary-updated', onUpd);
+
+  // ✅ 新增：开关变化时刷新按钮状态
+  const toggleEl = document.getElementById('summary-enabled-toggle');
+  toggleEl?.addEventListener('change', () => {
+    setTimeout(() => updateManualUI(activeCid), 0);
+  });
+
+  // 面板关闭时解绑
+  const overlay = document.getElementById('startOverlay');
+  const obs = new MutationObserver(() => {
+    if (overlay && overlay.dataset.open !== 'true') {
+      window.removeEventListener('ybm:summary-updated', onUpd);
+      obs.disconnect();
+    }
+  });
+  if (overlay) obs.observe(overlay, { attributes: true, attributeFilter: ['data-open'] });
+
+} catch (e) {
+  console.warn('[Summary] bind failed', e);
+}
 
     console.log('[Summary] panel opened');
 
@@ -1982,7 +2236,7 @@ try {
 
     // 当前状态（默认 true）
     const cur =
-      window.__YBM_FEATURE_FLAGS__?.memoryEnabled !== false;
+      window.__YBM_FEATURE_FLAGS__?.memoryEnabled !== true;
 
     // 初始化开关 UI
     toggle.checked = cur;

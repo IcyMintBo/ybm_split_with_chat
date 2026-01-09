@@ -945,7 +945,7 @@ whoLeft.appendChild(whoBox);
 
         setSendingState(true);
         try {
-          await engine.send?.({ text: t, channel: 'main', max_tokens: 520 });
+          await engine.send?.({ text: t, channel: 'main', max_tokens: 2048 });
           renderHistory(engine);
         } catch (e) {
           console.error(e);

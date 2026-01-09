@@ -1,44 +1,249 @@
-/* assets/memory_modal.css */
-#ybm-memory-mask {
+/* =========================
+   Memory Summary Modal — match chat.css "Edit modal" card style
+   ========================= */
+
+#ybm-memory-mask{
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.45);
-  z-index: 9999;
+  background: rgba(0,0,0,.22); /* 跟 chatEditMask 同级 */
+  z-index: 10010;
   display: none;
 }
-#ybm-memory-modal {
+
+#ybm-memory-modal{
   position: fixed;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 360px;
-  background: #111;
-  color: #eee;
-  border-radius: 10px;
-  padding: 16px;
-  z-index: 10000;
+  z-index: 10011;
+
+  width: min(760px, 92vw);
+  max-height: min(74vh, 620px);
+
   display: none;
-  box-shadow: 0 10px 30px rgba(0,0,0,.6);
+  flex-direction: column;
+
+  border-radius: 18px;
+  border: 3px solid rgba(0,0,0,.78);
+  background: #f7f1e6; /* 奶油纸 */
+  box-shadow:
+    0 10px 0 rgba(0,0,0,.22),
+    0 22px 40px rgba(0,0,0,.18);
+  overflow: hidden;
+  box-sizing: border-box;
 }
-#ybm-memory-modal h3 {
-  margin: 0 0 8px;
-  font-size: 16px;
-}
-#ybm-memory-modal p {
-  margin: 0 0 12px;
-  font-size: 13px;
-  opacity: .9;
-}
-#ybm-memory-modal .btns {
+
+/* 标题区：同 chatEditHeader */
+#ybm-memory-modal .memHead{
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 10px 12px;
+  background: #f3eadb;
+  border-bottom: 3px solid rgba(0,0,0,.72);
+}
+
+#ybm-memory-modal .memTitle{
+  font-weight: 900;
+  font-size: 14px;
+  color: rgba(0,0,0,.86);
+  letter-spacing: .06em;
+  user-select: none;
+}
+
+#ybm-memory-modal .memSub{
+  padding: 10px 12px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(0,0,0,.72);
+}
+
+/* 文本区：同 chatEditArea（纸张内页） */
+#ybm-memory-text{
+  width: calc(100% - 24px);
+  margin: 10px 12px 0;
+
+  flex: 1;
+  min-height: 220px;
+  max-height: 40vh;
+
+  border: none;
+  outline: none;
+  resize: vertical;
+
+  border-radius: 14px;
+  background: #fbf6ee;
+  padding: 12px 12px;
+
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(0,0,0,.88);
+
+  box-shadow: inset 0 2px 12px rgba(0,0,0,.10);
+  box-sizing: border-box;
+
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+#ybm-memory-text:focus{
+  box-shadow:
+    inset 0 2px 12px rgba(0,0,0,.12),
+    0 0 0 3px rgba(60,120,255,.20);
+}
+
+/* 按钮区：同卡片按钮风格 */
+#ybm-memory-modal .btns{
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  padding: 12px;
+  background: #f7f1e6;
+  box-sizing: border-box;
+}
+
+#ybm-memory-modal button{
+  border: 3px solid rgba(0,0,0,.72);
+  background: #fffaf1;
+  border-radius: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 900;
+  letter-spacing: .02em;
+
+  box-shadow: 0 5px 0 rgba(0,0,0,.22);
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+
+#ybm-memory-modal button:active{
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 rgba(0,0,0,.22);
+}
+
+/* 主按钮：保存并生效（更“亮”一点但仍在同一套里） */
+#ybm-memory-confirm{
+  background: #e9f1ff;
+}
+
+/* 次按钮：重新生成 */
+#ybm-memory-regenerate{
+  background: #fffaf1;
+}
+
+/* 跳过：更淡一点 */
+#ybm-memory-skip{
+  opacity: .92;
+}
+
+/* 小屏适配：同 chatEditModal */
+@media (max-width: 520px){
+  #ybm-memory-modal{
+    width: 92vw;
+    max-height: 66vh;
+    border-radius: 16px;
+  }
+  #ybm-memory-text{
+    min-height: 200px;
+  }
+  #ybm-memory-modal .btns{
+    justify-content: stretch;
+  }
+  #ybm-memory-modal button{
+    flex: 1 1 auto;
+    text-align: center;
+  }
+}
+
+/* 打开弹窗时禁滚动（可选：如果你已有同类逻辑可不加） */
+body.ybm-memory-open{ overflow: hidden; }
+/* =========================
+   Memory Summary Confirm Modal
+   （生成长期摘要的确认弹窗）
+   ========================= */
+
+#ybm-confirm-mask{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.22);
+  z-index: 10008;
+}
+
+#ybm-confirm-modal{
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10009;
+
+  width: min(420px, calc(100vw - 32px));
+  border-radius: 16px;
+  border: 3px solid rgba(0,0,0,.78);
+
+  background: #f7f1e6; /* 奶油纸，和编辑弹窗统一 */
+  box-shadow:
+    0 10px 0 rgba(0,0,0,.22),
+    0 22px 40px rgba(0,0,0,.18);
+
+  padding: 14px 14px 12px;
+  box-sizing: border-box;
+}
+
+/* 标题 */
+#ybm-confirm-modal .ybmConfirmTitle{
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: .06em;
+  color: rgba(0,0,0,.86);
+  margin-bottom: 6px;
+}
+
+/* 描述 */
+#ybm-confirm-modal .ybmConfirmDesc{
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(0,0,0,.78);
+  margin-bottom: 4px;
+}
+
+/* 范围说明（第 11–20 轮那行） */
+#ybm-confirm-modal .ybmConfirmSub{
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(0,0,0,.6);
+  margin-bottom: 12px;
+}
+
+/* 按钮区 */
+#ybm-confirm-modal .ybmConfirmBtns{
+  display: flex;
+  gap: 10px;
   justify-content: flex-end;
 }
-#ybm-memory-modal button {
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 0;
+
+#ybm-confirm-modal .ybmConfirmBtns .btn{
+  border: 3px solid rgba(0,0,0,.72);
+  background: #fffaf1;
+  border-radius: 12px;
+  padding: 8px 14px;
+
+  font-weight: 900;
+  letter-spacing: .02em;
   cursor: pointer;
+
+  box-shadow: 0 5px 0 rgba(0,0,0,.22);
+  transition: transform .08s ease, box-shadow .08s ease;
 }
-#ybm-memory-confirm { background: #4da3ff; color: #000; }
-#ybm-memory-skip { background: #333; color: #ccc; }
+
+#ybm-confirm-modal .ybmConfirmBtns .btn:active{
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 rgba(0,0,0,.22);
+}
+
+/* 主按钮：生成摘要 */
+#ybm-confirm-modal .ybmConfirmBtns .primary{
+  background: #e9f1ff;
+}

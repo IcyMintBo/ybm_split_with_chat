@@ -1140,6 +1140,16 @@ button,
     align-items: flex-start !important;
   }
 }
+/* ✅ Chat 模式：移动端锁外层滚动，只让聊天区自己滚 */
+@media (max-width: 980px) {
+  body.lockScroll {
+    overflow: hidden !important;
+    height: 100% !important;
+  }
+  .desktop.lockScroll {
+    overflow: hidden !important;
+  }
+}
 
 .startPage {
   padding-top: var(--start-top-gap);
@@ -1948,4 +1958,26 @@ button,
   letter-spacing: 1px;
   opacity: .92;
   padding: 2px 4px;
+}
+.summaryPills{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:8px 0 10px;
+}
+
+.summaryPills .pill{
+  appearance:none;
+  border:1px solid rgba(0,0,0,.18);
+  background:rgba(255,255,255,.55);
+  color:#111;
+  border-radius:999px;
+  padding:6px 12px;
+  font-size:13px;
+  cursor:pointer;
+}
+
+.summaryPills .pill.isOn{
+  border-color: rgba(0,0,0,.35);
+  background: rgba(255,255,255,.85);
 }
