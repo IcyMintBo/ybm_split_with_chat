@@ -43,9 +43,43 @@
       return db[k] || '';
     },
 setSummary(contactId, text) {
-  const db = load(KEY_SUMMARY);
   const k = makeKey(contactId);
   const v = String(text || '');
+
+  // ===== 1) summary text =====
+  const db = load(KEY_SUMMARY);
+
+  // ✅ 如果摘要被清空（等同删除），就把“总结进度”一起清零
+  if (!v.trim()) {
+    // 删除摘要
+    delete db[k];
+    save(KEY_SUMMARY, db);
+
+    // 清空 lastRange（总结到哪一轮）
+    const meta = load(KEY_META);
+    if (meta[k]) {
+      meta[k].lastRange = null;
+      save(KEY_META, meta);
+    }
+
+    // 顺便清空 skip（防止“跳过”状态影响重新总结）
+    const sk = load(KEY_SKIP);
+    if (k in sk) {
+      delete sk[k];
+      save(KEY_SKIP, sk);
+    }
+
+    // 通知 UI
+    try {
+      window.dispatchEvent(new CustomEvent('ybm:summary-updated', {
+        detail: { contactId, text: '' }
+      }));
+    } catch {}
+
+    return;
+  }
+
+  // 正常写入摘要
   db[k] = v;
   save(KEY_SUMMARY, db);
 
@@ -56,6 +90,7 @@ setSummary(contactId, text) {
     }));
   } catch {}
 },
+
 
 
     // ===== meta (last range) =====

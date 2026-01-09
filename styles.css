@@ -1959,3 +1959,25 @@ button,
   opacity: .92;
   padding: 2px 4px;
 }
+.summaryPills{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:8px 0 10px;
+}
+
+.summaryPills .pill{
+  appearance:none;
+  border:1px solid rgba(0,0,0,.18);
+  background:rgba(255,255,255,.55);
+  color:#111;
+  border-radius:999px;
+  padding:6px 12px;
+  font-size:13px;
+  cursor:pointer;
+}
+
+.summaryPills .pill.isOn{
+  border-color: rgba(0,0,0,.35);
+  background: rgba(255,255,255,.85);
+}

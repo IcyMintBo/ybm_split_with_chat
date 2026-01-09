@@ -8,6 +8,7 @@
 
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./chat/chat.css" />
+
 </head>
 
 <body>
@@ -285,9 +286,11 @@
               <div class="wbTitleBig">总结模块</div>
               <div class="wbSub">
                 对话长期摘要。可由 AI 自动生成，也可手动修正。
+                <div class="chatContactBar" id="summary-contact-pills" aria-label="选择联系人"></div>
               </div>
             </div>
           </div>
+
 
           <div class="wbSection">
             <div class="wbSectionTitle">启用总结模块</div>
@@ -304,207 +307,224 @@
 
           <div class="wbSection">
             <div class="wbSectionTitle">当前摘要内容</div>
-            <textarea id="summary-content-editor" class="wbTextarea" placeholder="这里是对话的长期摘要内容，可手动修改。"
-              rows="8"></textarea>
-          </div>
-        </div>
-      </template>
-
-      <template id="startTplPresets">
-        <div class="wbRowBtns">
-          <button class="wbBtn wbBtnPrimary" id="preset-load-default" type="button">载入默认</button>
-          <button class="wbBtn" id="preset-import-file" type="button">导入文件</button>
-          <button class="wbBtn wbBtnPrimary" id="preset-export-file" type="button">导出下载</button>
-        </div>
-        <input id="preset-file" type="file" accept="application/json" style="display:none;">
-
-        <div class="wbPad">
-          <div class="wbHeaderRow">
-            <div>
-              <div class="wbTitleBig">预设</div>
-              <div class="wbSub">按开关注入 system prompt（影响剧情写作风格）。</div>
-            </div>
+            <textarea id="summary-content-editor" class="wbTextarea" placeholder="这里是...可手动修改。" rows="8"></textarea>
           </div>
 
+          <!-- ✅ 新增：手动总结 / 重置进度 -->
           <div class="wbSection">
             <div class="wbSectionHead">
-              <div class="wbSectionTitle">全局预设</div>
-              <button class="wbBtn wbBtnPrimary" id="preset-add-global" type="button">＋ 新增</button>
-            </div>
-            <div id="preset-global-list" class="wbList"></div>
-          </div>
-
-          <div class="wbSection">
-            <div class="wbSectionHead">
-              <div class="wbSectionTitle">导入 / 导出</div>
+              <div class="wbSectionTitle">手动生成摘要</div>
               <div class="wbRowBtns">
-                <button class="wbBtn" id="preset-export" type="button">导出</button>
-                <button class="wbBtn wbBtnPrimary" id="preset-import" type="button">导入</button>
+                <button class="wbBtn wbBtnPrimary" id="summary-generate-now" type="button">立即总结</button>
+                <button class="wbBtn" id="summary-reset-progress" type="button">清空并重置</button>
               </div>
             </div>
-            <textarea id="preset-io" class="wbTextarea" placeholder="这里放 JSON（导入 / 导出用）"></textarea>
+
+            <div class="wbHint" id="summary-manual-status">—</div>
           </div>
+
+
+          <div class="wbHint" id="summary-manual-status">—</div>
         </div>
-      </template>
-
-      <!-- ===== View 1: Main window ===== -->
-      <div class="view" id="viewMain" aria-label="Main Entry">
-        <div class="window" id="window">
-          <div class="titlebar">
-            <div class="dots" aria-hidden="true">
-              <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-            </div>
-            <div class="tb-title" id="tbTitle">THE TAVERN · ENTRY</div>
-            <div class="tb-actions">
-              <div class="pill" data-goto="0">入口</div>
-              <div class="pill" data-goto="1">API</div>
-              <div class="pill" data-goto="2">说明</div>
-              <div class="pill primary" data-action="start">出发</div>
-            </div>
-          </div>
-
-          <div class="pages" id="pages">
-            <!-- Page 1 -->
-            <section class="page" aria-label="入口">
-              <div class="label">DEVICE STATUS: <b style="color:var(--rust)">ONLINE</b></div>
-              <div class="h1">THE TAVERN</div>
-              <p class="sub">领取成功。这里是系统入口：干净、直接、能用。</p>
-              <div class="sep"></div>
-
-              <div class="card">
-                <div class="iconBox rust">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
-                    <path d="M7 7h10v10H7z" />
-                    <path d="M9 12h6" />
-                  </svg>
-                </div>
-                <div>
-                  <div style="font-weight:900; letter-spacing:.06em;">进入剧情</div>
-                  <div class="sub">默认配置足够用。想折腾，再去右边两页。</div>
-                </div>
-              </div>
-
-              <div class="card soft">
-                <div class="iconBox sky">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
-                    <path d="M4 12h16" />
-                    <path d="M12 4v16" />
-                  </svg>
-                </div>
-                <div>
-                  <div style="font-weight:900; letter-spacing:.06em;">小提示</div>
-                  <div class="sub">手机端左右滑动切页；电脑端主要看中间主窗。</div>
-                </div>
-              </div>
-
-              <div class="btnRow">
-                <button class="btn" data-goto="1">API →</button>
-                <button class="btn primary" data-action="start">出发</button>
-              </div>
-
-              <div class="pageDots" aria-hidden="true">
-                <span class="on"></span><span></span><span></span>
-              </div>
-            </section>
-
-            <!-- Page 2 -->
-            <section class="page" aria-label="API">
-              <div class="label">CONNECTIVITY: <b style="color:var(--rust)">READY</b></div>
-              <div class="h1">API</div>
-              <p class="sub">像旧机器背后的接口面板：插对、拧紧、亮灯。</p>
-              <div class="sep"></div>
-
-              <div class="card">
-                <div class="iconBox">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
-                    <path d="M7 7h10v10H7z" />
-                    <path d="M4 12h3M17 12h3M12 4v3M12 17v3" />
-                  </svg>
-                </div>
-                <div>
-                  <div style="font-weight:900; letter-spacing:.06em;">接口地址</div>
-                  <div class="sub">https://…（占位）</div>
-                </div>
-              </div>
-
-              <div class="card soft">
-                <div class="iconBox rust">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
-                    <path d="M12 3v18" />
-                    <path d="M7 8h10" />
-                    <path d="M7 16h10" />
-                  </svg>
-                </div>
-                <div>
-                  <div style="font-weight:900; letter-spacing:.06em;">状态码说明位</div>
-                  <div class="sub">401/403/503 的弹窗、测试按钮、保存配置——都塞在这里。</div>
-                </div>
-              </div>
-
-              <div class="btnRow">
-                <button class="btn" data-goto="0">← 返回</button>
-                <button class="btn primary" data-goto="2">说明 →</button>
-              </div>
-
-              <div class="pageDots" aria-hidden="true">
-                <span></span><span class="on"></span><span></span>
-              </div>
-            </section>
-
-            <!-- Page 3 -->
-            <section class="page" aria-label="操作说明">
-              <div class="label">MANUAL: <b style="color:var(--rust)">OK</b></div>
-              <div class="h1">MANUAL</div>
-              <p class="sub">短、清楚、有台阶。像旧系统的说明卡。</p>
-              <div class="sep"></div>
-
-              <div class="card">
-                <div class="iconBox">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
-                    <rect x="5" y="4" width="14" height="16" rx="2" />
-                    <path d="M8 8h8M8 12h8M8 16h5" />
-                  </svg>
-                </div>
-                <div class="sub">
-                  · 手机端左右滑动切页<br />
-                  · “出发”进入对话栏<br />
-                  · 需要更换世界书/预设时，回到这里配置
-                </div>
-              </div>
-
-              <div class="card soft">
-                <div class="iconBox rust">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
-                    <path d="M4 7h16v10H4z" />
-                    <path d="M8 10h8M8 14h5" />
-                  </svg>
-                </div>
-                <div>
-                  <div style="font-weight:900; letter-spacing:.06em;">功能位（以后）</div>
-                  <div class="sub">更新日志 / 撤回偷看 / 存档导入导出——写成“旧系统通知”。</div>
-                </div>
-              </div>
-
-              <div class="btnRow">
-                <button class="btn" data-goto="1">← 返回</button>
-                <button class="btn primary" data-action="start">出发</button>
-              </div>
-
-              <div class="pageDots" aria-hidden="true">
-                <span></span><span></span><span class="on"></span>
-              </div>
-            </section>
-          </div>
-        </div>
-      </div>
-      <div id="mountChat"></div>
-
-
 
     </div>
+    </template>
+
+    <template id="startTplPresets">
+      <div class="wbRowBtns">
+        <button class="wbBtn wbBtnPrimary" id="preset-load-default" type="button">载入默认</button>
+        <button class="wbBtn" id="preset-import-file" type="button">导入文件</button>
+        <button class="wbBtn wbBtnPrimary" id="preset-export-file" type="button">导出下载</button>
+      </div>
+      <input id="preset-file" type="file" accept="application/json" style="display:none;">
+
+      <div class="wbPad">
+        <div class="wbHeaderRow">
+          <div>
+            <div class="wbTitleBig">预设</div>
+            <div class="wbSub">按开关注入 system prompt（影响剧情写作风格）。</div>
+          </div>
+        </div>
+
+        <div class="wbSection">
+          <div class="wbSectionHead">
+            <div class="wbSectionTitle">全局预设</div>
+            <button class="wbBtn wbBtnPrimary" id="preset-add-global" type="button">＋ 新增</button>
+          </div>
+          <div id="preset-global-list" class="wbList"></div>
+        </div>
+
+        <div class="wbSection">
+          <div class="wbSectionHead">
+            <div class="wbSectionTitle">导入 / 导出</div>
+            <div class="wbRowBtns">
+              <button class="wbBtn" id="preset-export" type="button">导出</button>
+              <button class="wbBtn wbBtnPrimary" id="preset-import" type="button">导入</button>
+            </div>
+          </div>
+          <textarea id="preset-io" class="wbTextarea" placeholder="这里放 JSON（导入 / 导出用）"></textarea>
+        </div>
+      </div>
+    </template>
+
+    <!-- ===== View 1: Main window ===== -->
+    <div class="view" id="viewMain" aria-label="Main Entry">
+      <div class="window" id="window">
+        <div class="titlebar">
+          <div class="dots" aria-hidden="true">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          </div>
+          <div class="tb-title" id="tbTitle">THE TAVERN · ENTRY</div>
+          <div class="tb-actions">
+            <div class="pill" data-goto="0">入口</div>
+            <div class="pill" data-goto="1">API</div>
+            <div class="pill" data-goto="2">说明</div>
+            <div class="pill primary" data-action="start">出发</div>
+          </div>
+        </div>
+
+        <div class="pages" id="pages">
+          <!-- Page 1 -->
+          <section class="page" aria-label="入口">
+            <div class="label">DEVICE STATUS: <b style="color:var(--rust)">ONLINE</b></div>
+            <div class="h1">THE TAVERN</div>
+            <p class="sub">领取成功。这里是系统入口：干净、直接、能用。</p>
+            <div class="sep"></div>
+
+            <div class="card">
+              <div class="iconBox rust">
+                <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
+                  <path d="M7 7h10v10H7z" />
+                  <path d="M9 12h6" />
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight:900; letter-spacing:.06em;">进入剧情</div>
+                <div class="sub">默认配置足够用。想折腾，再去右边两页。</div>
+              </div>
+            </div>
+
+            <div class="card soft">
+              <div class="iconBox sky">
+                <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
+                  <path d="M4 12h16" />
+                  <path d="M12 4v16" />
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight:900; letter-spacing:.06em;">小提示</div>
+                <div class="sub">手机端左右滑动切页；电脑端主要看中间主窗。</div>
+              </div>
+            </div>
+
+            <div class="btnRow">
+              <button class="btn" data-goto="1">API →</button>
+              <button class="btn primary" data-action="start">出发</button>
+            </div>
+
+            <div class="pageDots" aria-hidden="true">
+              <span class="on"></span><span></span><span></span>
+            </div>
+          </section>
+
+          <!-- Page 2 -->
+          <section class="page" aria-label="API">
+            <div class="label">CONNECTIVITY: <b style="color:var(--rust)">READY</b></div>
+            <div class="h1">API</div>
+            <p class="sub">像旧机器背后的接口面板：插对、拧紧、亮灯。</p>
+            <div class="sep"></div>
+
+            <div class="card">
+              <div class="iconBox">
+                <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
+                  <path d="M7 7h10v10H7z" />
+                  <path d="M4 12h3M17 12h3M12 4v3M12 17v3" />
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight:900; letter-spacing:.06em;">接口地址</div>
+                <div class="sub">https://…（占位）</div>
+              </div>
+            </div>
+
+            <div class="card soft">
+              <div class="iconBox rust">
+                <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
+                  <path d="M12 3v18" />
+                  <path d="M7 8h10" />
+                  <path d="M7 16h10" />
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight:900; letter-spacing:.06em;">状态码说明位</div>
+                <div class="sub">401/403/503 的弹窗、测试按钮、保存配置——都塞在这里。</div>
+              </div>
+            </div>
+
+            <div class="btnRow">
+              <button class="btn" data-goto="0">← 返回</button>
+              <button class="btn primary" data-goto="2">说明 →</button>
+            </div>
+
+            <div class="pageDots" aria-hidden="true">
+              <span></span><span class="on"></span><span></span>
+            </div>
+          </section>
+
+          <!-- Page 3 -->
+          <section class="page" aria-label="操作说明">
+            <div class="label">MANUAL: <b style="color:var(--rust)">OK</b></div>
+            <div class="h1">MANUAL</div>
+            <p class="sub">短、清楚、有台阶。像旧系统的说明卡。</p>
+            <div class="sep"></div>
+
+            <div class="card">
+              <div class="iconBox">
+                <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
+                  <rect x="5" y="4" width="14" height="16" rx="2" />
+                  <path d="M8 8h8M8 12h8M8 16h5" />
+                </svg>
+              </div>
+              <div class="sub">
+                · 手机端左右滑动切页<br />
+                · “出发”进入对话栏<br />
+                · 需要更换世界书/预设时，回到这里配置
+              </div>
+            </div>
+
+            <div class="card soft">
+              <div class="iconBox rust">
+                <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2">
+                  <path d="M4 7h16v10H4z" />
+                  <path d="M8 10h8M8 14h5" />
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight:900; letter-spacing:.06em;">功能位（以后）</div>
+                <div class="sub">更新日志 / 撤回偷看 / 存档导入导出——写成“旧系统通知”。</div>
+              </div>
+            </div>
+
+            <div class="btnRow">
+              <button class="btn" data-goto="1">← 返回</button>
+              <button class="btn primary" data-action="start">出发</button>
+            </div>
+
+            <div class="pageDots" aria-hidden="true">
+              <span></span><span></span><span class="on"></span>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <div id="mountChat"></div>
+
+
+
+  </div>
   </div>
 
-<link rel="stylesheet" href="memory/memory_modal.css">
+  <link rel="stylesheet" href="memory/memory_modal.css">
 
   <script src="./memory/MemoryManager.js"></script>
   <script src="./memory/SummaryStore.js"></script>
