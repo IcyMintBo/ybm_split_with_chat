@@ -7,14 +7,7 @@
       "pattern": "【……([^】\\n]+)】",
       "flags": "g",
       "replace": "<span style=\"background: rgba(0,0,0,.14); padding:2px 6px;\">‘$1’</span>"
-    },
-{
-  "enabled": true,
-  "name": "清除 grok 渲染标记整段",
-  "pattern": "<grok:render[\\s\\S]*<\\/grok:render>",
-  "flags": "g",
-  "replace": ""
-}
+    }
 
   ]
 }
