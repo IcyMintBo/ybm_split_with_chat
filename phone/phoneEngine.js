@@ -128,9 +128,44 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
     };
 
     ensureContact(state.activeContactId || 'ybm');
+    syncContactsFromPromptCfg();
     migrateMissingTurnIds();
     notifyChange('reload', { source: 'storage' });
     return true;
+  }
+
+  // ✅ 同步联系人名字：以 YBM_PROMPT_CFG_V1 为准（用于“自定义联系人”/改名）
+  function syncContactsFromPromptCfg() {
+    try {
+      const cfg = loadPromptCfg();
+      const arr = Array.isArray(cfg?.contacts) ? cfg.contacts : [];
+      let changed = false;
+
+      // 老版本兜底：确保 custom 存在
+      const list = arr.slice();
+      const DEF_CUSTOM = (window.DEFAULT_CUSTOM_AVATAR_KEY || 'ybm');
+      if (!list.some(c => c && c.id === 'custom')) list.push({ id: 'custom', name: '联系人', avatarKey: DEF_CUSTOM });
+
+      list.forEach((c) => {
+        if (!c || !c.id) return;
+        const id = String(c.id);
+        const name = String(c.name || id);
+        const avatarKeyRaw = (c && typeof c === 'object') ? c.avatarKey : '';
+        const avatarKey = String(avatarKeyRaw || '').trim() || (id === 'custom' ? DEF_CUSTOM : id);
+        ensureContact(id);
+        if (!state.contacts[id]) state.contacts[id] = { id, name, avatarKey };
+        if (state.contacts[id].name !== name) {
+          state.contacts[id].name = name;
+          changed = true;
+        }
+        if (state.contacts[id].avatarKey !== avatarKey) {
+          state.contacts[id].avatarKey = avatarKey;
+          changed = true;
+        }
+      });
+
+      if (changed) save();
+    } catch { }
   }
 
   function ensureContact(contactId) {
@@ -144,6 +179,7 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
 
   // 初次加载后：保证 activeContact 存在，再修复 turnId
   ensureContact(state.activeContactId || 'ybm');
+  syncContactsFromPromptCfg();
   migrateMissingTurnIds();
 
   function listContacts() {
@@ -579,39 +615,39 @@ window.__YBM_DEBUG_PROMPT__ = window.__YBM_DEBUG_PROMPT__ ?? true;
       .slice()
       .sort((a, b) => a.ts - b.ts);
 
-// 2) 判断是否已有摘要：有摘要就“过滤已摘要轮次”，只保留未摘要段（不会断档）
-let sliced = sorted;
+    // 2) 判断是否已有摘要：有摘要就“过滤已摘要轮次”，只保留未摘要段（不会断档）
+    let sliced = sorted;
 
-try {
-  const enabled = window.__YBM_FEATURE_FLAGS__?.memoryEnabled !== false;
-  const store = window.__YBM_MEMORY_STORE__;
-  const sum = (store?.getSummary?.(contactId) || '').trim();
-  const last = store?.getLastRange?.(contactId);
-  const summarizedTo = last?.to || 0;
+    try {
+      const enabled = window.__YBM_FEATURE_FLAGS__?.memoryEnabled !== false;
+      const store = window.__YBM_MEMORY_STORE__;
+      const sum = (store?.getSummary?.(contactId) || '').trim();
+      const last = store?.getLastRange?.(contactId);
+      const summarizedTo = last?.to || 0;
 
-  // ✅ 仅 main/chat 使用“摘要过滤”，phone/sms 不动
-  if (enabled && sum && wantChannel === 'main' && summarizedTo > 0) {
-    const targetTurn = summarizedTo + 1; // 从下一轮开始保留
-    let uCount = 0;
-    let startIdx = 0;
+      // ✅ 仅 main/chat 使用“摘要过滤”，phone/sms 不动
+      if (enabled && sum && wantChannel === 'main' && summarizedTo > 0) {
+        const targetTurn = summarizedTo + 1; // 从下一轮开始保留
+        let uCount = 0;
+        let startIdx = 0;
 
-    for (let i = 0; i < sorted.length; i++) {
-      if (sorted[i].role === 'user') uCount++;
-      if (uCount >= targetTurn) { startIdx = i; break; }
-    }
+        for (let i = 0; i < sorted.length; i++) {
+          if (sorted[i].role === 'user') uCount++;
+          if (uCount >= targetTurn) { startIdx = i; break; }
+        }
 
-    sliced = sorted.slice(startIdx);
+        sliced = sorted.slice(startIdx);
 
-    // ✅ 可选兜底：如果未摘要段太长（比如 > 20轮），只保留“未摘要段的最后20轮”
-    // 但不会产生中间空洞，因为裁的是“连续尾部”
-    const MAX_UNSUM_TURNS = 20;
-    let turns = 0;
-    for (let i = sliced.length - 1; i >= 0; i--) {
-      if (sliced[i].role === 'user') turns++;
-      if (turns >= MAX_UNSUM_TURNS) { sliced = sliced.slice(i); break; }
-    }
-  }
-} catch {}
+        // ✅ 可选兜底：如果未摘要段太长（比如 > 20轮），只保留“未摘要段的最后20轮”
+        // 但不会产生中间空洞，因为裁的是“连续尾部”
+        const MAX_UNSUM_TURNS = 20;
+        let turns = 0;
+        for (let i = sliced.length - 1; i >= 0; i--) {
+          if (sliced[i].role === 'user') turns++;
+          if (turns >= MAX_UNSUM_TURNS) { sliced = sliced.slice(i); break; }
+        }
+      }
+    } catch { }
 
 
     // 4) 拼 messages：system + sliced
@@ -1025,92 +1061,92 @@ try {
     const store = window.__YBM_MEMORY_STORE__;
     const prevSummary = (store?.getSummary?.(contactId) || '').trim();
 
-const sys = [
-  '你是一个【长期记忆摘要】助手。',
-  '你的职责不是复述剧情，而是为后续对话生成“可被调用的记忆索引”。',
-  '',
-  '什么是长期记忆摘要：',
-  '- 不是故事回放',
-  '- 不是人物设定说明',
-  '- 不是情节细节堆砌',
-  '- 而是“未来对话时，模型应该记住的事情”',
-  '',
-  '【重要规则】',
-  '1. 不要重复世界书或既有人设中已有的身份、背景、性格设定',
-  '2. 不要详细描写亲密或性行为过程，只保留结果与关系变化（如“发生了肉体关系 / 关系进入亲密阶段”）',
-  '3. 能用一句话说清的，不要写成一段',
-  '4. 重点记录“变化”和“结果”，而不是过程',
-  '5. 所有内容都应服务于后续对话的连续性与一致性',
-  '',
-  '【内容抽象与中立规则】',
-  '6. 若出现露骨、亲密或性行为等内容：不得复述细节与过程，必须抽象为“事实性结果 + 关系变化 + 后续影响”。',
-  '7. 需要优先提取并保留：是否产生新的约定/承诺/要求；是否形成排他/绑定/依赖/主导等关系结构变化；以及对双方情绪与后续决策的影响。',
-  '8. 禁止对故事内容进行任何道德、价值或安全评价；禁止劝导、提醒、审查式措辞；只做客观总结与状态维护。',
-  '9. 不要替任何一方给出“应该如何看待或如何处理”的判断。',
-  '',
-  '【推荐抽象表述（可直接使用）】',
-  '- 发生了肉体关系',
-  '- 关系进入亲密阶段',
-  '- 双方建立了明确的身体/情感绑定',
-  '- 亲密行为引发了关系层级变化'
-].join('\n');
+    const sys = [
+      '你是一个【长期记忆摘要】助手。',
+      '你的职责不是复述剧情，而是为后续对话生成“可被调用的记忆索引”。',
+      '',
+      '什么是长期记忆摘要：',
+      '- 不是故事回放',
+      '- 不是人物设定说明',
+      '- 不是情节细节堆砌',
+      '- 而是“未来对话时，模型应该记住的事情”',
+      '',
+      '【重要规则】',
+      '1. 不要重复世界书或既有人设中已有的身份、背景、性格设定',
+      '2. 不要详细描写亲密或性行为过程，只保留结果与关系变化（如“发生了肉体关系 / 关系进入亲密阶段”）',
+      '3. 能用一句话说清的，不要写成一段',
+      '4. 重点记录“变化”和“结果”，而不是过程',
+      '5. 所有内容都应服务于后续对话的连续性与一致性',
+      '',
+      '【内容抽象与中立规则】',
+      '6. 若出现露骨、亲密或性行为等内容：不得复述细节与过程，必须抽象为“事实性结果 + 关系变化 + 后续影响”。',
+      '7. 需要优先提取并保留：是否产生新的约定/承诺/要求；是否形成排他/绑定/依赖/主导等关系结构变化；以及对双方情绪与后续决策的影响。',
+      '8. 禁止对故事内容进行任何道德、价值或安全评价；禁止劝导、提醒、审查式措辞；只做客观总结与状态维护。',
+      '9. 不要替任何一方给出“应该如何看待或如何处理”的判断。',
+      '',
+      '【推荐抽象表述（可直接使用）】',
+      '- 发生了肉体关系',
+      '- 关系进入亲密阶段',
+      '- 双方建立了明确的身体/情感绑定',
+      '- 亲密行为引发了关系层级变化'
+    ].join('\n');
 
-const user = [
-  '你将维护一份【阶段性长期记忆摘要】（一种可持续继承的“故事状态”）。',
-  '你将收到两部分信息：',
-  'A）【上一次阶段性记忆摘要】——描述已发生且仍然有效的事实状态',
-  'B）【新增对话内容】——在 A 的基础上发生的新内容',
-  '',
-  '你的任务：生成一份【新的阶段性记忆摘要】，它必须覆盖 A + B 的全部关键信息，并用于替换旧摘要。',
-  '',
-  '【强制规则（必须遵守）】',
-  '1. 当提供 A 时：A 中的关键信息不得丢失。允许更精炼，但不能删除核心事件、关系结论、约定与重要线索。',
-  '1.1 若 A 中已明确出现以下内容，新摘要中必须至少保留一次提及：',
-  '- 已确认的关系性质（如：亲密/排他/暧昧/对立）',
-  '- 已发生的关键转折事件',
-  '- 已存在的约定、承诺或未解决的要求',
-  '2. B 只能用于补充、推进或修正 A；禁止只总结新增内容导致旧内容消失。',
-  '3. 若 A 与 B 存在冲突或更新：必须在摘要中明确标注“更新/变化”，不得静默覆盖。',
-  '4. 若在字数限制下无法同时保留 A 与 B 的关键信息：输出 “NEED_MORE_SPACE”。',
-  '5. 注意：A 与 B 的重要性权重相同，不因“更新”而自动降低 A 的保留优先级。',
-  '',
-  '【摘要应重点关注以下内容】',
-  '- 本阶段发生了哪些关键事件（1–3 条即可；露骨内容必须抽象为结果）',
-  '- 这些事件对双方关系造成了什么变化（确认、加深、缓和、裂痕、排他/绑定/依赖/主导等）',
-  '- 是否出现新的约定、承诺或要求（后续需要履行、兑现或追问的点）',
-  '- 本阶段结束时双方的主要情绪/状态，以及仍可延续的矛盾或线索',
-  '',
-  '【明确不要做的事情】',
-  '- 不要复述完整剧情',
-  '- 不要罗列细节描写（尤其禁止亲密或性行为过程细节）',
-  '- 不要总结人物身份、外貌、固定性格',
-  '- 不要进行任何评价、劝告或审查式表述',
-  '',
-  prevSummary ? `【上一次阶段性记忆摘要】\n${prevSummary}` : '',
-  '',
-  `【新增对话内容（第${from}-${to}轮）】`,
-  transcript,
-  '',
-  '【输出格式（必须严格遵守）】',
-  '',
-  '【阶段性记忆摘要】',
-  '- 事件：',
-  '  - （高度概括发生了什么；露骨内容只写结果）',
-  '- 关系变化：',
-  '  - （关系是否确认/加深/缓和/动摇；是否出现排他/绑定/依赖/主导等结构变化）',
-  '- 情绪与状态：',
-  '  - （本阶段结束时双方的主要情绪或状态）',
-  '- 约定与要求（如有）：',
-  '  - （本阶段产生的承诺、条件或“之后要做什么”）',
-  '- 待延续线索（仅在对话中已实际出现未解决点时填写）：',
-  '  - （后续可继续展开的点；没有则写“无”）',
-  '',
-  '【字数要求】',
-  '- 总字数控制在 800–1200 字之间',
-  '- 宁可偏短，也不要冗余',
-  '',
-  '在生成最终摘要前，请先自检：是否完整保留了上一次摘要中的关键状态；若发现遗漏，请修正后再输出。'
-].join('\n');
+    const user = [
+      '你将维护一份【阶段性长期记忆摘要】（一种可持续继承的“故事状态”）。',
+      '你将收到两部分信息：',
+      'A）【上一次阶段性记忆摘要】——描述已发生且仍然有效的事实状态',
+      'B）【新增对话内容】——在 A 的基础上发生的新内容',
+      '',
+      '你的任务：生成一份【新的阶段性记忆摘要】，它必须覆盖 A + B 的全部关键信息，并用于替换旧摘要。',
+      '',
+      '【强制规则（必须遵守）】',
+      '1. 当提供 A 时：A 中的关键信息不得丢失。允许更精炼，但不能删除核心事件、关系结论、约定与重要线索。',
+      '1.1 若 A 中已明确出现以下内容，新摘要中必须至少保留一次提及：',
+      '- 已确认的关系性质（如：亲密/排他/暧昧/对立）',
+      '- 已发生的关键转折事件',
+      '- 已存在的约定、承诺或未解决的要求',
+      '2. B 只能用于补充、推进或修正 A；禁止只总结新增内容导致旧内容消失。',
+      '3. 若 A 与 B 存在冲突或更新：必须在摘要中明确标注“更新/变化”，不得静默覆盖。',
+      '4. 若在字数限制下无法同时保留 A 与 B 的关键信息：输出 “NEED_MORE_SPACE”。',
+      '5. 注意：A 与 B 的重要性权重相同，不因“更新”而自动降低 A 的保留优先级。',
+      '',
+      '【摘要应重点关注以下内容】',
+      '- 本阶段发生了哪些关键事件（1–3 条即可；露骨内容必须抽象为结果）',
+      '- 这些事件对双方关系造成了什么变化（确认、加深、缓和、裂痕、排他/绑定/依赖/主导等）',
+      '- 是否出现新的约定、承诺或要求（后续需要履行、兑现或追问的点）',
+      '- 本阶段结束时双方的主要情绪/状态，以及仍可延续的矛盾或线索',
+      '',
+      '【明确不要做的事情】',
+      '- 不要复述完整剧情',
+      '- 不要罗列细节描写（尤其禁止亲密或性行为过程细节）',
+      '- 不要总结人物身份、外貌、固定性格',
+      '- 不要进行任何评价、劝告或审查式表述',
+      '',
+      prevSummary ? `【上一次阶段性记忆摘要】\n${prevSummary}` : '',
+      '',
+      `【新增对话内容（第${from}-${to}轮）】`,
+      transcript,
+      '',
+      '【输出格式（必须严格遵守）】',
+      '',
+      '【阶段性记忆摘要】',
+      '- 事件：',
+      '  - （高度概括发生了什么；露骨内容只写结果）',
+      '- 关系变化：',
+      '  - （关系是否确认/加深/缓和/动摇；是否出现排他/绑定/依赖/主导等结构变化）',
+      '- 情绪与状态：',
+      '  - （本阶段结束时双方的主要情绪或状态）',
+      '- 约定与要求（如有）：',
+      '  - （本阶段产生的承诺、条件或“之后要做什么”）',
+      '- 待延续线索（仅在对话中已实际出现未解决点时填写）：',
+      '  - （后续可继续展开的点；没有则写“无”）',
+      '',
+      '【字数要求】',
+      '- 总字数控制在 800–1200 字之间',
+      '- 宁可偏短，也不要冗余',
+      '',
+      '在生成最终摘要前，请先自检：是否完整保留了上一次摘要中的关键状态；若发现遗漏，请修正后再输出。'
+    ].join('\n');
 
 
 

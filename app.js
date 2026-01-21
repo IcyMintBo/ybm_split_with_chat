@@ -1,3 +1,5 @@
+// custom 联系人默认头像 key（全局统一）
+window.DEFAULT_CUSTOM_AVATAR_KEY = 'custom_01';
 (() => {
   // ===== API Config (Start) =====
   const API_LS_KEY = 'YBM_API_CFG_V1';
@@ -26,71 +28,71 @@
     localStorage.setItem(API_LS_KEY, JSON.stringify(cfg || {}));
   }
 
-function normalizeBaseUrl(input) {
-  let u = (input || '').trim();
-  if (!u) return { baseUrl: '', endpoint: '' };
+  function normalizeBaseUrl(input) {
+    let u = (input || '').trim();
+    if (!u) return { baseUrl: '', endpoint: '' };
 
-  // 去掉空白
-  u = u.replace(/\s+/g, '');
+    // 去掉空白
+    u = u.replace(/\s+/g, '');
 
-  // 没有协议就补 https://（小白常见）
-  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    // 没有协议就补 https://（小白常见）
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
 
-  // 合并多余斜杠（保留协议里的 //）
-  u = u.replace(/([^:]\/)\/+/g, '$1');
+    // 合并多余斜杠（保留协议里的 //）
+    u = u.replace(/([^:]\/)\/+/g, '$1');
 
-  // 去掉末尾斜杠
-  u = u.replace(/\/+$/, '');
+    // 去掉末尾斜杠
+    u = u.replace(/\/+$/, '');
 
-  // 小白经常把 endpoint 一起粘进来：把它们剥掉（但不裁版本号）
-  // 只剥“确定是 endpoint 的尾巴”
-  u = u.replace(/\/(chat\/completions|responses|messages)$/i, '');
+    // 小白经常把 endpoint 一起粘进来：把它们剥掉（但不裁版本号）
+    // 只剥“确定是 endpoint 的尾巴”
+    u = u.replace(/\/(chat\/completions|responses|messages)$/i, '');
 
-  // 智谱：保持用户原样（它本来就是 /api/paas/v4 体系），不要补 /v1
-  const isZhipuUrl = /open\.bigmodel\.cn/i.test(u);
-  if (isZhipuUrl) {
+    // 智谱：保持用户原样（它本来就是 /api/paas/v4 体系），不要补 /v1
+    const isZhipuUrl = /open\.bigmodel\.cn/i.test(u);
+    if (isZhipuUrl) {
+      const endpoint = u.replace(/\/+$/, '') + '/chat/completions';
+      return { baseUrl: u, endpoint };
+    }
+
+    // ✅ 如果用户已经写了版本号（v1/v2/v3/v4/v1beta...），一律不补、不裁
+    const hasVersion =
+      /\/v\d+(\b|\/)/i.test(u) ||
+      /\/v\d+beta(\b|\/)/i.test(u) ||
+      /\/v1beta(\b|\/)/i.test(u);
+
+    // ✅ 只有“完全没版本号”时才补 /v1（照顾小白）
+    if (!hasVersion) {
+      u = u + '/v1';
+    }
+
     const endpoint = u.replace(/\/+$/, '') + '/chat/completions';
     return { baseUrl: u, endpoint };
   }
 
-  // ✅ 如果用户已经写了版本号（v1/v2/v3/v4/v1beta...），一律不补、不裁
-  const hasVersion =
-    /\/v\d+(\b|\/)/i.test(u) ||
-    /\/v\d+beta(\b|\/)/i.test(u) ||
-    /\/v1beta(\b|\/)/i.test(u);
+  // 针对部分兼容网关：Authorization 头写法不完全一致（不点名任何站）
+  function buildAuthHeader(baseUrl, apiKey) {
+    if (!apiKey) return {};
+    const key = apiKey.trim();
+    if (!key) return {};
 
-  // ✅ 只有“完全没版本号”时才补 /v1（照顾小白）
-  if (!hasVersion) {
-    u = u + '/v1';
-  }
+    // 用户自己带前缀：完全尊重（兼容各种第三方文档写法）
+    // 例：Bearer xxx / Token xxx / Api-Key xxx / sk-xxx（注意：sk-xxx 不算前缀）
+    if (/^(bearer|token|api-key)\s+/i.test(key)) {
+      return { Authorization: key };
+    }
 
-  const endpoint = u.replace(/\/+$/, '') + '/chat/completions';
-  return { baseUrl: u, endpoint };
-}
+    const lower = (baseUrl || '').toLowerCase();
 
-// 针对部分兼容网关：Authorization 头写法不完全一致（不点名任何站）
-function buildAuthHeader(baseUrl, apiKey) {
-  if (!apiKey) return {};
-  const key = apiKey.trim();
-  if (!key) return {};
+    // 如果 baseUrl 看起来是“标准 OpenAI 兼容”的路径（包含 /v1），默认加 Bearer
+    // 这样 OpenAI/大多数代理平台开箱即用
+    if (/\/v1(\b|\/)/i.test(lower)) {
+      return { Authorization: 'Bearer ' + key };
+    }
 
-  // 用户自己带前缀：完全尊重（兼容各种第三方文档写法）
-  // 例：Bearer xxx / Token xxx / Api-Key xxx / sk-xxx（注意：sk-xxx 不算前缀）
-  if (/^(bearer|token|api-key)\s+/i.test(key)) {
+    // 否则：保持不带 Bearer（留给野生中转/非标准网关）
     return { Authorization: key };
   }
-
-  const lower = (baseUrl || '').toLowerCase();
-
-  // 如果 baseUrl 看起来是“标准 OpenAI 兼容”的路径（包含 /v1），默认加 Bearer
-  // 这样 OpenAI/大多数代理平台开箱即用
-  if (/\/v1(\b|\/)/i.test(lower)) {
-    return { Authorization: 'Bearer ' + key };
-  }
-
-  // 否则：保持不带 Bearer（留给野生中转/非标准网关）
-  return { Authorization: key };
-}
 
   async function fetchModels({ baseUrl, apiKey }) {
     const url = baseUrl.replace(/\/+$/, '') + '/models';
@@ -110,55 +112,55 @@ function buildAuthHeader(baseUrl, apiKey) {
   }
 
 
-async function testChat({ baseUrl, apiKey, model }) {
-  const url = baseUrl.replace(/\/+$/, '') + '/chat/completions';
-  const headers = { 'Content-Type': 'application/json' };
-  Object.assign(headers, buildAuthHeader(baseUrl, apiKey));
+  async function testChat({ baseUrl, apiKey, model }) {
+    const url = baseUrl.replace(/\/+$/, '') + '/chat/completions';
+    const headers = { 'Content-Type': 'application/json' };
+    Object.assign(headers, buildAuthHeader(baseUrl, apiKey));
 
-  // ✅ “测试”只验证连通性与模型可用性：
-  // 一些 Claude/Anthropic 代理会把 /chat/completions 转发到 Messages API，
-  // 并拒绝 role=system（要求 top-level system）。
-  // 为了通吃所有网关/模型，这里不发 system role。
-  const body = {
-    model,
-    messages: [{ role: 'user', content: 'ping' }],
-    temperature: 0.2,
-    stream: false,
-    max_tokens: 32
-  };
+    // ✅ “测试”只验证连通性与模型可用性：
+    // 一些 Claude/Anthropic 代理会把 /chat/completions 转发到 Messages API，
+    // 并拒绝 role=system（要求 top-level system）。
+    // 为了通吃所有网关/模型，这里不发 system role。
+    const body = {
+      model,
+      messages: [{ role: 'user', content: 'ping' }],
+      temperature: 0.2,
+      stream: false,
+      max_tokens: 32
+    };
 
-  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
 
-  if (!res.ok) {
-    const t = await res.text().catch(() => '');
-    throw new Error(`测试失败 ${res.status}\n${t.slice(0, 300)}`);
+    if (!res.ok) {
+      const t = await res.text().catch(() => '');
+      throw new Error(`测试失败 ${res.status}\n${t.slice(0, 300)}`);
+    }
+
+    const data = await res.json().catch(() => ({}));
+
+    // OpenAI-compat
+    let text = data?.choices?.[0]?.message?.content;
+    if (typeof text === 'string' && text.trim()) return text;
+
+    // 少数网关把文本放在 choices[0].text
+    text = data?.choices?.[0]?.text;
+    if (typeof text === 'string' && text.trim()) return text;
+
+    // Gemini-compat
+    const parts = data?.candidates?.[0]?.content?.parts || data?.candidates?.[0]?.parts;
+    if (Array.isArray(parts)) {
+      const t = parts.map(p => (typeof p?.text === 'string' ? p.text : '')).join('\n').trim();
+      if (t) return t;
+    }
+
+    // Anthropic Messages API 兼容（部分网关会直接返回这种结构）
+    if (Array.isArray(data?.content)) {
+      const t = data.content.map(b => (typeof b?.text === 'string' ? b.text : '')).join('\n').trim();
+      if (t) return t;
+    }
+
+    return '';
   }
-
-  const data = await res.json().catch(() => ({}));
-
-  // OpenAI-compat
-  let text = data?.choices?.[0]?.message?.content;
-  if (typeof text === 'string' && text.trim()) return text;
-
-  // 少数网关把文本放在 choices[0].text
-  text = data?.choices?.[0]?.text;
-  if (typeof text === 'string' && text.trim()) return text;
-
-  // Gemini-compat
-  const parts = data?.candidates?.[0]?.content?.parts || data?.candidates?.[0]?.parts;
-  if (Array.isArray(parts)) {
-    const t = parts.map(p => (typeof p?.text === 'string' ? p.text : '')).join('\n').trim();
-    if (t) return t;
-  }
-
-  // Anthropic Messages API 兼容（部分网关会直接返回这种结构）
-  if (Array.isArray(data?.content)) {
-    const t = data.content.map(b => (typeof b?.text === 'string' ? b.text : '')).join('\n').trim();
-    if (t) return t;
-  }
-
-  return '';
-}
 
 
 
@@ -302,26 +304,26 @@ async function testChat({ baseUrl, apiKey, model }) {
         setStatus(`✅ 测试成功\n模型回复：\n${reply || '（空）'}`);
         // 测试成功后认为 API 已配置完成
         markApiAttention(false);
-} catch (e) {
-  const msg = String(e?.message || e || '');
-  // 400 在很多反代/兼容网关里，代表“已连上但请求格式不兼容/缺字段”。
-  // 这时用户最关心的是“到底有没有通”，所以把信息讲清楚，不一刀切当作断连。
-  if (/\b测试失败\s*400\b/.test(msg)) {
-    setStatus(
-      [
-        '⚠️ 已连通（收到 400 返回）',
-        '这通常表示：接口是通的，但当前“测试请求”的格式不被该网关/该模型接受。',
-        '你仍然可以先保存，然后在聊天里验证（真实聊天会走更完整的兼容逻辑）。',
-        '',
-        msg
-      ].join('\n')
-    );
-  } else {
-    setStatus(`❌ 测试失败：${msg}`);
-  }
-  markApiAttention(true);
-  shakeApiTab();
-} finally {
+      } catch (e) {
+        const msg = String(e?.message || e || '');
+        // 400 在很多反代/兼容网关里，代表“已连上但请求格式不兼容/缺字段”。
+        // 这时用户最关心的是“到底有没有通”，所以把信息讲清楚，不一刀切当作断连。
+        if (/\b测试失败\s*400\b/.test(msg)) {
+          setStatus(
+            [
+              '⚠️ 已连通（收到 400 返回）',
+              '这通常表示：接口是通的，但当前“测试请求”的格式不被该网关/该模型接受。',
+              '你仍然可以先保存，然后在聊天里验证（真实聊天会走更完整的兼容逻辑）。',
+              '',
+              msg
+            ].join('\n')
+          );
+        } else {
+          setStatus(`❌ 测试失败：${msg}`);
+        }
+        markApiAttention(true);
+        shakeApiTab();
+      } finally {
 
         btnTest.disabled = false;
       }
@@ -340,6 +342,54 @@ async function testChat({ baseUrl, apiKey, model }) {
     });
   }
   const PROMPT_LS_KEY = 'YBM_PROMPT_CFG_V1';
+// ===== 安全迁移：修复旧版本 cfg，不清聊天记录 =====
+(function migratePromptCfgSafely() {
+  const KEY = 'YBM_PROMPT_CFG_V1';
+  const raw = localStorage.getItem(KEY);
+  if (!raw) return;
+
+  let cfg;
+  try { cfg = JSON.parse(raw); } catch { return; }
+  if (!cfg || typeof cfg !== 'object') return;
+
+  // 1️⃣ 修 custom 的 avatarKey（旧版本 ybm / 缺失）
+  if (Array.isArray(cfg.contacts)) {
+    const c = cfg.contacts.find(x => x && x.id === 'custom');
+    if (c) {
+      const ak = String(c.avatarKey || '').trim();
+      if (!ak || ak === 'ybm') {
+        c.avatarKey = window.DEFAULT_CUSTOM_AVATAR_KEY || 'custom_01';
+      }
+    }
+  }
+
+  // 2️⃣ 如果 contacts 被污染成“只剩 custom”，补回预设联系人
+  const presetContacts = [
+    { id: 'ybm',     name: '岩白眉', avatarKey: 'ybm' },
+    { id: 'caishu',  name: '猜叔',   avatarKey: 'caishu' },
+    { id: 'dantuo',  name: '但拓',   avatarKey: 'dantuo' },
+    { id: 'zhoubin', name: '州槟',   avatarKey: 'zhoubin' }
+  ];
+
+  if (!Array.isArray(cfg.contacts)) cfg.contacts = [];
+
+  const hasCustom = cfg.contacts.some(c => c && c.id === 'custom');
+  const others = cfg.contacts.filter(c => c && c.id !== 'custom');
+
+  if (hasCustom && others.length === 0) {
+    // 只剩 custom：这是被初始化脚本污染过的情况
+    const custom = cfg.contacts.find(c => c.id === 'custom');
+    cfg.contacts = [custom, ...presetContacts];
+  } else {
+    // 正常情况：只补缺失的预设联系人
+    const existingIds = new Set(cfg.contacts.map(c => c.id));
+    presetContacts.forEach(p => {
+      if (!existingIds.has(p.id)) cfg.contacts.push(p);
+    });
+  }
+
+  localStorage.setItem(KEY, JSON.stringify(cfg));
+})();
 
   function loadPromptCfg() {
     try { return JSON.parse(localStorage.getItem(PROMPT_LS_KEY) || 'null'); } catch { return null; }
@@ -359,10 +409,14 @@ async function testChat({ baseUrl, apiKey, model }) {
     // 如果 cfg 不存在，先给一个基础壳
     const base = (cfg && typeof cfg === 'object') ? cfg : { version: 1 };
     if (!base.contacts) base.contacts = [
-      { id: 'ybm', name: '岩白眉' },
-      { id: 'caishu', name: '猜叔' },
-      { id: 'dantuo', name: '但拓' },
-      { id: 'zhoubin', name: '州槟' }
+      { id: 'ybm', name: '岩白眉', avatarKey: 'ybm' },
+      { id: 'caishu', name: '猜叔', avatarKey: 'caishu' },
+      { id: 'dantuo', name: '但拓', avatarKey: 'dantuo' },
+      { id: 'zhoubin', name: '州槟', avatarKey: 'zhoubin' },
+      // ✅ 自定义联系人（可改名，默认占位）
+{ id: 'custom', name: '联系人', avatarKey: (window.DEFAULT_CUSTOM_AVATAR_KEY || 'custom_01') }
+
+
     ];
     if (!base.activeContactId) base.activeContactId = base.contacts[0].id;
 
@@ -377,25 +431,25 @@ async function testChat({ baseUrl, apiKey, model }) {
       }
     } catch { }
 
-try {
-  if (!hasPresets) {
-    const r = await fetch('./default_presets.json', { cache: 'no-store' });
-    if (r.ok) {
-      const j = await r.json();
-      if (j && j.presets && typeof j.presets === 'object') {
-        // ✅ 合并而不是覆盖：保留已有的 presets.sms / presets.xxx
-        const oldPresets = (base.presets && typeof base.presets === 'object') ? base.presets : {};
-        const newPresets = j.presets;
+    try {
+      if (!hasPresets) {
+        const r = await fetch('./default_presets.json', { cache: 'no-store' });
+        if (r.ok) {
+          const j = await r.json();
+          if (j && j.presets && typeof j.presets === 'object') {
+            // ✅ 合并而不是覆盖：保留已有的 presets.sms / presets.xxx
+            const oldPresets = (base.presets && typeof base.presets === 'object') ? base.presets : {};
+            const newPresets = j.presets;
 
-        base.presets = { ...oldPresets, ...newPresets };
+            base.presets = { ...oldPresets, ...newPresets };
 
-        // ✅ 如果新文件里只有 global，就只更新 global；否则保留旧 global
-        if (Array.isArray(newPresets.global)) base.presets.global = newPresets.global;
-        else if (Array.isArray(oldPresets.global)) base.presets.global = oldPresets.global;
+            // ✅ 如果新文件里只有 global，就只更新 global；否则保留旧 global
+            if (Array.isArray(newPresets.global)) base.presets.global = newPresets.global;
+            else if (Array.isArray(oldPresets.global)) base.presets.global = oldPresets.global;
+          }
+        }
       }
-    }
-  }
-} catch { }
+    } catch { }
 
 
     // 如果默认文件没拉到，也保证结构存在
@@ -421,13 +475,34 @@ try {
 
     if (!Array.isArray(cfg.contacts) || cfg.contacts.length === 0) {
       cfg.contacts = [
-        { id: 'ybm', name: '岩白眉' },
-        { id: 'caishu', name: '猜叔' },
-        { id: 'dantuo', name: '但拓' },
-        { id: 'zhoubin', name: '州槟' }
+        { id: 'ybm', name: '岩白眉', avatarKey: 'ybm' },
+        { id: 'caishu', name: '猜叔', avatarKey: 'caishu' },
+        { id: 'dantuo', name: '但拓', avatarKey: 'dantuo' },
+        { id: 'zhoubin', name: '州槟', avatarKey: 'zhoubin' },
+        // ✅ 自定义联系人（可改名，默认占位）
+        { id: 'custom', name: '联系人', avatarKey: (window.DEFAULT_CUSTOM_AVATAR_KEY || 'custom_01') }
+
       ];
     }
     if (!cfg.activeContactId) cfg.activeContactId = cfg.contacts[0].id;
+
+    // ✅ 兜底补齐自定义联系人（历史版本可能没有）
+    if (!cfg.contacts.some(c => c && c.id === 'custom')) {
+cfg.contacts.push({ id: 'custom', name: '联系人', avatarKey: (window.DEFAULT_CUSTOM_AVATAR_KEY || 'custom_01') });
+    }
+
+    // ✅ 兜底补齐 avatarKey（让“选一次头像”全局同步）
+    cfg.contacts.forEach((c) => {
+      if (!c || !c.id) return;
+      // 如果没填 avatarKey，默认用联系人 id（custom 默认用 ybm）
+      if (!('avatarKey' in c) || !String(c.avatarKey || '').trim()) {
+c.avatarKey = (c.id === 'custom')
+  ? (window.DEFAULT_CUSTOM_AVATAR_KEY || 'custom_01')
+  : String(c.id);
+
+
+      }
+    });
 
     // ✅ 世界书：数组结构（匹配 phoneEngine）
     if (!cfg.worldbook || typeof cfg.worldbook !== 'object') cfg.worldbook = {};
@@ -444,6 +519,24 @@ try {
     savePromptCfg(cfg);
     return cfg;
   }
+
+  // ✅ 统一设置联系人预置头像：只写 YBM_PROMPT_CFG_V1.contacts[].avatarKey
+  // 约定：avatarKey 直接等于 png 文件名（例如 caishu -> ./assets/avatars/caishu.png）
+  // 选了预置头像后，同时清掉 Chat 的“上传头像缓存”，避免覆盖。
+  window.setContactAvatarKey = function setContactAvatarKey(contactId, avatarKey) {
+    const cid = String(contactId || '').trim();
+    const key = String(avatarKey || '').trim();
+    if (!cid || !key) return false;
+
+    const cfg = ensurePromptCfg();
+    const hit = (cfg.contacts || []).find(c => c && c.id === cid);
+    if (hit) hit.avatarKey = key;
+    else cfg.contacts.push({ id: cid, name: cid, avatarKey: key });
+
+    try { localStorage.removeItem('YBM_AVATAR_V1_' + cid); } catch { }
+    savePromptCfg(cfg);
+    return true;
+  };
 
   function getActiveContactName(cfg) {
     const cid = cfg?.activeContactId;
@@ -1216,16 +1309,16 @@ try {
   const viewMain = document.getElementById('viewMain');
   const windowEl = document.getElementById('window');
 
-function setView(target) {
-  // 每次都扫一遍现有的 .view（包括后挂载的 viewChat）
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
-  target?.classList.add('on');
+  function setView(target) {
+    // 每次都扫一遍现有的 .view（包括后挂载的 viewChat）
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+    target?.classList.add('on');
 
-  // ✅ 移动端：在 Chat 里锁外层滚动，避免“外层/内层抢滚动”
-  const isChat = target && target.id === 'viewChat';
-  document.body.classList.toggle('lockScroll', !!isChat);
-  document.querySelector('.desktop')?.classList.toggle('lockScroll', !!isChat);
-}
+    // ✅ 移动端：在 Chat 里锁外层滚动，避免“外层/内层抢滚动”
+    const isChat = target && target.id === 'viewChat';
+    document.body.classList.toggle('lockScroll', !!isChat);
+    document.querySelector('.desktop')?.classList.toggle('lockScroll', !!isChat);
+  }
 
 
   // ===== Launcher -> Start =====
@@ -1938,292 +2031,293 @@ document.addEventListener('DOMContentLoaded', () => {
     body.appendChild(tpl.content.cloneNode(true));
     title.textContent = '总结模块';
     overlay.dataset.open = 'true';
-// ===== Summary 面板：加载/保存（按联系人分开，胶囊切换）=====
-// ✅ 增加：手动总结按钮（按当前轮数向下取整，按 10 轮一块总结）
-try {
-  const store = window.__YBM_MEMORY_STORE__;
-  const engine = window.PhoneEngine || window.ChatEngine;
-
-  const ta = document.getElementById('summary-content-editor');
-  const pills = document.getElementById('summary-contact-pills');
-
-  // ✅ 新增：按钮与状态文案
-  const btnGen = document.getElementById('summary-generate-now');
-  const btnReset = document.getElementById('summary-reset-progress');
-  const manualStatus = document.getElementById('summary-manual-status');
-
-  if (!store || !engine || !ta || !pills || !btnGen || !btnReset || !manualStatus) {
-    throw new Error('summary panel missing deps');
-  }
-
-
-  // 取联系人：优先引擎真实联系人
-  const contacts =
-    (engine.listContacts?.() && engine.listContacts().length ? engine.listContacts() : null) ||
-    (engine.getContacts?.() && engine.getContacts().length ? engine.getContacts() : null) ||
-    [
-      { id: 'ybm', name: '岩白眉' },
-      { id: 'caishu', name: '猜叔' },
-      { id: 'dantuo', name: '但拓' },
-      { id: 'zhoubin', name: '州槟' }
-    ];
-
-  let activeCid = engine.getActiveContact?.() || contacts[0]?.id || 'ybm';
-
-  // -------- 基础：加载/保存摘要 --------
-  function load(cid) {
-    ta.value = store.getSummary(cid) || '';
-    updateManualUI(cid); // ✅ 新增：每次加载也刷新“手动总结”状态
-  }
-  function save(cid) {
-    store.setSummary(cid, ta.value || '');
-  }
-
-  // -------- 关键：计算当前 user 轮数（尽量多兜底，拿不到就禁用按钮）--------
-  function getUserTurnCount(cid) {
-    // 尝试 1：引擎提供 getMessages({contactId})
+    // ===== Summary 面板：加载/保存（按联系人分开，胶囊切换）=====
+    // ✅ 增加：手动总结按钮（按当前轮数向下取整，按 10 轮一块总结）
     try {
-      const all1 = engine.getMessages?.({ contactId: cid });
-      if (Array.isArray(all1)) {
-        return all1.filter(m => m && m.channel === 'main' && m.role === 'user').length;
+      const store = window.__YBM_MEMORY_STORE__;
+      const engine = window.PhoneEngine || window.ChatEngine;
+
+      const ta = document.getElementById('summary-content-editor');
+      const pills = document.getElementById('summary-contact-pills');
+
+      // ✅ 新增：按钮与状态文案
+      const btnGen = document.getElementById('summary-generate-now');
+      const btnReset = document.getElementById('summary-reset-progress');
+      const manualStatus = document.getElementById('summary-manual-status');
+
+      if (!store || !engine || !ta || !pills || !btnGen || !btnReset || !manualStatus) {
+        throw new Error('summary panel missing deps');
       }
-    } catch {}
 
-    // 尝试 2：引擎提供 getMessages(cid) 或 getMessages()
-    try {
-      const all2 = engine.getMessages?.(cid) || engine.getMessages?.();
-      if (Array.isArray(all2)) {
-        return all2.filter(m => m && m.channel === 'main' && m.role === 'user').length;
+
+      // 取联系人：优先引擎真实联系人
+      const contacts =
+        (engine.listContacts?.() && engine.listContacts().length ? engine.listContacts() : null) ||
+        (engine.getContacts?.() && engine.getContacts().length ? engine.getContacts() : null) ||
+        [
+          { id: 'ybm', name: '岩白眉' },
+          { id: 'caishu', name: '猜叔' },
+          { id: 'dantuo', name: '但拓' },
+          { id: 'zhoubin', name: '州槟' },
+          { id: 'custom', name: '联系人' }
+        ];
+
+      let activeCid = engine.getActiveContact?.() || contacts[0]?.id || 'ybm';
+
+      // -------- 基础：加载/保存摘要 --------
+      function load(cid) {
+        ta.value = store.getSummary(cid) || '';
+        updateManualUI(cid); // ✅ 新增：每次加载也刷新“手动总结”状态
       }
-    } catch {}
-
-    // 尝试 3：ChatUI 可能有拿消息的方法（兜底）
-    try {
-      const all3 = window.ChatUI?.engine?.getMessages?.({ contactId: cid });
-      if (Array.isArray(all3)) {
-        return all3.filter(m => m && m.channel === 'main' && m.role === 'user').length;
+      function save(cid) {
+        store.setSummary(cid, ta.value || '');
       }
-    } catch {}
 
-    return null; // 拿不到就返回 null
-  }
+      // -------- 关键：计算当前 user 轮数（尽量多兜底，拿不到就禁用按钮）--------
+      function getUserTurnCount(cid) {
+        // 尝试 1：引擎提供 getMessages({contactId})
+        try {
+          const all1 = engine.getMessages?.({ contactId: cid });
+          if (Array.isArray(all1)) {
+            return all1.filter(m => m && m.channel === 'main' && m.role === 'user').length;
+          }
+        } catch { }
 
-  // -------- 关键：按你现在的自动逻辑保持一致：留 5 轮缓冲、每 10 轮一块 --------
-  function calcManualRange(cid) {
-    const turnCount = getUserTurnCount(cid);
-    if (turnCount == null) return { range: null, reason: 'no_turn_count', turnCount: null, canEnd: 0 };
+        // 尝试 2：引擎提供 getMessages(cid) 或 getMessages()
+        try {
+          const all2 = engine.getMessages?.(cid) || engine.getMessages?.();
+          if (Array.isArray(all2)) {
+            return all2.filter(m => m && m.channel === 'main' && m.role === 'user').length;
+          }
+        } catch { }
 
-    const PROMPT_OFFSET = 5;   // 留最近 5 轮不要总结（跟你现在自动触发一致）
-    const BLOCK = 10;          // 每次总结 10 轮
+        // 尝试 3：ChatUI 可能有拿消息的方法（兜底）
+        try {
+          const all3 = window.ChatUI?.engine?.getMessages?.({ contactId: cid });
+          if (Array.isArray(all3)) {
+            return all3.filter(m => m && m.channel === 'main' && m.role === 'user').length;
+          }
+        } catch { }
 
-    const effective = turnCount - PROMPT_OFFSET;
-    const canEnd = Math.floor(effective / BLOCK) * BLOCK; // 可总结到的“整十轮”
-    if (canEnd < BLOCK) return { range: null, reason: 'too_early', turnCount, canEnd };
+        return null; // 拿不到就返回 null
+      }
 
-    const last = store.getLastRange?.(cid);
-    const lastTo = Number(last?.to || 0) || 0;
+      // -------- 关键：按你现在的自动逻辑保持一致：留 5 轮缓冲、每 10 轮一块 --------
+      function calcManualRange(cid) {
+        const turnCount = getUserTurnCount(cid);
+        if (turnCount == null) return { range: null, reason: 'no_turn_count', turnCount: null, canEnd: 0 };
 
-    const nextFrom = lastTo + 1;
-    const nextTo = lastTo + BLOCK;
+        const PROMPT_OFFSET = 5;   // 留最近 5 轮不要总结（跟你现在自动触发一致）
+        const BLOCK = 10;          // 每次总结 10 轮
 
-    if (nextTo <= canEnd) {
-      return { range: { from: nextFrom, to: nextTo }, reason: 'ok', turnCount, canEnd };
-    }
-    return { range: null, reason: 'not_ready', turnCount, canEnd };
-  }
+        const effective = turnCount - PROMPT_OFFSET;
+        const canEnd = Math.floor(effective / BLOCK) * BLOCK; // 可总结到的“整十轮”
+        if (canEnd < BLOCK) return { range: null, reason: 'too_early', turnCount, canEnd };
 
-  function updateManualUI(cid) {
-    const enabled = window.__YBM_FEATURE_FLAGS__?.memoryEnabled !== false;
+        const last = store.getLastRange?.(cid);
+        const lastTo = Number(last?.to || 0) || 0;
 
-    if (!enabled) {
-      btnGen.disabled = true;
-      manualStatus.textContent = '总结模块已关闭：开启后才可手动生成摘要。';
-      return;
-    }
+        const nextFrom = lastTo + 1;
+        const nextTo = lastTo + BLOCK;
 
-    const r = calcManualRange(cid);
+        if (nextTo <= canEnd) {
+          return { range: { from: nextFrom, to: nextTo }, reason: 'ok', turnCount, canEnd };
+        }
+        return { range: null, reason: 'not_ready', turnCount, canEnd };
+      }
 
-    if (r.reason === 'no_turn_count') {
-      btnGen.disabled = true;
-      manualStatus.textContent = '无法读取当前轮数（引擎未暴露 getMessages）。手动总结暂不可用。';
-      return;
-    }
+      function updateManualUI(cid) {
+        const enabled = window.__YBM_FEATURE_FLAGS__?.memoryEnabled !== false;
 
-    if (r.range) {
-      btnGen.disabled = false;
-      manualStatus.textContent =
-        `将总结第 ${r.range.from}–${r.range.to} 轮（当前第 ${r.turnCount} 轮；按规则最多可总结到第 ${r.canEnd} 轮）。`;
-    } else {
-      btnGen.disabled = true;
-      manualStatus.textContent =
-        `暂无可总结的新段落（当前第 ${r.turnCount} 轮；按规则最多可总结到第 ${r.canEnd} 轮）。`;
-    }
-  }
+        if (!enabled) {
+          btnGen.disabled = true;
+          manualStatus.textContent = '总结模块已关闭：开启后才可手动生成摘要。';
+          return;
+        }
 
-  // -------- 渲染胶囊 --------
-  function renderPills() {
-    pills.classList.add('chatContactBar'); // 让主界面也吃到 chat 那套样式
-    pills.innerHTML = '';
+        const r = calcManualRange(cid);
 
-    for (const c of contacts) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'chatChip' + (c.id === activeCid ? ' active' : '');
-      btn.dataset.cid = c.id;
+        if (r.reason === 'no_turn_count') {
+          btnGen.disabled = true;
+          manualStatus.textContent = '无法读取当前轮数（引擎未暴露 getMessages）。手动总结暂不可用。';
+          return;
+        }
 
-      const dot = document.createElement('span');
-      dot.className = 'chatChipDot';
+        if (r.range) {
+          btnGen.disabled = false;
+          manualStatus.textContent =
+            `将总结第 ${r.range.from}–${r.range.to} 轮（当前第 ${r.turnCount} 轮；按规则最多可总结到第 ${r.canEnd} 轮）。`;
+        } else {
+          btnGen.disabled = true;
+          manualStatus.textContent =
+            `暂无可总结的新段落（当前第 ${r.turnCount} 轮；按规则最多可总结到第 ${r.canEnd} 轮）。`;
+        }
+      }
 
-      const label = document.createElement('span');
-      label.textContent = c.name || c.id;
+      // -------- 渲染胶囊 --------
+      function renderPills() {
+        pills.classList.add('chatContactBar'); // 让主界面也吃到 chat 那套样式
+        pills.innerHTML = '';
 
-      btn.appendChild(dot);
-      btn.appendChild(label);
+        for (const c of contacts) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'chatChip' + (c.id === activeCid ? ' active' : '');
+          btn.dataset.cid = c.id;
 
-      btn.addEventListener('click', () => {
-        activeCid = c.id;
+          const dot = document.createElement('span');
+          dot.className = 'chatChipDot';
 
-        pills.querySelectorAll('.chatChip').forEach(el => {
-          el.classList.toggle('active', el.dataset.cid === activeCid);
-        });
+          const label = document.createElement('span');
+          label.textContent = c.name || c.id;
 
-        load(activeCid);
-      });
+          btn.appendChild(dot);
+          btn.appendChild(label);
 
-      pills.appendChild(btn);
-    }
-  }
+          btn.addEventListener('click', () => {
+            activeCid = c.id;
 
-  renderPills();
-  load(activeCid);
+            pills.querySelectorAll('.chatChip').forEach(el => {
+              el.classList.toggle('active', el.dataset.cid === activeCid);
+            });
 
-  // 编辑自动保存：写回当前 activeCid
-  let t = null;
-  ta.addEventListener('input', () => {
-    clearTimeout(t);
-    t = setTimeout(() => save(activeCid), 250);
-  });
+            load(activeCid);
+          });
 
-  // ✅ 新增：按钮点击 → 手动生成摘要
-  btnGen.addEventListener('click', async () => {
-    const enabled = window.__YBM_FEATURE_FLAGS__?.memoryEnabled !== false;
-    if (!enabled) {
-      updateManualUI(activeCid);
-      return;
-    }
+          pills.appendChild(btn);
+        }
+      }
 
-    const mem = window.__YBM_MEMORY__?.MemoryManager;
-    if (!mem?.generateSummary) {
-      manualStatus.textContent = '未找到 MemoryManager.generateSummary，无法生成摘要。';
-      btnGen.disabled = true;
-      return;
-    }
-
-    const r = calcManualRange(activeCid);
-    if (!r.range) {
-      updateManualUI(activeCid);
-      return;
-    }
-
-    try {
-      btnGen.disabled = true;
-      manualStatus.textContent = `正在生成第 ${r.range.from}–${r.range.to} 轮摘要...`;
-
-      // 这里和你现在 MemoryManager 的签名保持一致：传 allMessages + range
-      const allMessages =
-        engine.getMessages?.({ contactId: activeCid }) ||
-        engine.getMessages?.(activeCid) ||
-        engine.getMessages?.() ||
-        [];
-
-      await mem.generateSummary({
-        contactId: activeCid,
-        range: r.range,
-        allMessages
-      });
-
-      // 成功后：刷新 textarea + 文案
+      renderPills();
       load(activeCid);
-    } catch (e) {
-      console.warn('[Summary] manual generate failed', e);
-      manualStatus.textContent = `手动生成失败：${e?.message || e}`;
-      updateManualUI(activeCid);
-    }
-  });
-  // ✅ 新增：清空摘要并重置进度（summary + lastRange + skip）
-  function hardResetSummaryProgress(cid) {
-    const contactKey = String(cid || 'default');
 
-    // 1) 清空摘要文本（走 store）
-    try { store.setSummary?.(contactKey, ''); } catch {}
+      // 编辑自动保存：写回当前 activeCid
+      let t = null;
+      ta.addEventListener('input', () => {
+        clearTimeout(t);
+        t = setTimeout(() => save(activeCid), 250);
+      });
 
-    // 2) 清空 lastRange（走 store）
-    try { store.setLastRange?.(contactKey, null); } catch {}
+      // ✅ 新增：按钮点击 → 手动生成摘要
+      btnGen.addEventListener('click', async () => {
+        const enabled = window.__YBM_FEATURE_FLAGS__?.memoryEnabled !== false;
+        if (!enabled) {
+          updateManualUI(activeCid);
+          return;
+        }
 
-    // 3) 清空 skip（直接改 localStorage）
-    try {
-      const KEY_SKIP = '__YBM_MEMORY_SKIP__';
-      const KEY_SUMMARY = '__YBM_MEMORY_SUMMARY__';
-      const KEY_META = '__YBM_MEMORY_META__';
+        const mem = window.__YBM_MEMORY__?.MemoryManager;
+        if (!mem?.generateSummary) {
+          manualStatus.textContent = '未找到 MemoryManager.generateSummary，无法生成摘要。';
+          btnGen.disabled = true;
+          return;
+        }
 
-      const loadLS = (k) => {
-        try { return JSON.parse(localStorage.getItem(k)) || {}; } catch { return {}; }
+        const r = calcManualRange(activeCid);
+        if (!r.range) {
+          updateManualUI(activeCid);
+          return;
+        }
+
+        try {
+          btnGen.disabled = true;
+          manualStatus.textContent = `正在生成第 ${r.range.from}–${r.range.to} 轮摘要...`;
+
+          // 这里和你现在 MemoryManager 的签名保持一致：传 allMessages + range
+          const allMessages =
+            engine.getMessages?.({ contactId: activeCid }) ||
+            engine.getMessages?.(activeCid) ||
+            engine.getMessages?.() ||
+            [];
+
+          await mem.generateSummary({
+            contactId: activeCid,
+            range: r.range,
+            allMessages
+          });
+
+          // 成功后：刷新 textarea + 文案
+          load(activeCid);
+        } catch (e) {
+          console.warn('[Summary] manual generate failed', e);
+          manualStatus.textContent = `手动生成失败：${e?.message || e}`;
+          updateManualUI(activeCid);
+        }
+      });
+      // ✅ 新增：清空摘要并重置进度（summary + lastRange + skip）
+      function hardResetSummaryProgress(cid) {
+        const contactKey = String(cid || 'default');
+
+        // 1) 清空摘要文本（走 store）
+        try { store.setSummary?.(contactKey, ''); } catch { }
+
+        // 2) 清空 lastRange（走 store）
+        try { store.setLastRange?.(contactKey, null); } catch { }
+
+        // 3) 清空 skip（直接改 localStorage）
+        try {
+          const KEY_SKIP = '__YBM_MEMORY_SKIP__';
+          const KEY_SUMMARY = '__YBM_MEMORY_SUMMARY__';
+          const KEY_META = '__YBM_MEMORY_META__';
+
+          const loadLS = (k) => {
+            try { return JSON.parse(localStorage.getItem(k)) || {}; } catch { return {}; }
+          };
+          const saveLS = (k, v) => localStorage.setItem(k, JSON.stringify(v || {}));
+
+          // summary：确保真删干净（你的 SummaryStore 里 key 是 makeKey(contactId)，但你这里用的也是 contactId 作 key）
+          const s = loadLS(KEY_SUMMARY);
+          if (contactKey in s) delete s[contactKey];
+          saveLS(KEY_SUMMARY, s);
+
+          // meta：lastRange 清空
+          const m = loadLS(KEY_META);
+          if (m[contactKey]) m[contactKey].lastRange = null;
+          saveLS(KEY_META, m);
+
+          // skip：删掉
+          const sk = loadLS(KEY_SKIP);
+          if (contactKey in sk) delete sk[contactKey];
+          saveLS(KEY_SKIP, sk);
+        } catch { }
+      }
+
+      btnReset.addEventListener('click', () => {
+        hardResetSummaryProgress(activeCid);
+        ta.value = '';
+        manualStatus.textContent = '已清空摘要并重置进度（lastRange / skip 已清零）。现在可以重新手动总结。';
+        updateManualUI(activeCid);
+      });
+
+      // 自动生成摘要后：只更新当前正在看的这一份
+      const onUpd = (e) => {
+        const d = e?.detail;
+        if (!d) return;
+        if (d.contactId !== activeCid) return;
+        ta.value = d.text || '';
+        updateManualUI(activeCid); // ✅ 新增：生成后也刷新按钮状态
       };
-      const saveLS = (k, v) => localStorage.setItem(k, JSON.stringify(v || {}));
+      window.addEventListener('ybm:summary-updated', onUpd);
 
-      // summary：确保真删干净（你的 SummaryStore 里 key 是 makeKey(contactId)，但你这里用的也是 contactId 作 key）
-      const s = loadLS(KEY_SUMMARY);
-      if (contactKey in s) delete s[contactKey];
-      saveLS(KEY_SUMMARY, s);
+      // ✅ 新增：开关变化时刷新按钮状态
+      const toggleEl = document.getElementById('summary-enabled-toggle');
+      toggleEl?.addEventListener('change', () => {
+        setTimeout(() => updateManualUI(activeCid), 0);
+      });
 
-      // meta：lastRange 清空
-      const m = loadLS(KEY_META);
-      if (m[contactKey]) m[contactKey].lastRange = null;
-      saveLS(KEY_META, m);
+      // 面板关闭时解绑
+      const overlay = document.getElementById('startOverlay');
+      const obs = new MutationObserver(() => {
+        if (overlay && overlay.dataset.open !== 'true') {
+          window.removeEventListener('ybm:summary-updated', onUpd);
+          obs.disconnect();
+        }
+      });
+      if (overlay) obs.observe(overlay, { attributes: true, attributeFilter: ['data-open'] });
 
-      // skip：删掉
-      const sk = loadLS(KEY_SKIP);
-      if (contactKey in sk) delete sk[contactKey];
-      saveLS(KEY_SKIP, sk);
-    } catch {}
-  }
-
-  btnReset.addEventListener('click', () => {
-    hardResetSummaryProgress(activeCid);
-    ta.value = '';
-    manualStatus.textContent = '已清空摘要并重置进度（lastRange / skip 已清零）。现在可以重新手动总结。';
-    updateManualUI(activeCid);
-  });
-
-  // 自动生成摘要后：只更新当前正在看的这一份
-  const onUpd = (e) => {
-    const d = e?.detail;
-    if (!d) return;
-    if (d.contactId !== activeCid) return;
-    ta.value = d.text || '';
-    updateManualUI(activeCid); // ✅ 新增：生成后也刷新按钮状态
-  };
-  window.addEventListener('ybm:summary-updated', onUpd);
-
-  // ✅ 新增：开关变化时刷新按钮状态
-  const toggleEl = document.getElementById('summary-enabled-toggle');
-  toggleEl?.addEventListener('change', () => {
-    setTimeout(() => updateManualUI(activeCid), 0);
-  });
-
-  // 面板关闭时解绑
-  const overlay = document.getElementById('startOverlay');
-  const obs = new MutationObserver(() => {
-    if (overlay && overlay.dataset.open !== 'true') {
-      window.removeEventListener('ybm:summary-updated', onUpd);
-      obs.disconnect();
+    } catch (e) {
+      console.warn('[Summary] bind failed', e);
     }
-  });
-  if (overlay) obs.observe(overlay, { attributes: true, attributeFilter: ['data-open'] });
-
-} catch (e) {
-  console.warn('[Summary] bind failed', e);
-}
 
     console.log('[Summary] panel opened');
 

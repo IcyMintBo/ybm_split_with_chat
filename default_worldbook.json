@@ -17,6 +17,10 @@
     {
       "id": "zhoubin",
       "name": "州槟"
+    },
+    {
+      "id": "custom",
+      "name": "联系人"
     }
   ],
   "worldbook": {
@@ -222,7 +226,8 @@
           "content": "“我在工作。”\n“陈会长还没发话。”",
           "enabled": true
         }
-      ]
+      ],
+      "custom": []
     }
   }
 }

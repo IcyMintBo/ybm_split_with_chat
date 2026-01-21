@@ -1,11 +1,37 @@
 (() => {
   // ===== contacts =====
   const CONTACTS_DEF = [
-    { id: 'ybm', name: '岩白眉' },
-    { id: 'caishu', name: '猜叔' },
-    { id: 'dantuo', name: '但拓' },
-    { id: 'zhoubin', name: '州槟' },
+    { id: 'ybm', name: '岩白眉', avatarKey: 'ybm' },
+    { id: 'caishu', name: '猜叔', avatarKey: 'caishu' },
+    { id: 'dantuo', name: '但拓', avatarKey: 'dantuo' },
+    { id: 'zhoubin', name: '州槟', avatarKey: 'zhoubin' },
+    // ✅ 自定义联系人（可改名，默认占位）
+{ id: 'custom', name: '联系人', avatarKey: (window.DEFAULT_CUSTOM_AVATAR_KEY || 'custom_01') },
   ];
+
+  // 优先从 prompt cfg 取联系人（用于“改名同步”），没有就回退默认
+  const PROMPT_LS_KEY = 'YBM_PROMPT_CFG_V1';
+  function loadPromptContacts() {
+    try {
+      const cfg = JSON.parse(localStorage.getItem(PROMPT_LS_KEY) || 'null');
+      const arr = Array.isArray(cfg?.contacts) ? cfg.contacts : null;
+      if (!arr || !arr.length) return CONTACTS_DEF.slice();
+
+      // ✅ 兜底补齐自定义联系人（老版本没有）
+      const out = arr
+        .filter(c => c && c.id)
+        .map(c => ({
+          id: String(c.id),
+          name: String(c.name || c.id),
+          avatarKey: String(c.avatarKey || '').trim() || (String(c.id) === 'custom' ? (window.DEFAULT_CUSTOM_AVATAR_KEY || 'custom_01') : String(c.id))
+        }));
+     if (!out.some(c => c.id === 'custom')) out.push({ id: 'custom', name: '联系人', avatarKey: (window.DEFAULT_CUSTOM_AVATAR_KEY || 'custom_01') });
+
+      return out;
+    } catch {
+      return CONTACTS_DEF.slice();
+    }
+  }
 
   // ===== utils =====
   function qs(id) { return document.getElementById(id); }
@@ -125,31 +151,61 @@ function sanitizeModelText(text) {
     return canvas.toDataURL('image/jpeg', quality);
   }
 
-  // 给 <img> 安全设置头像：优先使用用户上传，其次尝试静态文件，最后隐藏
+  // 给 <img> 安全设置头像：
+  // - me：仍然走“上传头像”（YBM_AVATAR_V1_me）
+  // - assistant：统一走“预置头像”（单一真源：YBM_PROMPT_CFG_V1.contacts[].avatarKey）
+  // 约定：avatarKey 直接等于 png 文件名（例如 caishu -> ./assets/avatars/caishu.png）
   function applyAvatarToImg(avaImg, role, cid) {
     const id = (role === 'me') ? 'me' : (cid || 'ybm');
     const stored = getStoredAvatar(id);
 
-    // 统一的 fallback：失败就隐藏并移除 src，避免 404 刷屏
+    function getPresetAvatarKeyFromCfg(contactId) {
+      try {
+        const cfg = JSON.parse(localStorage.getItem(PROMPT_LS_KEY) || 'null');
+        const arr = Array.isArray(cfg?.contacts) ? cfg.contacts : [];
+        const hit = arr.find(c => c && String(c.id) === String(contactId));
+        const key = String(hit?.avatarKey || '').trim();
+        if (key) return key;
+      } catch { }
+      // fallback：custom 默认用 ybm，其余默认用自己的 id
+return (String(contactId) === 'custom') ? (window.DEFAULT_CUSTOM_AVATAR_KEY || 'custom_01') : String(contactId || 'ybm');
+
+    }
+
+    // 统一 fallback：失败就隐藏并移除 src，避免 404 刷屏
     avaImg.onerror = () => {
       avaImg.removeAttribute('src');
       avaImg.style.display = 'none';
     };
     avaImg.onload = () => { avaImg.style.display = 'block'; };
 
-    if (stored) {
-      avaImg.src = stored;
-      return;
-    }
-
-    // 没有上传头像：me 默认不显示；assistant 尝试 ./assets/avatars/${cid}.png
+    // 1) me：仍然沿用“上传头像”逻辑（不从 cfg 取）
     if (role === 'me') {
+      if (stored) {
+        avaImg.src = stored;
+        return;
+      }
       avaImg.removeAttribute('src');
       avaImg.style.display = 'none';
       return;
     }
 
-    avaImg.src = `./assets/avatars/${cid || 'ybm'}.png`; // 不存在会走 onerror 自动隐藏
+    // 2) assistant：优先使用 cfg.avatarKey 对应的静态 png
+    const presetKey = getPresetAvatarKeyFromCfg(cid || 'ybm');
+    avaImg.src = `./assets/avatars/${presetKey}.png`;
+
+    // 3) 兜底：如果有人还留着旧上传头像（YBM_AVATAR_V1_<id>），作为最后兜底
+    //    注意：当你“选择预置头像”时，建议同时删除 YBM_AVATAR_V1_<id>，避免覆盖。
+    if (stored) {
+      // 如果预置头像 404 会触发 onerror 把 img 隐藏；这里用一个二次兜底：
+      // 等一帧检查是否被隐藏，如果隐藏就换成 stored。
+      requestAnimationFrame(() => {
+        if (avaImg.style.display === 'none') {
+          avaImg.style.display = 'block';
+          avaImg.src = stored;
+        }
+      });
+    }
   }
 
   function injectPolishOnce() {
@@ -321,14 +377,15 @@ send.innerHTML = `
     if (!engine?.listContacts || !engine?.addContact) return;
     const existing = engine.listContacts() || [];
     const have = new Set(existing.map(c => c.id));
-    for (const c of CONTACTS_DEF) if (!have.has(c.id)) engine.addContact(c);
+    for (const c of loadPromptContacts()) if (!have.has(c.id)) engine.addContact(c);
     if (!engine.getActiveContact?.()) engine.setActiveContact?.('ybm');
   }
 
   function getActiveContactName(engine) {
     const id = engine.getActiveContact?.() || 'ybm';
     const list = engine.listContacts?.() || [];
-    const c = list.find(x => x.id === id) || CONTACTS_DEF.find(x => x.id === id) || { id, name: id };
+    const def = loadPromptContacts();
+    const c = list.find(x => x.id === id) || def.find(x => x.id === id) || { id, name: id };
     return c.name || c.id;
   }
 
@@ -343,7 +400,8 @@ send.innerHTML = `
 
     const cur = engine.getActiveContact?.() || 'ybm';
 
-    for (const c of CONTACTS_DEF) {
+    const contacts = loadPromptContacts();
+    for (const c of contacts) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'chatChip' + (c.id === cur ? ' active' : '');
@@ -369,6 +427,12 @@ send.innerHTML = `
     }
 
     titlebar.insertAdjacentElement('afterend', bar);
+  }
+
+  function refreshContactBar(engine) {
+    const old = document.getElementById('chatContactBar');
+    if (old) old.remove();
+    mountContactBar(engine);
   }
 
 
@@ -914,6 +978,17 @@ whoLeft.appendChild(whoBox);
       document.documentElement.dataset.chatChangeBound = '1';
       engine.onChange?.((type) => {
         if (type === 'reload' || type === 'save') renderHistory(engine);
+      });
+    }
+
+    // ✅ prompt cfg（联系人改名）同步：刷新联系人条 + 重新渲染当前历史
+    if (!document.documentElement.dataset.chatPromptSyncBound) {
+      document.documentElement.dataset.chatPromptSyncBound = '1';
+      window.addEventListener('storage', (e) => {
+        if (!e || e.key !== PROMPT_LS_KEY) return;
+        try { ensureDefaultContacts(engine); } catch { }
+        refreshContactBar(engine);
+        renderHistory(engine);
       });
     }
 
