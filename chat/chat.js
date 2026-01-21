@@ -150,6 +150,37 @@ function sanitizeModelText(text) {
     // png 会很大，优先 jpeg
     return canvas.toDataURL('image/jpeg', quality);
   }
+  // ✅ 统一给 <img> 设置静态头像（兼容 GitHub Pages 子目录）
+  // chat/chat.html 在 /chat/ 目录下：
+  // - 正确路径一般是 ../assets/avatars/xxx.png
+  // - 但为了兼容你可能从根目录打开的情况，再兜底 ./assets/avatars/xxx.png
+  // - 最后再兜底 /assets/avatars/xxx.png
+  function setPresetAvatarWithFallback(img, avatarKey) {
+    const k = String(avatarKey || '').trim().replace(/\.png$/i, '');
+    const candidates = [
+      `../assets/avatars/${k}.png`,
+      `./assets/avatars/${k}.png`,
+      `/assets/avatars/${k}.png`,
+    ];
+
+    let idx = 0;
+
+    img.onerror = () => {
+      idx += 1;
+      if (idx < candidates.length) {
+        img.style.display = 'block';
+        img.src = candidates[idx];
+      } else {
+        img.removeAttribute('src');
+        img.style.display = 'none';
+      }
+    };
+
+    img.onload = () => { img.style.display = 'block'; };
+
+    img.style.display = 'block';
+    img.src = candidates[0];
+  }
 
   // 给 <img> 安全设置头像：
   // - me：仍然走“上传头像”（YBM_AVATAR_V1_me）
@@ -190,9 +221,10 @@ return (String(contactId) === 'custom') ? (window.DEFAULT_CUSTOM_AVATAR_KEY || '
       return;
     }
 
-    // 2) assistant：优先使用 cfg.avatarKey 对应的静态 png
+    // 2) assistant：优先使用 cfg.avatarKey 对应的静态 png（带路径兜底）
     const presetKey = getPresetAvatarKeyFromCfg(cid || 'ybm');
-    avaImg.src = `./assets/avatars/${presetKey}.png`;
+    setPresetAvatarWithFallback(avaImg, presetKey);
+
 
     // 3) 兜底：如果有人还留着旧上传头像（YBM_AVATAR_V1_<id>），作为最后兜底
     //    注意：当你“选择预置头像”时，建议同时删除 YBM_AVATAR_V1_<id>，避免覆盖。
